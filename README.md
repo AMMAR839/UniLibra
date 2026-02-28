@@ -5,10 +5,10 @@
 - Anggota 2:  Nicholas Shane Pangihutan Siahaan (23/520590/TK/57399)
 - Anggota 3:  Ammar Ali Yasir  (23/520644/TK/57406) 
 
+### Departemen Teknologi Elektro dan Teknologi Informasi, Fakultas Teknik, Universitas Gadjah Mada
 
-## Departemen Teknologi Elektro dan Teknologi Informasi, Fakultas Teknik, Universitas Gadjah Mada
 
-### Perumusan Permasalahan
+## Perumusan Permasalahan
 
 ### Identitas Produk
 * **Nama Produk:** UniLibra
