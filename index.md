@@ -1,4 +1,3 @@
-## LAB 2.4: Merancang SDLC Pengembangan Produk
 
 # UniLibra
 
