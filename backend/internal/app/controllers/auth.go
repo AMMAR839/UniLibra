@@ -5,6 +5,7 @@ import (
 
 	"unilibra-backend/internal/pkg/config"
 	"unilibra-backend/internal/pkg/models"
+	"unilibra-backend/internal/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -93,9 +94,17 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Jika sukses, berikan respon berhasil (TODO: JWT Token)
+	// Buat Token JWT
+	token, err := utils.GenerateToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat token autentikasi."})
+		return
+	}
+
+	// Kembalikan respon beserta token-nya
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login berhasil!",
+		"token":   token,
 		"user": gin.H{
 			"id":    user.ID,
 			"name":  user.Name,
