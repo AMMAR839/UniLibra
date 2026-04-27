@@ -1,12 +1,11 @@
 package utils
 
 import (
+	"os"
 	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 )
-
-// [SEMENTARA] JWT secret key
-var jwtSecret = []byte("kunci_perpustakaan")
 
 // GenerateToken bertugas membuat JWT berdasarkan ID pengguna
 func GenerateToken(userID uint) (string, error) {
@@ -19,6 +18,9 @@ func GenerateToken(userID uint) (string, error) {
 	// Buat token menggunakan algoritma enkripsi HS256
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
+	// Ambil secret key dari file .env
+	secretKey := os.Getenv("JWT_SECRET")
+
 	// Tanda tangani token dengan secret key untuk menghasilkan string token yang aman
-	return token.SignedString(jwtSecret)
+	return token.SignedString([]byte(secretKey))
 }

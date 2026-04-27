@@ -6,10 +6,18 @@ import (
 
 	"unilibra-backend/internal/app/routes"
 	"unilibra-backend/internal/pkg/config"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	fmt.Println("Memulai server UniLibra...")
+
+	// Load variabel dari file .env
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Peringatan: File .env tidak ditemukan, menggunakan environment system bawaan.")
+	}
 
 	// Hubungkan ke database & jalankan Auto-Migrate
 	config.ConnectDatabase()
