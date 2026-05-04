@@ -2,6 +2,7 @@ package routes
 
 import (
 	"unilibra-backend/internal/app/controllers"
+	"unilibra-backend/internal/app/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,9 +24,18 @@ func SetupRouter() *gin.Engine {
 	{
 		// Mendaftarkan alamat /api/register yang mengarah ke fungsi Register
 		api.POST("/register", controllers.Register)
-		
+
 		// Mendaftarkan alamat /api/login yang mengarah ke fungsi Login
 		api.POST("/login", controllers.Login)
+
+		protected := api.Group("/")
+		protected.Use(middlewares.AuthRequired())
+		{
+			// Mendaftarkan alamat POST /api/books ke fungsi CreateBook
+			protected.POST("/books", controllers.CreateBook)
+
+			// Nanti fitur edit, hapus, dan pinjam buku akan kita taruh di dalam sini juga
+		}
 	}
 
 	return r
