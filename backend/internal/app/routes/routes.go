@@ -22,19 +22,22 @@ func SetupRouter() *gin.Engine {
 	// Kelompok alamat untuk API
 	api := r.Group("/api")
 	{
-		// Mendaftarkan alamat /api/register yang mengarah ke fungsi Register
+		// === AREA PUBLIK (Siapa saja boleh masuk) ===
 		api.POST("/register", controllers.Register)
-
-		// Mendaftarkan alamat /api/login yang mengarah ke fungsi Login
 		api.POST("/login", controllers.Login)
 
+		// Etalase buku bisa dilihat tanpa perlu login!
+		api.GET("/books", controllers.GetBooks)
+		api.GET("/books/:id", controllers.GetBookByID)
+
+		// === AREA PRIVAT (Wajib lapor Satpam / Punya JWT) ===
 		protected := api.Group("/")
 		protected.Use(middlewares.AuthRequired())
 		{
-			// Mendaftarkan alamat POST /api/books ke fungsi CreateBook
+			// Hanya user login yang bisa melakukan tindakan ini
 			protected.POST("/books", controllers.CreateBook)
-
-			// Nanti fitur edit, hapus, dan pinjam buku akan kita taruh di dalam sini juga
+			protected.PUT("/books/:id", controllers.UpdateBook)    // <--- BARU (Update)
+			protected.DELETE("/books/:id", controllers.DeleteBook) // <--- BARU (Delete)
 		}
 	}
 
