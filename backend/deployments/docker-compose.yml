@@ -1,0 +1,55 @@
+services:
+  # Container Database
+  db:
+    image: postgres:18-alpine
+    container_name: unilibra-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+  # Container Backend
+  backend:
+    build:
+      context: ../            # Docker mencari Dockerfile di folder induk (backend/)
+      dockerfile: Dockerfile
+    container_name: unilibra-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      # Koneksi database diarahkan ke service "db" di atas
+      DB_HOST: db 
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_PORT: 5432
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - db
+      
+    # === ATURAN WATCH CERDAS ===
+    develop:
+      watch:
+        # 1. Jika file kode berubah, lakukan SYNC (biarkan Air yang compile ulang)
+        - action: sync
+          path: ../
+          target: /app
+          ignore:
+            - ../.git/
+            - ../deployments/
+            - ../tmp/         # Abaikan folder hasil build Air
+        
+        # 2. Jika daftar library berubah, REBUILD container dari nol
+        - action: rebuild
+          path: ../go.mod
+        - action: rebuild
+          path: ../go.sum
+
+volumes:
+  postgres_data:
