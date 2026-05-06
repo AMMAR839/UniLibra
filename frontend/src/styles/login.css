@@ -6,7 +6,6 @@
   overflow: hidden;
   padding: clamp(12px, 2vw, 28px);
   isolation: isolate;
-  background: rgba(16, 41, 29, 0.62);
 }
 
 .login-page::after {
@@ -17,7 +16,7 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  opacity: 0.35;
+  opacity: 0.65;
   z-index: -1;
 }
 

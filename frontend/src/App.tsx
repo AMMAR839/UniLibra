@@ -4,18 +4,31 @@ import "./App.css";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import Login from "./pages/login";
+import Register from "./pages/register";
 
-type AppPage = "home" | "login";
+type AppPage = "home" | "login" | "register";
+
+function pageFromPath(pathname: string): AppPage {
+  if (pathname === "/login") {
+    return "login";
+  }
+
+  if (pathname === "/register") {
+    return "register";
+  }
+
+  return "home";
+}
 
 function App() {
   const [page, setPage] = useState<AppPage>(() =>
-    window.location.pathname === "/login" ? "login" : "home",
+    pageFromPath(window.location.pathname),
   );
   const isLoggedIn = Boolean(localStorage.getItem("token"));
 
   useEffect(() => {
     function syncPageWithUrl() {
-      setPage(window.location.pathname === "/login" ? "login" : "home");
+      setPage(pageFromPath(window.location.pathname));
     }
 
     window.addEventListener("popstate", syncPageWithUrl);
@@ -23,14 +36,22 @@ function App() {
     return () => window.removeEventListener("popstate", syncPageWithUrl);
   }, []);
 
-  function openLogin() {
-    setPage("login");
-    window.history.pushState({}, "", "/login");
+  function navigateTo(pathname: string) {
+    setPage(pageFromPath(pathname));
+    window.history.pushState({}, "", pathname);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function openLogin() {
+    navigateTo("/login");
+  }
+
   if (page === "login") {
-    return <Login />;
+    return <Login onRegisterClick={() => navigateTo("/register")} />;
+  }
+
+  if (page === "register") {
+    return <Register onLoginClick={() => navigateTo("/login")} />;
   }
 
   return (
@@ -234,7 +255,7 @@ function App() {
             title="Bumi Manusia"
             author="Pramoedya Ananta Toer"
             rating="4.9"
-            distance="1 Casan"
+            distance="1.5 km"
             price="Rp 1.000"
           />
 

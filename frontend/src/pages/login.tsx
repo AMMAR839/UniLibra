@@ -2,13 +2,17 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { motion } from "framer-motion";
 import LoginCharacterArt from "../components/LoginCharacterArt";
-import "./login.css";
+import "../styles/login.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const GOOGLE_LOGIN_URL =
   import.meta.env.VITE_GOOGLE_LOGIN_URL || `${API_URL}/api/auth/google`;
 
-export default function Login() {
+type LoginProps = {
+  onRegisterClick?: () => void;
+};
+
+export default function Login({ onRegisterClick }: LoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -64,6 +68,7 @@ export default function Login() {
           setRemember={setRemember}
           onSubmit={handleSubmit}
           onGoogleLogin={handleGoogleLogin}
+          onRegisterClick={onRegisterClick}
         />
       </section>
     </main>
@@ -102,6 +107,7 @@ function LoginRight({
   setRemember,
   onSubmit,
   onGoogleLogin,
+  onRegisterClick,
 }: {
   email: string;
   password: string;
@@ -112,6 +118,7 @@ function LoginRight({
   setRemember: (value: boolean) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onGoogleLogin: () => void;
+  onRegisterClick?: () => void;
 }) {
   return (
     <section className="login-panel-wrap">
@@ -179,7 +186,20 @@ function LoginRight({
         </button>
 
         <p className="login-register">
-          Belum punya akun? <a href="/register">Daftar di sini</a>
+          Belum punya akun?{" "}
+          <a
+            href="/register"
+            onClick={(event) => {
+              if (!onRegisterClick) {
+                return;
+              }
+
+              event.preventDefault();
+              onRegisterClick();
+            }}
+          >
+            Daftar di sini
+          </a>
         </p>
       </motion.div>
     </section>

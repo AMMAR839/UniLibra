@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import designHtml from "../../Desaign Akhir.html?raw";
 import "./LoginCharacterArt.css";
 
@@ -27,7 +27,7 @@ type CharacterState = {
   statePower: number;
 };
 
-export default function LoginCharacterArt() {
+function LoginCharacterArt() {
   const stageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,6 +38,7 @@ export default function LoginCharacterArt() {
       return;
     }
 
+    const stageElement = stage;
     const svgElement = svg;
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -59,23 +60,24 @@ export default function LoginCharacterArt() {
     };
 
     function clientToSvg(clientX: number, clientY: number) {
-      const matrix = svgElement.getScreenCTM();
+      const rect = stageElement.getBoundingClientRect();
+      const viewBox = svgElement.viewBox.baseVal;
 
-      if (!matrix) {
+      if (!rect.width || !rect.height || !viewBox.width || !viewBox.height) {
         return { x: pointer.x, y: pointer.y };
       }
 
-      const point = svgElement.createSVGPoint();
-      point.x = clientX;
-      point.y = clientY;
-
-      return point.matrixTransform(matrix.inverse());
+      return {
+        x: viewBox.x + ((clientX - rect.left) / rect.width) * viewBox.width,
+        y: viewBox.y + ((clientY - rect.top) / rect.height) * viewBox.height,
+      };
     }
 
     function setPointerFromEvent(event: PointerEvent) {
       const pos = clientToSvg(event.clientX, event.clientY);
       pointer.x = pos.x;
       pointer.y = pos.y;
+      characters.forEach(updateCharacter);
     }
 
     function setTranslate(element: SVGElement, x: number, y: number) {
@@ -248,7 +250,7 @@ export default function LoginCharacterArt() {
     window.addEventListener("pointerdown", setPointerFromEvent, {
       passive: true,
     });
-    frameId = window.requestAnimationFrame(animate);
+    animate();
 
     return () => {
       window.removeEventListener("pointermove", setPointerFromEvent);
@@ -265,3 +267,5 @@ export default function LoginCharacterArt() {
     />
   );
 }
+
+export default memo(LoginCharacterArt);

@@ -1,9 +1,9 @@
 .login-art-stage {
   position: absolute;
-  left: clamp(50px, 0 vw, 60px);
-  bottom: clamp(-100px, -15vw, -200px);
+  left: clamp(28px, 4vw, 60px);
+  bottom: clamp(-78px, -7vw, -42px);
   z-index: 0;
-  width: clamp(130px, 22vw, 230px);
+  width: clamp(170px, 24vw, 260px);
   aspect-ratio: 231 / 228;
   display: block;
   overflow: visible;
@@ -47,9 +47,10 @@
 
 @media (max-width: 560px) {
   .login-art-stage {
+    left: auto;
     right: -8px;
-    bottom: -36px;
-    width: 150px;
+    bottom: -30px;
+    width: 165px;
   }
 }
 
