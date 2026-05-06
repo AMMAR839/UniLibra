@@ -135,10 +135,6 @@ function App() {
               placeholder="Cari judul, penulis, genre, atau lokasi..."
             />
           </div>
-          <div className="search-ai-badge">
-            <AiIcon />
-            AI Powered
-          </div>
           <button className="btn-search" type="button">
             <SearchIcon size={16} />
             Cari
@@ -364,14 +360,6 @@ function SearchIcon({ size }: { size: number }) {
         strokeLinejoin="round"
         d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
       />
-    </svg>
-  );
-}
-
-function AiIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2a1 1 0 0 1 1 1v1.07A8.001 8.001 0 0 1 20.93 11H22a1 1 0 0 1 0 2h-1.07A8.001 8.001 0 0 1 13 20.93V22a1 1 0 0 1-2 0v-1.07A8.001 8.001 0 0 1 3.07 13H2a1 1 0 0 1 0-2h1.07A8.001 8.001 0 0 1 11 3.07V2a1 1 0 0 1 1-1zm0 4a6 6 0 1 0 0 12A6 6 0 0 0 12 6zm0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8z" />
     </svg>
   );
 }
