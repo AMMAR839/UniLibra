@@ -1,34 +1,74 @@
+import type { MouseEvent } from "react";
+
 type NavbarProps = {
   isLoggedIn: boolean;
+  activePage?: "home" | "catalog";
   onLoginClick?: () => void;
+  onNavigate?: (path: string) => void;
 };
 
-function Navbar({ isLoggedIn, onLoginClick }: NavbarProps) {
+function Navbar({
+  isLoggedIn,
+  activePage = "home",
+  onLoginClick,
+  onNavigate,
+}: NavbarProps) {
+  function handleNavigate(path: string) {
+    return (event: MouseEvent<HTMLAnchorElement>) => {
+      if (!onNavigate) {
+        return;
+      }
+
+      event.preventDefault();
+      onNavigate(path);
+    };
+  }
+
   return (
     <nav>
-      <a href="#" className="nav-logo">
+      <a href="/" className="nav-logo" onClick={handleNavigate("/")}>
         <div className="logo-mark"></div>
         <span className="logo-text">UniLibra</span>
       </a>
 
       <ul className="nav-links">
         <li>
-          <a href="#">Beranda</a>
+          <a
+            className={activePage === "home" ? "is-active" : undefined}
+            href="/"
+            onClick={handleNavigate("/")}
+          >
+            Beranda
+          </a>
         </li>
         <li>
-          <a href="#">Katalog Buku</a>
+          <a
+            className={activePage === "catalog" ? "is-active" : undefined}
+            href="/katalog"
+            onClick={handleNavigate("/katalog")}
+          >
+            Katalog Buku
+          </a>
         </li>
         <li>
-          <a href="#">Pinjamkan Buku</a>
+          <a href="/#pinjamkan" onClick={handleNavigate("/#pinjamkan")}>
+            Pinjamkan Buku
+          </a>
         </li>
         <li>
-          <a href="#">Tentang Kami</a>
+          <a href="/#tentang" onClick={handleNavigate("/#tentang")}>
+            Tentang Kami
+          </a>
         </li>
         <li>
-          <a href="#">Blog</a>
+          <a href="/#blog" onClick={handleNavigate("/#blog")}>
+            Blog
+          </a>
         </li>
         <li>
-          <a href="#">Kontak</a>
+          <a href="/#kontak" onClick={handleNavigate("/#kontak")}>
+            Kontak
+          </a>
         </li>
       </ul>
 
