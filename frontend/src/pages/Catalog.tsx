@@ -92,7 +92,12 @@ const catalogBooks: CatalogBook[] = [
 const heroBooks = catalogBooks.slice(0, 3);
 const filterLabels = ["Semua", "Terdekat", "Populer", "Fantasi", "Sastra"];
 
-function CatalogPage() {
+type CatalogPageProps = {
+  onBorrowBook?: () => void;
+  onLendBook?: () => void;
+};
+
+function CatalogPage({ onBorrowBook, onLendBook }: CatalogPageProps) {
   return (
     <main className="catalog-page">
       <section className="catalog-hero">
@@ -106,7 +111,7 @@ function CatalogPage() {
             punya status, jarak, rating, dan biaya pinjam yang mudah dibandingkan.
           </p>
           <div className="catalog-hero-actions">
-            <button className="btn-primary" type="button">
+            <button className="btn-primary" type="button" onClick={onBorrowBook}>
               Mulai Meminjam
               <ArrowIcon />
             </button>
@@ -198,7 +203,7 @@ function CatalogPage() {
 
         <div className="book-grid catalog-book-grid">
           {catalogBooks.map((book) => (
-            <BookCard book={book} key={book.title} />
+            <BookCard book={book} key={book.title} onBorrowBook={onBorrowBook} />
           ))}
         </div>
       </section>
@@ -211,7 +216,7 @@ function CatalogPage() {
             mereka butuhkan tanpa harus membeli baru.
           </p>
         </div>
-        <button className="btn-banner" type="button">
+        <button className="btn-banner" type="button" onClick={onLendBook}>
           Pinjamkan Bukumu
           <ArrowIcon />
         </button>
@@ -220,7 +225,13 @@ function CatalogPage() {
   );
 }
 
-function BookCard({ book }: { book: CatalogBook }) {
+function BookCard({
+  book,
+  onBorrowBook,
+}: {
+  book: CatalogBook;
+  onBorrowBook?: () => void;
+}) {
   return (
     <article className="book-card catalog-book-card">
       <div className="book-cover-wrap">
@@ -254,7 +265,7 @@ function BookCard({ book }: { book: CatalogBook }) {
         <div className="book-price">
           <strong>{book.price}</strong> / minggu
         </div>
-        <button className="btn-pinjam" type="button">
+        <button className="btn-pinjam" type="button" onClick={onBorrowBook}>
           Pinjam Sekarang
         </button>
       </div>

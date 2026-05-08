@@ -2,12 +2,24 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
+import AdminPage from "./pages/Admin";
+import BorrowBookPage from "./pages/BorrowBook";
 import CatalogPage from "./pages/Catalog";
+import HistoryPage from "./pages/History";
 import HomePage from "./pages/Home";
+import LendBookPage from "./pages/LendBook";
 import Login from "./pages/login";
 import Register from "./pages/register";
 
-type AppPage = "home" | "catalog" | "login" | "register";
+type AppPage =
+  | "home"
+  | "catalog"
+  | "lend"
+  | "borrow"
+  | "history"
+  | "admin"
+  | "login"
+  | "register";
 
 function pageFromPath(pathname: string): AppPage {
   if (pathname === "/login") {
@@ -20,6 +32,22 @@ function pageFromPath(pathname: string): AppPage {
 
   if (pathname === "/katalog" || pathname === "/catalog") {
     return "catalog";
+  }
+
+  if (pathname === "/pinjamkan") {
+    return "lend";
+  }
+
+  if (pathname === "/meminjam" || pathname === "/pinjam-buku") {
+    return "borrow";
+  }
+
+  if (pathname === "/riwayat" || pathname === "/history") {
+    return "history";
+  }
+
+  if (pathname === "/admin") {
+    return "admin";
   }
 
   return "home";
@@ -71,17 +99,38 @@ function App() {
     return <Register onLoginClick={() => navigateTo("/login")} />;
   }
 
+  if (page === "admin") {
+    return <AdminPage />;
+  }
+
   return (
     <>
       <Navbar
-        activePage={page === "catalog" ? "catalog" : "home"}
+        activePage={
+          page === "catalog" || page === "borrow"
+            ? "catalog"
+            : page === "lend"
+              ? "lend"
+              : page === "history"
+                ? "history"
+              : "home"
+        }
         isLoggedIn={isLoggedIn}
         onLoginClick={openLogin}
         onNavigate={navigateTo}
       />
 
       {page === "catalog" ? (
-        <CatalogPage />
+        <CatalogPage
+          onBorrowBook={() => navigateTo("/meminjam")}
+          onLendBook={() => navigateTo("/pinjamkan")}
+        />
+      ) : page === "lend" ? (
+        <LendBookPage />
+      ) : page === "borrow" ? (
+        <BorrowBookPage onBackToCatalog={() => navigateTo("/katalog")} />
+      ) : page === "history" ? (
+        <HistoryPage />
       ) : (
         <HomePage onExploreCatalog={() => navigateTo("/katalog")} />
       )}
