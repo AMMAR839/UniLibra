@@ -30,6 +30,10 @@ func SetupRouter() *gin.Engine {
 		api.GET("/books", controllers.GetBooks)
 		api.GET("/books/:id", controllers.GetBookByID)
 
+		api.GET("/ai/search", controllers.SearchBooksAI)
+		api.GET("/ai/similar/:id", controllers.GetSimilarBooks)
+		api.GET("/ai/popular", controllers.GetPopularBooks)
+
 		// === AREA PRIVAT (Wajib lapor Satpam / Punya JWT) ===
 		protected := api.Group("/")
 		protected.Use(middlewares.AuthRequired())
