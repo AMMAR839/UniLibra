@@ -5,10 +5,12 @@ import Navbar from "./components/Navbar";
 import AdminPage from "./pages/Admin";
 import BorrowBookPage from "./pages/BorrowBook";
 import CatalogPage from "./pages/Catalog";
+import ContactPage from "./pages/Contact";
 import HistoryPage from "./pages/History";
 import HomePage from "./pages/Home";
 import LendBookPage from "./pages/LendBook";
 import Login from "./pages/login";
+import ProfilePage from "./pages/Profile";
 import Register from "./pages/register";
 
 type AppPage =
@@ -17,6 +19,8 @@ type AppPage =
   | "lend"
   | "borrow"
   | "history"
+  | "contact"
+  | "profile"
   | "admin"
   | "login"
   | "register";
@@ -44,6 +48,14 @@ function pageFromPath(pathname: string): AppPage {
 
   if (pathname === "/riwayat" || pathname === "/history") {
     return "history";
+  }
+
+  if (pathname === "/kontak" || pathname === "/contact") {
+    return "contact";
+  }
+
+  if (pathname === "/profil" || pathname === "/profile") {
+    return "profile";
   }
 
   if (pathname === "/admin") {
@@ -113,7 +125,11 @@ function App() {
               ? "lend"
               : page === "history"
                 ? "history"
-              : "home"
+                : page === "contact"
+                  ? "contact"
+                  : page === "profile"
+                    ? "profile"
+                    : "home"
         }
         isLoggedIn={isLoggedIn}
         onLoginClick={openLogin}
@@ -130,12 +146,16 @@ function App() {
       ) : page === "borrow" ? (
         <BorrowBookPage onBackToCatalog={() => navigateTo("/katalog")} />
       ) : page === "history" ? (
-        <HistoryPage />
+        <HistoryPage onBorrowBook={() => navigateTo("/meminjam")} />
+      ) : page === "contact" ? (
+        <ContactPage />
+      ) : page === "profile" ? (
+        <ProfilePage />
       ) : (
         <HomePage onExploreCatalog={() => navigateTo("/katalog")} />
       )}
 
-      <Footer />
+      <Footer onNavigate={navigateTo} />
     </>
   );
 }

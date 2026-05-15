@@ -510,11 +510,14 @@ nav {
   padding: 5px 12px 5px 5px;
   border: 1px solid var(--border);
   border-radius: 20px;
+  color: var(--ink);
   cursor: pointer;
+  text-decoration: none;
   transition: background 0.2s;
 }
 
-.avatar-chip:hover {
+.avatar-chip:hover,
+.avatar-chip.is-active {
   background: var(--cream);
 }
 
@@ -563,17 +566,6 @@ nav {
   z-index: 1;
 }
 
-.hero-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  color: var(--amber);
-  margin-bottom: 20px;
-}
 
 .hero-eyebrow::before {
   content: "";
@@ -672,4 +664,3 @@ nav {
   font-weight: 700;
   color: var(--ink);
 }
-

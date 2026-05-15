@@ -1,3 +1,5 @@
+import { useMemo, useState } from "react";
+import type { ChangeEvent, KeyboardEvent } from "react";
 import bulanCover from "../assets/novel_bulan_tere_liye.jpg";
 import dilanCover from "../assets/Dilan.webp";
 import harryCover from "../assets/book_harry.webp";
@@ -89,111 +91,43 @@ const catalogBooks: CatalogBook[] = [
   },
 ];
 
-const heroBooks = catalogBooks.slice(0, 3);
-const filterLabels = ["Semua", "Terdekat", "Populer", "Fantasi", "Sastra"];
-
 type CatalogPageProps = {
   onBorrowBook?: () => void;
   onLendBook?: () => void;
 };
 
 function CatalogPage({ onBorrowBook, onLendBook }: CatalogPageProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const filteredBooks = useMemo(
+    () =>
+      catalogBooks.filter((book) => {
+        if (!normalizedSearch) {
+          return true;
+        }
+
+        return [book.title, book.author, book.genre]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedSearch);
+      }),
+    [normalizedSearch],
+  );
+
+  function handleSearchChange(event: ChangeEvent<HTMLInputElement>) {
+    setSearchQuery(event.target.value);
+  }
+
   return (
     <main className="catalog-page">
-      <section className="catalog-hero">
-        <div className="catalog-hero-copy">
-          <div className="hero-eyebrow">Katalog Buku UniLibra</div>
-          <h1 className="catalog-title">
-            Temukan buku yang dekat dengan hidupmu.
-          </h1>
-          <p className="catalog-sub">
-            Pilih dari koleksi sekitar kampus, kos, dan komunitas. Setiap buku
-            punya status, jarak, rating, dan biaya pinjam yang mudah dibandingkan.
-          </p>
-          <div className="catalog-hero-actions">
-            <button className="btn-primary" type="button" onClick={onBorrowBook}>
-              Mulai Meminjam
-              <ArrowIcon />
-            </button>
-            <div className="catalog-hero-stats" aria-label="Statistik katalog">
-              <span>
-                <strong>12.400+</strong>
-                Buku tersedia
-              </span>
-              <span>
-                <strong>3.200+</strong>
-                Peminjam aktif
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <aside className="catalog-showcase" aria-label="Pilihan buku unggulan">
-          <div className="catalog-showcase-main">
-            <img src={dilanCover} alt="Dilan 1990" />
-            <div>
-              <span>Rekomendasi minggu ini</span>
-              <strong>Dilan 1990</strong>
-              <p>Romansa ringan dari pemilik buku 1.1 km dari areamu.</p>
-            </div>
-          </div>
-          <div className="catalog-showcase-list">
-            {heroBooks.map((book) => (
-              <div className="catalog-mini-book" key={book.title}>
-                {book.coverSrc ? (
-                  <img src={book.coverSrc} alt={book.title} />
-                ) : (
-                  <div className={`catalog-mini-cover ${book.coverClass}`}>
-                    {book.title}
-                  </div>
-                )}
-                <div>
-                  <strong>{book.title}</strong>
-                  <span>{book.distance} dari lokasi kamu</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </aside>
-      </section>
-
-      <section className="catalog-toolbar" aria-label="Cari dan filter katalog">
-        <div className="search-input-wrap catalog-search-wrap">
-          <SearchIcon size={18} />
-          <input
-            className="search-input"
-            type="text"
-            placeholder="Cari judul, penulis, genre, atau lokasi..."
-          />
-        </div>
-        <div className="catalog-filter-row">
-          {filterLabels.map((label) => (
-            <button
-              className={`catalog-filter-chip ${
-                label === "Semua" ? "is-active" : ""
-              }`}
-              key={label}
-              type="button"
-            >
-              {label === "Semua" ? <FilterIcon /> : null}
-              {label}
-            </button>
-          ))}
-        </div>
-        <button className="btn-search catalog-search-button" type="button">
-          <SearchIcon size={16} />
-          Cari
-        </button>
-      </section>
-
       <section className="books-section catalog-books-section" id="catalog-books">
         <div className="catalog-section-header">
           <div>
-            <span className="section-number">01 - Koleksi terdekat</span>
-            <h2 className="section-title">Rekomendasi di Sekitarmu</h2>
+            <span className="section-number">Katalog Buku</span>
+            <h2 className="section-title">Pilih Buku yang Mau Dipinjam</h2>
           </div>
           <div className="catalog-section-meta">
-            <span>6 buku cocok</span>
+            <span>{filteredBooks.length} buku cocok</span>
             <a href="#catalog-books" className="section-link">
               Lihat semua
               <ArrowIcon />
@@ -201,11 +135,32 @@ function CatalogPage({ onBorrowBook, onLendBook }: CatalogPageProps) {
           </div>
         </div>
 
+        <label className="catalog-inline-search">
+          <SearchIcon />
+          <input
+            onChange={handleSearchChange}
+            placeholder="Cari judul, penulis, atau genre buku..."
+            type="search"
+            value={searchQuery}
+          />
+          {searchQuery ? (
+            <button type="button" onClick={() => setSearchQuery("")}>
+              Bersihkan
+            </button>
+          ) : null}
+        </label>
+
         <div className="book-grid catalog-book-grid">
-          {catalogBooks.map((book) => (
+          {filteredBooks.map((book) => (
             <BookCard book={book} key={book.title} onBorrowBook={onBorrowBook} />
           ))}
         </div>
+
+        {filteredBooks.length === 0 ? (
+          <div className="catalog-empty-state">
+            Tidak ada buku yang cocok dengan pencarianmu.
+          </div>
+        ) : null}
       </section>
 
       <div className="banner-strip catalog-banner">
@@ -232,8 +187,22 @@ function BookCard({
   book: CatalogBook;
   onBorrowBook?: () => void;
 }) {
+  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onBorrowBook?.();
+    }
+  }
+
   return (
-    <article className="book-card catalog-book-card">
+    <article
+      aria-label={`Pinjam buku ${book.title}`}
+      className="book-card catalog-book-card"
+      onClick={onBorrowBook}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+    >
       <div className="book-cover-wrap">
         {book.coverSrc ? (
           <img
@@ -265,9 +234,6 @@ function BookCard({
         <div className="book-price">
           <strong>{book.price}</strong> / minggu
         </div>
-        <button className="btn-pinjam" type="button" onClick={onBorrowBook}>
-          Pinjam Sekarang
-        </button>
       </div>
     </article>
   );
@@ -293,12 +259,12 @@ function ArrowIcon() {
   );
 }
 
-function SearchIcon({ size }: { size: number }) {
+function SearchIcon() {
   return (
     <svg
       aria-hidden="true"
-      width={size}
-      height={size}
+      width="18"
+      height="18"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -308,26 +274,6 @@ function SearchIcon({ size }: { size: number }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
-      />
-    </svg>
-  );
-}
-
-function FilterIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="14"
-      height="14"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M4 6h16M7 12h10M10 18h4"
       />
     </svg>
   );

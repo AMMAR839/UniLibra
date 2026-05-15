@@ -8,7 +8,7 @@
   padding: 56px 5vw;
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(320px, 0.72fr);
-  grid-template-rows: auto auto;
+  grid-template-rows: auto auto auto;
   column-gap: 48px;
   row-gap: 22px;
   align-items: center;
@@ -179,15 +179,6 @@
   max-width: 100%;
 }
 
-.home-tagline {
-  font-family: "Playfair Display", serif;
-  font-size: 2.35rem;
-  line-height: 1.12;
-  max-width: 680px;
-  margin-bottom: 18px;
-  overflow-wrap: break-word;
-}
-
 .home-sub {
   color: rgba(245, 240, 232, 0.68);
   font-size: 1rem;
@@ -201,16 +192,83 @@
   align-items: center;
   gap: 18px;
   flex-wrap: wrap;
+  grid-column: 1; 
+  grid-row: 3;    
+  position: relative;
+  z-index: 1;
+  margin-top: 12px;
 }
 
+.home-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  grid-column: 1;
+  grid-row: 3;
+  position: relative;
+  z-index: 1;
+  margin-top: 16px;
+}
+
+/* Tombol Jelajahi Katalog - Simpel & Elegan */
 .home-actions .btn-primary {
-  background: var(--paper);
-  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 28px;
+  border-radius: 100px;
+  background: transparent;
+  color: var(--paper, #f5f0e8);
+  border: 1px solid rgba(245, 240, 232, 0.25);
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .home-actions .btn-primary:hover {
-  background: var(--amber-light);
-  color: var(--ink);
+  background: var(--paper, #f5f0e8);
+  color: #130d08;
+  border-color: var(--paper, #f5f0e8);
+}
+
+.home-actions .btn-primary svg {
+  transition: transform 0.3s ease;
+}
+
+.home-actions .btn-primary:hover svg {
+  transform: translateX(5px);
+}
+
+/* Link Lihat yang ramai - Tetap dipertahankan */
+.home-watch-link {
+  color: rgba(245, 240, 232, 0.7);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-decoration: none;
+  position: relative;
+  padding: 8px 0;
+  transition: color 0.3s ease;
+}
+
+.home-watch-link:hover {
+  color: var(--amber-light, #f5d061);
+}
+
+.home-watch-link::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: var(--amber-light, #f5d061);
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+.home-watch-link:hover::after {
+  width: 100%;
 }
 
 .home-watch-link {
@@ -223,16 +281,26 @@
   grid-column: 1;
   grid-row: 2;
   z-index: 1;
-  background: rgba(19, 13, 8, 0.44);
-  border: 1px solid rgba(245, 240, 232, 0.18);
-  border-left: 3px solid rgba(232, 169, 58, 0.82);
-  backdrop-filter: blur(12px);
   border-radius: 12px;
   padding: 18px 20px;
-  max-width: 520px;
+  max-width: 450px;
   justify-self: start;
   align-self: start;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 44px 44px rgba(0, 0, 0, 0.22);
+  background: rgba(19, 13, 8, 0.44);
+  /* border: 1px solid rgba(245, 240, 232, 0.18); */
+  overflow: hidden;
+}
+
+.home-hero-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
 .home-panel-kicker,

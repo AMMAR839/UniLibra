@@ -86,27 +86,6 @@ function BorrowBookPage({ onBackToCatalog }: BorrowBookPageProps) {
 
   return (
     <main className="borrow-page">
-      <section className="borrow-hero">
-        <div>
-          <span className="hero-eyebrow">Halaman peminjaman</span>
-          <h1>Ajukan peminjaman dan ngobrol langsung dengan pemilik buku.</h1>
-          <p>
-            Halaman ini adalah lanjutan setelah user klik buku di katalog: user
-            bisa lihat detail, pilih durasi pinjam, mengirim request, lalu
-            lanjut chat untuk konfirmasi waktu dan lokasi.
-          </p>
-        </div>
-
-        <div className="borrow-hero-actions">
-          <button className="btn-ghost" type="button" onClick={onBackToCatalog}>
-            Kembali ke Katalog
-          </button>
-          <span className="borrow-status-pill">
-            Status: Menunggu konfirmasi pemilik
-          </span>
-        </div>
-      </section>
-
       <section className="borrow-layout">
         <div className="borrow-main-column">
           <article className="borrow-book-card">

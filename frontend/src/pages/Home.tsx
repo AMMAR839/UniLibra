@@ -156,9 +156,7 @@ function HomePage({ onExploreCatalog }: HomeProps) {
             ))}
           </div>
         </div>
-
         <div className="home-hero-content">
-          <div className="hero-eyebrow">Komunitas baca Indonesia</div>
           <h1 className="home-title">UniLibra</h1>
           <p className="home-tagline">
             Tempat buku fisik menemukan pembaca baru di sekitarmu.
@@ -167,15 +165,6 @@ function HomePage({ onExploreCatalog }: HomeProps) {
             Pinjam, temukan, dan bagikan koleksi buku dari komunitas sekitar.
             UniLibra membuat membaca terasa dekat, hemat, dan lebih hidup.
           </p>
-          <div className="home-actions">
-            <button className="btn-primary" type="button" onClick={onExploreCatalog}>
-              Jelajahi Katalog
-              <ArrowIcon />
-            </button>
-            <a className="btn-text home-watch-link" href="#sedang-ramai">
-              Lihat yang ramai
-            </a>
-          </div>
         </div>
 
         <div className="home-hero-panel">
@@ -201,7 +190,18 @@ function HomePage({ onExploreCatalog }: HomeProps) {
             ))}
           </div>
         </div>
+        
+        <div className="home-actions">
+            <button className="btn-primary" type="button" onClick={onExploreCatalog}>
+              Jelajahi Katalog
+              <ArrowIcon />
+            </button>
+            <a className="btn-text home-watch-link" href="#sedang-ramai">
+              Lihat yang ramai
+            </a>
+        </div>
       </section>
+
 
       <section className="home-rail-section" id="sedang-ramai">
         <div className="home-section-heading">

@@ -1,4 +1,21 @@
-function Footer() {
+import type { MouseEvent } from "react";
+
+type FooterProps = {
+  onNavigate?: (path: string) => void;
+};
+
+function Footer({ onNavigate }: FooterProps) {
+  function handleNavigate(path: string) {
+    return (event: MouseEvent<HTMLAnchorElement>) => {
+      if (!onNavigate) {
+        return;
+      }
+
+      event.preventDefault();
+      onNavigate(path);
+    };
+  }
+
   return (
     <footer>
       <div className="footer-top">
@@ -20,7 +37,9 @@ function Footer() {
               <a href="#">Katalog Privat</a>
             </li>
             <li>
-              <a href="#">Hubungi Kami</a>
+              <a href="/kontak" onClick={handleNavigate("/kontak")}>
+                Hubungi Kami
+              </a>
             </li>
           </ul>
         </div>
@@ -32,7 +51,9 @@ function Footer() {
               <a href="#">Lowongan</a>
             </li>
             <li>
-              <a href="#">Katalog Buku</a>
+              <a href="/katalog" onClick={handleNavigate("/katalog")}>
+                Katalog Buku
+              </a>
             </li>
             <li>
               <a href="#">Petunjuk Buku</a>
@@ -50,7 +71,9 @@ function Footer() {
               <a href="#">Blog</a>
             </li>
             <li>
-              <a href="#">Kontak</a>
+              <a href="/kontak" onClick={handleNavigate("/kontak")}>
+                Kontak
+              </a>
             </li>
           </ul>
         </div>
@@ -59,14 +82,14 @@ function Footer() {
       <div className="footer-bottom">
         <p>Hak Cipta &copy; 2026 UniLibra. Dibuat dengan &hearts; di Yogyakarta.</p>
         <div className="social-row">
-          <a className="social-btn" href="#">
+          <a className="social-btn" href="https://facebook.com/unilibra.id" rel="noreferrer" target="_blank">
             f
           </a>
-          <a className="social-btn" href="#">
+          <a className="social-btn" href="https://instagram.com/unilibra.id" rel="noreferrer" target="_blank">
             ig
           </a>
-          <a className="social-btn" href="#">
-            yt
+          <a className="social-btn" href="https://linkedin.com/company/unilibra" rel="noreferrer" target="_blank">
+            in
           </a>
         </div>
       </div>

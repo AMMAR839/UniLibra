@@ -1,4 +1,4 @@
-type HistoryStatus = "active" | "pending" | "returned" | "cancelled";
+import type { KeyboardEvent, MouseEvent } from "react";
 
 type HistoryItem = {
   title: string;
@@ -7,39 +7,17 @@ type HistoryItem = {
   ownerInitial: string;
   ownerLocation: string;
   coverClass: string;
-  status: HistoryStatus;
-  statusText: string;
   total: string;
   note: string;
   meta: Array<{
     label: string;
     value: string;
   }>;
-  actions: string[];
 };
 
-const summaryStats = [
-  {
-    label: "Total transaksi",
-    value: "18",
-    text: "Seluruh request dan peminjaman yang pernah dibuat.",
-  },
-  {
-    label: "Sedang aktif",
-    value: "3",
-    text: "Buku yang saat ini sedang kamu pinjam atau menunggu jatuh tempo.",
-  },
-  {
-    label: "Sudah dikembalikan",
-    value: "11",
-    text: "Riwayat peminjaman yang selesai tanpa kendala.",
-  },
-  {
-    label: "Dibatalkan",
-    value: "4",
-    text: "Request yang tidak jadi diproses atau dibatalkan salah satu pihak.",
-  },
-];
+type HistoryPageProps = {
+  onBorrowBook: () => void;
+};
 
 const historyItems: HistoryItem[] = [
   {
@@ -49,8 +27,6 @@ const historyItems: HistoryItem[] = [
     ownerInitial: "SM",
     ownerLocation: "Yogyakarta",
     coverClass: "history-cover-rust",
-    status: "returned",
-    statusText: "Dikembalikan",
     total: "Rp 6.000",
     note: "Salah satu transaksi tercepat dan paling mulus. Pemilik memberi rating bagus dan membuka kemungkinan untuk pinjam judul lain dari koleksinya.",
     meta: [
@@ -59,7 +35,6 @@ const historyItems: HistoryItem[] = [
       { label: "Tanggal kembali", value: "14 Jan 2026" },
       { label: "Catatan", value: "Tepat waktu" },
     ],
-    actions: ["Lihat Detail", "Pinjam Lagi", "Chat Pemilik"],
   },
   {
     title: "Sapiens",
@@ -68,8 +43,6 @@ const historyItems: HistoryItem[] = [
     ownerInitial: "RD",
     ownerLocation: "Bantul",
     coverClass: "history-cover-blue",
-    status: "returned",
-    statusText: "Dikembalikan",
     total: "Rp 14.000",
     note: "Peminjaman selesai dengan baik dan buku sudah dikembalikan tepat waktu. Kamu juga sudah memberi ulasan positif untuk pemilik buku.",
     meta: [
@@ -78,7 +51,6 @@ const historyItems: HistoryItem[] = [
       { label: "Tanggal kembali", value: "12 Mar 2026" },
       { label: "Rating", value: "5.0" },
     ],
-    actions: ["Lihat Detail", "Pinjam Lagi", "Lihat Ulasan"],
   },
   {
     title: "Matematika Teknik",
@@ -87,8 +59,6 @@ const historyItems: HistoryItem[] = [
     ownerInitial: "AR",
     ownerLocation: "Depok",
     coverClass: "history-cover-dark",
-    status: "cancelled",
-    statusText: "Dibatalkan",
     total: "Rp 9.000",
     note: "Request batal diproses karena jadwal serah terima tidak cocok. Transaksi ditutup tanpa biaya tambahan dan kamu masih bisa mencari buku lain dengan kategori serupa.",
     meta: [
@@ -97,7 +67,6 @@ const historyItems: HistoryItem[] = [
       { label: "Alasan", value: "Jadwal bentrok" },
       { label: "Refund", value: "Tidak ada" },
     ],
-    actions: ["Lihat Detail", "Cari Buku Serupa", "Hubungi Lagi"],
   },
   {
     title: "Atomic Habits",
@@ -106,8 +75,6 @@ const historyItems: HistoryItem[] = [
     ownerInitial: "NS",
     ownerLocation: "Sleman",
     coverClass: "history-cover-yellow",
-    status: "active",
-    statusText: "Sedang dipinjam",
     total: "Rp 16.000",
     note: "Buku sedang aktif dipinjam. Pemilik sudah konfirmasi titik temu dan transaksi berjalan normal. Kamu masih bisa chat pemilik atau ajukan perpanjangan sebelum jatuh tempo.",
     meta: [
@@ -116,7 +83,6 @@ const historyItems: HistoryItem[] = [
       { label: "Jatuh tempo", value: "16 Apr 2026" },
       { label: "Metode", value: "Ketemuan langsung" },
     ],
-    actions: ["Lihat Detail", "Perpanjang", "Chat Pemilik"],
   },
   {
     title: "Filosofi Teras",
@@ -125,8 +91,6 @@ const historyItems: HistoryItem[] = [
     ownerInitial: "NP",
     ownerLocation: "Yogyakarta",
     coverClass: "history-cover-green",
-    status: "pending",
-    statusText: "Menunggu",
     total: "Rp 12.000",
     note: "Request sudah dikirim dan sedang menunggu konfirmasi dari pemilik. Kamu masih bisa edit pesan, ubah preferensi lokasi, atau membatalkan request sebelum disetujui.",
     meta: [
@@ -135,41 +99,10 @@ const historyItems: HistoryItem[] = [
       { label: "Durasi", value: "2 minggu" },
       { label: "Lokasi", value: "Sekitar UGM" },
     ],
-    actions: ["Lihat Request", "Edit Request", "Chat Pemilik"],
   },
 ];
 
-const statusOverview = [
-  { label: "Request menunggu konfirmasi", value: "1 transaksi" },
-  { label: "Sedang dipinjam", value: "3 buku" },
-  { label: "Perlu dikembalikan minggu ini", value: "1 buku" },
-  { label: "Sudah selesai bulan ini", value: "2 transaksi" },
-];
-
-const flowSteps = [
-  {
-    title: "Request dibuat",
-    text: "Pengguna memilih buku, durasi, dan metode serah terima, lalu request masuk ke pemilik.",
-    active: true,
-  },
-  {
-    title: "Menunggu konfirmasi",
-    text: "Pemilik mengecek ketersediaan dan menyepakati detail melalui chat.",
-    active: true,
-  },
-  {
-    title: "Sedang dipinjam",
-    text: "Buku sudah diterima dan status berjalan sampai tanggal jatuh tempo.",
-    active: true,
-  },
-  {
-    title: "Dikembalikan / selesai",
-    text: "Setelah buku kembali dan transaksi selesai, riwayat masuk ke arsip.",
-    active: false,
-  },
-];
-
-function HistoryPage() {
+function HistoryPage({ onBorrowBook }: HistoryPageProps) {
   function openNavbarChat() {
     window.dispatchEvent(new Event("unilibra:open-chat"));
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -177,54 +110,6 @@ function HistoryPage() {
 
   return (
     <main className="history-page">
-      <section className="history-hero">
-        <div className="history-hero-copy">
-          <span className="hero-eyebrow">Riwayat peminjaman</span>
-          <h1>
-            Semua pesanan buku, yang <em>dipinjam</em>, dikembalikan, sampai
-            dibatalkan.
-          </h1>
-          <p>
-            Halaman ini merangkum aktivitas peminjamanmu di UniLibra: request
-            yang masih menunggu, buku yang sedang aktif dipinjam, histori yang
-            sudah dikembalikan, dan transaksi yang dibatalkan.
-          </p>
-          <div className="history-hero-tags" aria-label="Keunggulan riwayat">
-            <span>Semua status dalam satu tempat</span>
-            <span>Bisa filter dan cari cepat</span>
-            <span>Cocok untuk lanjutan halaman peminjaman</span>
-          </div>
-        </div>
-
-        <aside className="history-hero-panel" aria-label="Cuplikan riwayat buku">
-          {historyItems.slice(3).map((item) => (
-            <article className="history-mini-card" key={item.title}>
-              <div className={`history-mini-cover ${item.coverClass}`}>
-                {item.title}
-              </div>
-              <div>
-                <strong>{item.title}</strong>
-                <span>{item.author}</span>
-                <b className={`history-status history-status-${item.status}`}>
-                  {item.statusText}
-                </b>
-              </div>
-              <small>{item.status === "active" ? "Kembali 16 Apr" : "Perlu cek"}</small>
-            </article>
-          ))}
-        </aside>
-      </section>
-
-      <section className="history-stats" aria-label="Ringkasan riwayat">
-        {summaryStats.map((stat) => (
-          <article className="history-stat-card" key={stat.label}>
-            <span>{stat.label}</span>
-            <strong>{stat.value}</strong>
-            <p>{stat.text}</p>
-          </article>
-        ))}
-      </section>
-
       <section className="history-toolbar" aria-label="Cari dan filter riwayat">
         <label className="history-search">
           <SearchIcon />
@@ -263,57 +148,14 @@ function HistoryPage() {
       <section className="history-content">
         <div className="history-list">
           {historyItems.map((item) => (
-            <HistoryCard item={item} key={item.title} onOpenChat={openNavbarChat} />
+            <HistoryCard
+              item={item}
+              key={item.title}
+              onOpenBorrow={onBorrowBook}
+              onOpenChat={openNavbarChat}
+            />
           ))}
         </div>
-
-        <aside className="history-side">
-          <article className="history-side-card">
-            <h2>Status Aktif Saat Ini</h2>
-            <p>Ringkasan cepat untuk transaksi yang masih berjalan atau perlu perhatian.</p>
-            <div className="history-status-list">
-              {statusOverview.map((status) => (
-                <span key={status.label}>
-                  {status.label}
-                  <strong>{status.value}</strong>
-                </span>
-              ))}
-            </div>
-          </article>
-
-          <article className="history-side-card">
-            <h2>Alur Riwayat Peminjaman</h2>
-            <p>Semua transaksi di UniLibra biasanya bergerak melalui tahapan berikut.</p>
-            <ol className="history-flow">
-              {flowSteps.map((step, index) => (
-                <li className={step.active ? "is-active" : undefined} key={step.title}>
-                  <span>{index + 1}</span>
-                  <div>
-                    <strong>{step.title}</strong>
-                    <p>{step.text}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </article>
-
-          <article className="history-side-card history-quick-card">
-            <h2>Aksi Cepat</h2>
-            <p>Bagian ini bisa dipakai untuk tombol lanjutan dari histori.</p>
-            <button type="button">
-              Butuh perpanjangan pinjam?
-              <span>Ajukan</span>
-            </button>
-            <button type="button">
-              Ingin cari judul serupa?
-              <span>Jelajahi</span>
-            </button>
-            <button type="button" onClick={openNavbarChat}>
-              Perlu hubungi pemilik?
-              <span>Buka Chat</span>
-            </button>
-          </article>
-        </aside>
       </section>
     </main>
   );
@@ -321,13 +163,33 @@ function HistoryPage() {
 
 function HistoryCard({
   item,
+  onOpenBorrow,
   onOpenChat,
 }: {
   item: HistoryItem;
+  onOpenBorrow: () => void;
   onOpenChat: () => void;
 }) {
+  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onOpenBorrow();
+    }
+  }
+
+  function handleOpenChat(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    onOpenChat();
+  }
+
   return (
-    <article className="history-card">
+    <article
+      className="history-card"
+      onClick={onOpenBorrow}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+    >
       <div className={`history-cover ${item.coverClass}`}>
         <span>{item.title}</span>
       </div>
@@ -342,9 +204,6 @@ function HistoryCard({
             <span>Total transaksi</span>
             <strong>{item.total}</strong>
           </div>
-          <b className={`history-status history-status-${item.status}`}>
-            {item.statusText}
-          </b>
         </div>
 
         <div className="history-meta-grid">
@@ -363,19 +222,13 @@ function HistoryCard({
           <span>
             Pemilik: {item.owner} - {item.ownerLocation}
           </span>
-        </div>
-
-        <div className="history-card-actions">
-          {item.actions.map((action) => (
-            <button
-              className={action.includes("Chat") || action.includes("Hubungi") ? "is-dark" : ""}
-              key={action}
-              onClick={action.includes("Chat") || action.includes("Hubungi") ? onOpenChat : undefined}
-              type="button"
-            >
-              {action}
-            </button>
-          ))}
+          <button
+            className="history-owner-chat"
+            onClick={handleOpenChat}
+            type="button"
+          >
+            Chat Pemilik
+          </button>
         </div>
       </div>
     </article>

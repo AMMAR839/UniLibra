@@ -22,7 +22,7 @@ type ChatConversation = {
 
 type NavbarProps = {
   isLoggedIn: boolean;
-  activePage?: "home" | "catalog" | "lend" | "history";
+  activePage?: "home" | "catalog" | "lend" | "history" | "contact" | "profile";
   onLoginClick?: () => void;
   onNavigate?: (path: string) => void;
 };
@@ -225,7 +225,11 @@ function Navbar({
           </a>
         </li>
         <li>
-          <a href="/#kontak" onClick={handleNavigate("/#kontak")}>
+          <a
+            className={activePage === "contact" ? "is-active" : undefined}
+            href="/kontak"
+            onClick={handleNavigate("/kontak")}
+          >
             Kontak
           </a>
         </li>
@@ -354,10 +358,14 @@ function Navbar({
         </div>
 
         {isLoggedIn ? (
-          <div className="avatar-chip">
+          <a
+            className={`avatar-chip ${activePage === "profile" ? "is-active" : ""}`.trim()}
+            href="/profil"
+            onClick={handleNavigate("/profil")}
+          >
             <div className="avatar">NS</div>
             <span>Nicholas S.</span>
-          </div>
+          </a>
         ) : (
           <button className="btn-ghost" type="button" onClick={onLoginClick}>
             Masuk / Daftar
