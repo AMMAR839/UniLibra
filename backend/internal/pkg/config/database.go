@@ -14,7 +14,6 @@ import (
 var DB *gorm.DB
 
 func ConnectDatabase() {
-	// Ambil data dari file .env
 	host := os.Getenv("DB_HOST")
 	user := os.Getenv("DB_USER")
 	password := os.Getenv("DB_PASSWORD")
@@ -33,7 +32,6 @@ func ConnectDatabase() {
 
 	database.Exec("CREATE EXTENSION IF NOT EXISTS vector")
 
-	// Membuat tabel berdasarkan struct di folder models dengan AutoMigrate
 	err = database.AutoMigrate(&models.User{}, &models.Book{}, &models.Transaction{})
 	if err != nil {
 		log.Fatal("Gagal melakukan Auto-Migrate:", err)
