@@ -11,14 +11,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// BorrowBookInput adalah wadah untuk menerima data dari Frontend
 type BorrowBookInput struct {
 	BookID             uint      `json:"book_id" binding:"required"`
 	BorrowDate         time.Time `json:"borrow_date" binding:"required"`
 	ExpectedReturnDate time.Time `json:"expected_return_date" binding:"required"`
 }
 
-// RequestBorrow mengajukan permintaan peminjaman buku
 func RequestBorrow(c *gin.Context) {
 	var input BorrowBookInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -26,48 +24,38 @@ func RequestBorrow(c *gin.Context) {
 		return
 	}
 
-	// 1. Ambil ID User yang sedang login (Peminjam)
 	userID, _ := c.Get("userID")
 	borrowerID := uint(userID.(float64))
 
-	// 2. Cari buku yang ingin dipinjam
 	var book models.Book
 	if err := config.DB.First(&book, input.BookID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Buku tidak ditemukan"})
 		return
 	}
 
-	// 3. VALIDASI KEAMANAN & BISNIS
-	// a. Tidak boleh meminjam buku milik sendiri
 	if book.OwnerID == borrowerID {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Anda tidak bisa meminjam buku milik Anda sendiri"})
 		return
 	}
 
-	// b. Buku harus dalam status "available"
 	if book.Status != "available" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Mohon maaf, buku ini sedang tidak tersedia atau sedang dipinjam orang lain"})
 		return
 	}
 
-	// c. Tanggal kembali tidak boleh mundur (sebelum tanggal pinjam)
 	if input.ExpectedReturnDate.Before(input.BorrowDate) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Tanggal pengembalian tidak valid"})
 		return
 	}
 
-	// 4. Hitung Total Harga
-	// Mengurangi waktu (Return - Borrow) untuk mendapatkan durasi dalam hitungan jam, lalu dibagi 24 menjadi hari
 	durationHours := input.ExpectedReturnDate.Sub(input.BorrowDate).Hours()
 	days := int(math.Ceil(durationHours / 24))
 
-	// Jika pinjam kurang dari 24 jam, tetap dihitung 1 hari
 	if days <= 0 {
 		days = 1
 	}
 	totalPrice := int(float64(days) * book.RentalPrice)
 
-	// 5. Buat dan simpan transaksi ke database
 	transaction := models.Transaction{
 		BookID:             book.ID,
 		BorrowerID:         borrowerID,
@@ -88,47 +76,39 @@ func RequestBorrow(c *gin.Context) {
 	})
 }
 
-// UpdateTransactionStatusInput adalah wadah JSON dari Frontend
 type UpdateTransactionStatusInput struct {
-	Status string `json:"status" binding:"required"` // Harus diisi ACCEPTED atau REJECTED
+	Status string `json:"status" binding:"required"`
 }
 
-// RespondToBorrowRequest mengeksekusi persetujuan atau penolakan oleh Pemilik Buku
 func RespondToBorrowRequest(c *gin.Context) {
 	transactionID := c.Param("id")
 	var input UpdateTransactionStatusInput
 
-	// 1. Tangkap JSON Body
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Format data tidak valid"})
 		return
 	}
 
-	// 2. Validasi input: hanya boleh ACCEPTED atau REJECTED
 	if input.Status != "ACCEPTED" && input.Status != "REJECTED" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Status hanya boleh ACCEPTED atau REJECTED"})
 		return
 	}
 
-	// 3. Ambil ID User yang sedang login
 	userID, _ := c.Get("userID")
 	currentUserID := uint(userID.(float64))
 
-	// 4. Cari data transaksi
 	var transaction models.Transaction
 	if err := config.DB.First(&transaction, transactionID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Transaksi tidak ditemukan"})
 		return
 	}
 
-	// 5. Cari data buku untuk mengecek siapa pemilik aslinya
 	var book models.Book
 	if err := config.DB.First(&book, transaction.BookID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Buku tidak ditemukan"})
 		return
 	}
 
-	// 6. VALIDASI KEAMANAN (Hanya pemilik buku yang boleh merespons)
 	if book.OwnerID != currentUserID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Akses ditolak. Hanya pemilik buku yang dapat merespons permintaan ini."})
 		return
@@ -139,14 +119,12 @@ func RespondToBorrowRequest(c *gin.Context) {
 		return
 	}
 
-	// 7. Simpan status transaksi yang baru
 	transaction.Status = input.Status
 	if err := config.DB.Save(&transaction).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan status transaksi"})
 		return
 	}
 
-	// 8. Jika DITERIMA, ubah status buku menjadi "rented" agar tidak bisa dipinjam orang lain
 	if input.Status == "ACCEPTED" {
 		book.Status = "rented"
 		config.DB.Save(&book)
@@ -154,6 +132,86 @@ func RespondToBorrowRequest(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Status transaksi berhasil diperbarui menjadi " + input.Status,
+		"data":    transaction,
+	})
+}
+
+func InitiateReturn(c *gin.Context) {
+	transactionID := c.Param("id")
+
+	userID, _ := c.Get("userID")
+	currentUserID := uint(userID.(float64))
+
+	var transaction models.Transaction
+	if err := config.DB.First(&transaction, transactionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Transaksi tidak ditemukan"})
+		return
+	}
+
+	if transaction.BorrowerID != currentUserID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Hanya peminjam yang bisa melakukan pengembalian"})
+		return
+	}
+
+	if transaction.Status != "ACCEPTED" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Buku ini belum dipinjam atau sudah dikembalikan"})
+		return
+	}
+
+	transaction.Status = "RETURN_PENDING"
+	if err := config.DB.Save(&transaction).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengupdate status transaksi"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Permintaan pengembalian dikirim ke pemilik buku",
+		"data":    transaction,
+	})
+}
+
+func ConfirmReturn(c *gin.Context) {
+	transactionID := c.Param("id")
+
+	userID, _ := c.Get("userID")
+	currentUserID := uint(userID.(float64))
+
+	var transaction models.Transaction
+	if err := config.DB.First(&transaction, transactionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Transaksi tidak ditemukan"})
+		return
+	}
+
+	var book models.Book
+	if err := config.DB.First(&book, transaction.BookID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Buku tidak ditemukan"})
+		return
+	}
+
+	if book.OwnerID != currentUserID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Hanya pemilik buku yang bisa mengonfirmasi pengembalian"})
+		return
+	}
+
+	if transaction.Status != "RETURN_PENDING" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Pengembalian belum diajukan oleh peminjam"})
+		return
+	}
+
+	transaction.Status = "COMPLETED"
+	if err := config.DB.Save(&transaction).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyelesaikan transaksi"})
+		return
+	}
+
+	book.Status = "available"
+	if err := config.DB.Save(&book).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengubah status buku"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Transaksi selesai! Buku kembali tersedia.",
 		"data":    transaction,
 	})
 }
