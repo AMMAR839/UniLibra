@@ -33,10 +33,10 @@ services:
     depends_on:
       - db
       
-    # === ATURAN WATCH CERDAS ===
+    # Compose Watch
     develop:
       watch:
-        # 1. Jika file kode berubah, lakukan SYNC (biarkan Air yang compile ulang)
+        # 1. Jika file kode berubah, lakukan sync data (biarkan Air yang compile ulang)
         - action: sync
           path: ../
           target: /app
@@ -45,7 +45,7 @@ services:
             - ../deployments/
             - ../tmp/         # Abaikan folder hasil build Air
         
-        # 2. Jika daftar library berubah, REBUILD container dari nol
+        # 2. Jika daftar library berubah, rebuild container dari nol
         - action: rebuild
           path: ../go.mod
         - action: rebuild
