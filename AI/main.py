@@ -105,7 +105,7 @@ def get_popular_books(limit: int = 5):
 def chatbot_unilibra(req: ChatRequest):
     try:
         # Langkah 1: Retrieval (Menggunakan fungsi utilitas yang sama dengan /search)
-        buku_relevan = execute_semantic_search(req.pesan, limit=3)
+        buku_relevan = execute_semantic_search(req.pesan, limit=1500)
         
         konteks_buku = ""
         if buku_relevan:
