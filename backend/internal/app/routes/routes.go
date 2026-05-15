@@ -42,6 +42,9 @@ func SetupRouter() *gin.Engine {
 			protected.POST("/books", controllers.CreateBook)
 			protected.PUT("/books/:id", controllers.UpdateBook)    // <--- BARU (Update)
 			protected.DELETE("/books/:id", controllers.DeleteBook) // <--- BARU (Delete)
+
+			protected.POST("/transactions/borrow", controllers.RequestBorrow)
+			protected.PUT("/transactions/:id/respond", controllers.RespondToBorrowRequest)
 		}
 	}
 
