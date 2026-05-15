@@ -1,0 +1,7 @@
+# Sembunyikan file kredensial
+.env
+
+# Sembunyikan folder virtual environment & cache python (Opsional tapi disarankan)
+__pycache__/
+*.pyc
+.venv/
