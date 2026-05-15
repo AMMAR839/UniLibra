@@ -1,10 +1,25 @@
 # UniLibra
 ### Platform Peminjaman Buku Universal
 
+
 ## Anggota Kelompok:  
-- Anggota 1:  Christian Kevin Andhika Danidaiva (23/513576/TK/56433)
-- Anggota 2:  Nicholas Shane Pangihutan Siahaan (23/520590/TK/57399)
-- Anggota 3:  Ammar Ali Yasir  (23/520644/TK/57406)
+| Nama | NIM | Role |
+| :--- | :--- | :--- |
+| **Christian Kevin Andhika Danidaiva** | 23/513576/TK/56433 | Project Manager & Backend Engineer |
+| **Nicholas Shane Pangihutan Siahaan** | 23/520590/TK/57399 | AI Engineer |
+| **Ammar Ali Yasir** | 23/520644/TK/57406 | Frontend Engineer |
+
+## Getting Started
+
+Jalankan environment setiap mulai sesi pengembangan lokal
+```bash
+make up
+```
+
+Matikan environment setelah sesi pengembangan selesai
+```bash
+make down
+```
 
 ## Workflow
 
@@ -16,27 +31,38 @@ git switch main
 git pull origin main
 ```
 
-**2. Pindah ke branch untuk pengembangan fitur:**
+**2. Pindah ke branch individu:**
 ```bash
-git switch -c feat/[nama-fitur]  # Untuk membuat branch baru
+git switch -c [NIU]  # Untuk membuat branch baru
 ```
 or
 ```bash
-git switch feat/[nama-fitur] # Jika branch sudah ada
+git switch [NIU] # Jika branch sudah ada
+git pull --rebase origin main
 ```
 
-**3. Implementasi dan commit:**
+**3. Code:** 
+
+Setiap kode di-save, perubahan akan langsung disinkronisasi oleh Docker Compose dan dapat langsung dilihat
+
+**4. Commit:**
 ```bash
 git add .
+git status # Pastikan tidak ada unwanted file
 git commit -m "feat: [deskripsi fitur]"
 ```
 
-**4. Push ke repositori:**
+**5. Pull perubahan di main:**
 ```bash
-git push origin feat/[nama-fitur]
+git pull --rebase origin main
 ```
 
-**5. Pull Request (PR):**
+**6. Push ke repositori:**
+```bash
+git push origin [NIU]
+```
+
+**7. Pull Request (PR):**
 Ajukan PR ke cabang `main`. Wajib mendapatkan persetujuan (*approval*) minimal dari 1 anggota tim sebelum di-*merge*.
 
 ## Konvensi Commit Message
