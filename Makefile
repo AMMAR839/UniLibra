@@ -5,11 +5,14 @@
 
 # Menyalakan server dengan mode watch (Live Reload)
 up:
-	docker compose --env-file .env -f deployments/docker-compose.yml up --build --watch
+	docker compose --env-file .env up --build --watch
 
 # Mematikan server dan membersihkan container
 down:
-	docker compose --env-file .env -f deployments/docker-compose.yml down
+	docker compose --env-file .env down
+
+dvolume:
+	docker compose --env-file .env down -v
 
 # Melihat log backend secara realtime
 logs:
