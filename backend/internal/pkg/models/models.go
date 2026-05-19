@@ -30,7 +30,7 @@ type Book struct {
 	Longitude   float64   `json:"longitude"`
 	Status      string    `gorm:"default:'available'" json:"status"`
 	CoverURL    string    `json:"cover_url"`
-	Embedding   string    `gorm:"type:vector(384)" json:"-"`
+	Embedding   *string   `gorm:"type:vector(384)" json:"-"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

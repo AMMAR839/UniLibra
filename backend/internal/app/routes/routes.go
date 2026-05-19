@@ -31,6 +31,13 @@ func SetupRouter() *gin.Engine {
 		protected := api.Group("/")
 		protected.Use(middlewares.AuthRequired())
 		{
+			protected.GET("/profile", controllers.GetUserProfile)
+			protected.PUT("/profile", controllers.UpdateUserProfile)
+
+			protected.GET("/my-books", controllers.GetMyBooks)
+			protected.GET("/transactions/borrowings", controllers.GetMyBorrowings)
+			protected.GET("/transactions/lendings", controllers.GetMyLendings)
+
 			protected.POST("/books", controllers.CreateBook)
 			protected.PUT("/books/:id", controllers.UpdateBook)
 			protected.DELETE("/books/:id", controllers.DeleteBook)

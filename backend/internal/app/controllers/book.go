@@ -46,7 +46,7 @@ func CreateBook(c *gin.Context) {
 	}
 
 	if err := config.DB.Create(&book).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan buku ke database."})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan buku ke database: " + err.Error()})
 		return
 	}
 
