@@ -2,6 +2,7 @@ package models
 
 import (
 	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -23,12 +24,13 @@ type Book struct {
 	Title       string    `gorm:"not null" json:"title"`
 	Author      string    `gorm:"not null" json:"author"`
 	Description string    `gorm:"type:text" json:"description"`
-	OwnerID     uint      `gorm:"not null" json:"owner_id"` // Mencatat ID pengguna yang menyewakan
-	RentalPrice float64   `gorm:"not null" json:"rental_price"` // Harga sewa
-	Latitude    float64   `json:"latitude"`  // Titik koordinat Y
-	Longitude   float64   `json:"longitude"` // Titik koordinat X
-	Status      string    `gorm:"default:'available'" json:"status"` // available (tersedia), rented (disewa)
-	CoverURL    string    `json:"cover_url"` // Untuk menyimpan link foto sampul buku nanti
+	OwnerID     uint      `gorm:"not null" json:"owner_id"`
+	RentalPrice float64   `gorm:"not null" json:"rental_price"`
+	Latitude    float64   `json:"latitude"`
+	Longitude   float64   `json:"longitude"`
+	Status      string    `gorm:"default:'available'" json:"status"`
+	CoverURL    string    `json:"cover_url"`
+	Embedding   *string   `gorm:"type:vector(384)" json:"-"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

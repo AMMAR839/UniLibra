@@ -12,23 +12,19 @@ import (
 	"unilibra-backend/internal/pkg/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/glebarez/sqlite" // <-- KITA MENGGUNAKAN PURE GO SQLITE SEKARANG
+	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
 
-// setupTestDB membuat database SQLite sementara di memori RAM khusus untuk testing
 func setupTestDB() {
-	// Membuka koneksi ke SQLite in-memory (Pure Go)
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	if err != nil {
 		panic("Gagal membuka database test")
 	}
 
-	// Migrate tabel Buku
 	db.AutoMigrate(&models.Book{})
 
-	// Timpa variabel global DB di config dengan database test ini
 	config.DB = db
 }
 
@@ -84,15 +80,12 @@ func TestCreateBook_ValidationError(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "Data buku tidak lengkap")
 }
 
-// --- TEST FITUR READ (GET) ---
-
 func TestGetBooks(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	setupTestDB()
 
-	// Masukkan 2 data dummy ke database
 	config.DB.Create(&models.Book{Title: "Buku Tersedia", Status: "available"})
-	config.DB.Create(&models.Book{Title: "Buku Dipinjam", Status: "rented"}) // Seharusnya tidak muncul
+	config.DB.Create(&models.Book{Title: "Buku Dipinjam", Status: "rented"})
 
 	r := gin.Default()
 	r.GET("/api/books", GetBooks)
@@ -102,24 +95,20 @@ func TestGetBooks(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	// Pastikan hanya buku yang 'available' yang tertangkap
 	assert.Contains(t, w.Body.String(), "Buku Tersedia")
 	assert.NotContains(t, w.Body.String(), "Buku Dipinjam")
 }
-
-// --- TEST FITUR READ (GET) ---
 
 func TestGetBookByID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	setupTestDB()
 
 	book := models.Book{Title: "Harry Potter", Description: "Buku Sihir"}
-	config.DB.Create(&book) // Database otomatis memberi ID ke variabel 'book' ini
+	config.DB.Create(&book)
 
 	r := gin.Default()
 	r.GET("/api/books/:id", GetBookByID)
 
-	// KUNCI PERBAIKAN 1: Gunakan ID yang dinamis, jangan hardcode angka 1
 	url := fmt.Sprintf("/api/books/%d", book.ID)
 	req, _ := http.NewRequest("GET", url, nil)
 	w := httptest.NewRecorder()
@@ -129,23 +118,19 @@ func TestGetBookByID(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "Harry Potter")
 }
 
-// --- TEST FITUR UPDATE (PUT) ---
-
 func TestUpdateBook_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	setupTestDB()
 
-	// Buat buku awal
 	book := models.Book{Title: "Buku Lama", OwnerID: 1}
 	config.DB.Create(&book)
 
 	r := gin.Default()
 	r.PUT("/api/books/:id", func(c *gin.Context) {
-		c.Set("userID", float64(1)) // Simulasi login sebagai OwnerID 1
+		c.Set("userID", float64(1))
 		UpdateBook(c)
 	})
 
-	// KUNCI PERBAIKAN 2: Isi SEMUA data yang diwajibkan oleh struktur CreateBookInput
 	updateData := CreateBookInput{
 		Title:       "Buku Baru",
 		Author:      "Penulis Baru",
@@ -165,8 +150,6 @@ func TestUpdateBook_Success(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "Buku Baru")
 }
 
-// --- TEST FITUR DELETE (DELETE) ---
-
 func TestDeleteBook_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	setupTestDB()
@@ -176,7 +159,7 @@ func TestDeleteBook_Success(t *testing.T) {
 
 	r := gin.Default()
 	r.DELETE("/api/books/:id", func(c *gin.Context) {
-		c.Set("userID", float64(1)) // Simulasi login sebagai OwnerID 1
+		c.Set("userID", float64(1))
 		DeleteBook(c)
 	})
 
@@ -187,8 +170,7 @@ func TestDeleteBook_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "Buku berhasil ditarik dari katalog")
 
-	// Verifikasi ke database langsung apakah benar-benar terhapus (Soft Delete)
 	var deletedBook models.Book
 	err := config.DB.First(&deletedBook, 1).Error
-	assert.Error(t, err) // Harusnya menghasilkan error karena buku sudah tidak ada
+	assert.Error(t, err)
 }

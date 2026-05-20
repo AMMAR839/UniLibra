@@ -26,9 +26,11 @@ def search_books(query: str, limit: int = 5):
     query_vector = model.encode(query).tolist()
     conn = get_db_connection()
     cur = conn.cursor()
+    # MENGUBAH NAMA KOLOM MENGIKUTI GOLANG
     cur.execute("""
-        SELECT id, book_name, author, genre, average_rating
+        SELECT id, title, author, description, rental_price, status
         FROM books
+        WHERE embedding IS NOT NULL
         ORDER BY embedding <=> %s::vector
         LIMIT %s
     """, (query_vector, limit))
@@ -44,13 +46,13 @@ def recommend_similar_books(book_id: int, limit: int = 5):
     cur.execute("SELECT embedding FROM books WHERE id = %s", (book_id,))
     target = cur.fetchone()
 
-    if not target:
-        raise HTTPException(status_code=404, detail="Buku tidak ditemukan")
+    if not target or target['embedding'] is None:
+        raise HTTPException(status_code=404, detail="Buku tidak ditemukan atau belum memiliki AI embedding")
         
     cur.execute("""
-        SELECT id, book_name, author, genre, average_rating
+        SELECT id, title, author, description, rental_price, status
         FROM books
-        WHERE id != %s
+        WHERE id != %s AND embedding IS NOT NULL
         ORDER BY embedding <=> %s::vector
         LIMIT %s
     """, (book_id, target['embedding'], limit))
@@ -63,10 +65,11 @@ def recommend_similar_books(book_id: int, limit: int = 5):
 def get_popular_books(limit: int = 5):
     conn = get_db_connection()
     cur = conn.cursor()
+    # KARENA KITA BELUM PUNYA RATING, KITA UBAH JADI MENAMPILKAN BUKU TERBARU DULU
     cur.execute("""
-        SELECT id, book_name, author, genre, average_rating
+        SELECT id, title, author, description, rental_price, status
         FROM books
-        ORDER BY average_rating DESC
+        ORDER BY created_at DESC
         LIMIT %s
     """, (limit,))
     popular = cur.fetchall()
