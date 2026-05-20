@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Karakter Imut Interaktif - Mata Ikuti Kursor</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    width: 100%;
+    min-height: 100%;
+    background: #e7e7e7;
+  }
+
+  body {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+  }
+
+  .stage {
+    width: min(92vw, 540px);
+    aspect-ratio: 231 / 228;
+    display: grid;
+    place-items: center;
+  }
+
+  .art {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+    touch-action: none;
+  }
+
+  .character,
+  .body-motion,
+  .face-motion,
+  .pupil,
+  .mouth-motion,
+  .cheeks-motion,
+  .smile-eye-follow {
+    transform-box: view-box;
+    will-change: transform;
+  }
+
+  .body-motion {
+    transition: filter 180ms ease;
+  }
+
+  .eye-white,
+  .eye-dot,
+  .mouth,
+  .smile-eye {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .character,
+    .body-motion,
+    .face-motion,
+    .pupil,
+    .mouth-motion,
+    .cheeks-motion,
+    .smile-eye-follow {
+      transition: none;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+<svg class="art" viewBox="0 0 231 228" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Empat karakter blob imut interaktif yang matanya mengikuti kursor">
+  <defs>
+    <linearGradient id="purpleG" x1="101" y1="18" x2="101" y2="207" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9b63ff"/>
+      <stop offset="0.54" stop-color="#7d43ef"/>
+      <stop offset="1" stop-color="#6230cf"/>
+    </linearGradient>
+
+    <radialGradient id="purpleLight" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(81 45) rotate(73) scale(75 43)">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".24"/>
+      <stop offset=".56" stop-color="#ffffff" stop-opacity=".05"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="pinkG" x1="156" y1="77" x2="156" y2="205" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f45b9e"/>
+      <stop offset=".55" stop-color="#df3d87"/>
+      <stop offset="1" stop-color="#bd246c"/>
+    </linearGradient>
+
+    <radialGradient id="pinkLight" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(143 94) rotate(72) scale(48 28)">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="yellowG" x1="198" y1="111" x2="198" y2="209" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe25e"/>
+      <stop offset=".58" stop-color="#ffd342"/>
+      <stop offset="1" stop-color="#f3bd31"/>
+    </linearGradient>
+
+    <radialGradient id="yellowLight" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(186 129) rotate(65) scale(45 27)">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="orangeG" x1="75" y1="123" x2="75" y2="209" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff9b47"/>
+      <stop offset=".55" stop-color="#ff812f"/>
+      <stop offset="1" stop-color="#fb7028"/>
+    </linearGradient>
+
+    <radialGradient id="orangeLight" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(36 146) rotate(23) scale(91 43)">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".20"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+
+    <filter id="bodySoft" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2" flood-color="#000000" flood-opacity=".08"/>
+    </filter>
+
+    <filter id="innerShade">
+      <feDropShadow dx="-4" dy="4" stdDeviation="7" flood-color="#000000" flood-opacity=".10"/>
+    </filter>
+  </defs>
+
+  <rect width="231" height="228" fill="#e7e7e7"/>
+
+  <!-- bayangan lembut bawah -->
+  <g id="shadows">
+    <ellipse cx="87" cy="204" rx="81" ry="11" fill="#000000" opacity=".08" filter="url(#softShadow)"/>
+    <ellipse cx="176" cy="202" rx="48" ry="9" fill="#000000" opacity=".06" filter="url(#softShadow)"/>
+  </g>
+
+  <!-- KARAKTER UNGU -->
+  <g id="character-purple" class="character" data-center-x="100.8" data-center-y="84" data-origin-x="100.8" data-origin-y="204" data-radius="104" data-eye-max="3.7" data-face-x="1.7" data-face-y="1.1" data-tilt="5.3" data-mouth-x="99.9" data-mouth-y="58.7">
+    <g class="body-motion" filter="url(#bodySoft)">
+      <path d="M100.8 18 C68.6 18 42.4 55.3 41.4 102.7 C40.3 151.4 45.8 190.1 53.7 204.2 C69.4 208.5 131.9 208.1 148.8 204.1 C155.8 187.2 157.2 145.9 156.1 105 C154.9 55.2 132.5 18 100.8 18Z" fill="url(#purpleG)"/>
+      <path d="M100.8 18 C68.6 18 42.4 55.3 41.4 102.7 C40.3 151.4 45.8 190.1 53.7 204.2 C69.4 208.5 131.9 208.1 148.8 204.1 C155.8 187.2 157.2 145.9 156.1 105 C154.9 55.2 132.5 18 100.8 18Z" fill="url(#purpleLight)"/>
+    </g>
+
+    <g class="face-motion">
+      <g class="cheeks-motion">
+        <ellipse cx="83.3" cy="57.5" rx="7.3" ry="3.8" fill="#ef80b9" opacity=".72"/>
+        <ellipse cx="116.8" cy="58.2" rx="7.1" ry="3.8" fill="#ef80b9" opacity=".72"/>
+      </g>
+      <circle class="eye-white" cx="84.8" cy="43.2" r="8.1" fill="#f7f7f7"/>
+      <circle class="eye-white" cx="112.4" cy="43.4" r="8.1" fill="#f7f7f7"/>
+      <g class="pupil" data-origin-x="84.8" data-origin-y="43.2">
+        <circle class="eye-dot" cx="85.3" cy="42.6" r="4.6" fill="#222222"/>
+        <path d="M82.1 40.5 L84.1 40.5 L84.7 38.6 L85.4 40.5 L87.3 40.5 L85.8 41.6 L86.4 43.6 L84.7 42.4 L83.1 43.6 L83.7 41.6 Z" fill="#ffffff"/>
+      </g>
+      <g class="pupil" data-origin-x="112.4" data-origin-y="43.4">
+        <circle class="eye-dot" cx="111.9" cy="42.8" r="4.6" fill="#222222"/>
+        <path d="M108.9 40.6 L110.9 40.6 L111.5 38.7 L112.2 40.6 L114.1 40.6 L112.6 41.7 L113.2 43.7 L111.5 42.5 L109.9 43.7 L110.5 41.7 Z" fill="#ffffff"/>
+      </g>
+      <g class="mouth-motion" data-origin-x="99.9" data-origin-y="58.7">
+        <ellipse class="mouth" cx="99.9" cy="58.7" rx="8.9" ry="4.3" fill="#242424"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- KARAKTER PINK -->
+  <g id="character-pink" class="character" data-center-x="156.5" data-center-y="125" data-origin-x="156.5" data-origin-y="203" data-radius="82" data-eye-max="3.1" data-face-x="1.5" data-face-y="1.0" data-tilt="4.8" data-mouth-x="156.2" data-mouth-y="101.6">
+    <g class="body-motion" filter="url(#bodySoft)">
+      <path d="M156.5 77.7 C139.6 77.7 124.9 95.3 122.6 125.8 C120.2 157.9 125.1 192.9 134.4 202.5 C143.9 207.4 176.1 207.1 184.4 201.5 C190.7 187 190.3 152.1 188.8 126.6 C187.2 98.1 174.1 77.7 156.5 77.7Z" fill="url(#pinkG)"/>
+      <path d="M156.5 77.7 C139.6 77.7 124.9 95.3 122.6 125.8 C120.2 157.9 125.1 192.9 134.4 202.5 C143.9 207.4 176.1 207.1 184.4 201.5 C190.7 187 190.3 152.1 188.8 126.6 C187.2 98.1 174.1 77.7 156.5 77.7Z" fill="url(#pinkLight)"/>
+    </g>
+
+    <g class="face-motion">
+      <circle class="eye-white" cx="144.0" cy="91.1" r="8.1" fill="#f7f7f7"/>
+      <circle class="eye-white" cx="164.4" cy="88.7" r="8.2" fill="#f7f7f7"/>
+      <g class="pupil" data-origin-x="144.0" data-origin-y="91.1">
+        <circle cx="144.0" cy="91.1" r="3.3" fill="#242424"/> <!-- Koordinat cx & cy dipaskan ke origin -->
+        <circle cx="145.4" cy="89.6" r="1.0" fill="#ffffff" opacity=".9"/> <!-- Titik pantulan cahaya disesuaikan sedikit -->
+      </g>
+      <g class="pupil" data-origin-x="164.4" data-origin-y="88.7">
+        <circle cx="164.4" cy="88.7" r="3.3" fill="#242424"/> <!-- Koordinat cx & cy dipaskan ke origin -->
+        <circle cx="165.9" cy="87.3" r="1.0" fill="#ffffff" opacity=".9"/> <!-- Titik pantulan cahaya disesuaikan sedikit -->
+      </g>
+      <g class="mouth-motion" data-origin-x="156.2" data-origin-y="101.6">
+        <ellipse class="mouth" cx="156.2" cy="101.6" rx="3.1" ry="4.8" fill="#252525"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- KARAKTER KUNING -->
+  <g id="character-yellow" class="character" data-center-x="198.5" data-center-y="154" data-origin-x="198.5" data-origin-y="205" data-radius="68" data-eye-max="2.1" data-face-x="1.2" data-face-y="0.8" data-tilt="4.4" data-mouth-x="201.6" data-mouth-y="136.8">
+    <g class="body-motion" filter="url(#bodySoft)">
+      <path d="M198.5 111.7 C182.8 111.7 171.2 127.4 169.2 153.4 C167.2 179.4 171.9 199.2 181.9 204.5 C192.2 210 215.6 207.3 222.2 200.7 C228.5 194.4 227.8 173.2 226.3 155.7 C224.1 130.1 215.0 111.7 198.5 111.7Z" fill="url(#yellowG)"/>
+      <path d="M198.5 111.7 C182.8 111.7 171.2 127.4 169.2 153.4 C167.2 179.4 171.9 199.2 181.9 204.5 C192.2 210 215.6 207.3 222.2 200.7 C228.5 194.4 227.8 173.2 226.3 155.7 C224.1 130.1 215.0 111.7 198.5 111.7Z" fill="url(#yellowLight)"/>
+    </g>
+
+    <g class="face-motion">
+      <g class="pupil" data-origin-x="190.4" data-origin-y="128.5">
+        <circle cx="190.4" cy="128.5" r="3.6" fill="#242424"/>
+      </g>
+      <g class="pupil" data-origin-x="211.4" data-origin-y="126.6">
+        <circle cx="211.4" cy="126.6" r="3.7" fill="#242424"/>
+      </g>
+      <g class="mouth-motion" data-origin-x="201.6" data-origin-y="136.8">
+        <path d="M194.2 135.6 C197.3 141.3 206.1 140.8 209.2 134.1" fill="none" stroke="#242424" stroke-width="4.8" stroke-linecap="round"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- KARAKTER ORANGE -->
+  <g id="character-orange" class="character" data-center-x="73.2" data-center-y="166" data-origin-x="73.2" data-origin-y="207" data-radius="86" data-eye-max="2.8" data-face-x="1.6" data-face-y="0.9" data-tilt="6.2" data-mouth-x="82.7" data-mouth-y="166.8">
+    <g class="body-motion" filter="url(#bodySoft)">
+      <path d="M73.2 122.6 C31.5 122.6 4.2 153.1 1.1 184.7 C-0.2 197.9 6.3 204.7 20.9 207.2 C43.2 211.1 111.7 210.1 132.3 205.8 C142.3 203.7 146.4 197.7 145.2 187.3 C141.6 154.8 115.6 122.6 73.2 122.6Z" fill="url(#orangeG)"/>
+      <path d="M73.2 122.6 C31.5 122.6 4.2 153.1 1.1 184.7 C-0.2 197.9 6.3 204.7 20.9 207.2 C43.2 211.1 111.7 210.1 132.3 205.8 C142.3 203.7 146.4 197.7 145.2 187.3 C141.6 154.8 115.6 122.6 73.2 122.6Z" fill="url(#orangeLight)"/>
+    </g>
+
+    <g class="face-motion">
+      <g class="smile-eye-follow" data-origin-x="65.8" data-origin-y="151.9" data-turn="-1">
+        <path class="smile-eye" d="M61.5 153.5 C63.2 149.2 68.4 149.1 70.2 153.2" fill="none" stroke="#242424" stroke-width="4.3" stroke-linecap="round"/>
+      </g>
+      <g class="smile-eye-follow" data-origin-x="97.8" data-origin-y="150.4" data-turn="1">
+        <path class="smile-eye" d="M93.4 152.0 C95.3 147.7 100.3 147.8 102.1 151.7" fill="none" stroke="#242424" stroke-width="4.3" stroke-linecap="round"/>
+      </g>
+      <g class="mouth-motion" data-origin-x="82.7" data-origin-y="166.8">
+        <path class="mouth" d="M68.2 160.4 C71.6 174.4 91.1 176.3 96.9 158.9 C91.0 163.9 74.3 164.9 68.2 160.4Z" fill="#242424"/>
+      </g>
+    </g>
+  </g>
+</svg>
+</div>
+
+<script>
+(() => {
+  const svg = document.querySelector('.art');
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const lerp = (current, target, amount) => current + (target - current) * amount;
+  const number = (element, name, fallback = 0) => {
+    const value = Number(element.dataset[name]);
+    return Number.isFinite(value) ? value : fallback;
+  };
+  const fixed = (value) => Number(value).toFixed(4).replace(/\.0+$/, '');
+
+  const pointer = {
+    x: 115.5,
+    y: 93,
+    active: false
+  };
+
+  function clientToSvg(clientX, clientY) {
+    const matrix = svg.getScreenCTM();
+    if (!matrix) return { x: pointer.x, y: pointer.y };
+
+    const point = svg.createSVGPoint();
+    point.x = clientX;
+    point.y = clientY;
+    return point.matrixTransform(matrix.inverse());
+  }
+
+  function setPointerFromEvent(event) {
+    const pos = clientToSvg(event.clientX, event.clientY);
+    pointer.x = pos.x;
+    pointer.y = pos.y;
+    pointer.active = true;
+  }
+
+  function setTranslate(element, x, y) {
+    element.setAttribute('transform', `translate(${fixed(x)} ${fixed(y)})`);
+  }
+
+  function setAround(element, originX, originY, angleDeg, scaleX = 1, scaleY = 1, moveX = 0, moveY = 0) {
+    const angle = angleDeg * Math.PI / 180;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    const a = cos * scaleX;
+    const b = sin * scaleX;
+    const c = -sin * scaleY;
+    const d = cos * scaleY;
+    const e = moveX + originX - a * originX - c * originY;
+    const f = moveY + originY - b * originX - d * originY;
+
+    element.setAttribute(
+      'transform',
+      `matrix(${fixed(a)} ${fixed(b)} ${fixed(c)} ${fixed(d)} ${fixed(e)} ${fixed(f)})`
+    );
+  }
+
+  window.addEventListener('pointermove', setPointerFromEvent, { passive: true });
+  window.addEventListener('pointerdown', setPointerFromEvent, { passive: true });
+  document.addEventListener('mouseleave', () => {
+    pointer.active = false;
+  });
+
+  const characters = [...document.querySelectorAll('.character')].map((character) => {
+    const body = character.querySelector('.body-motion');
+    const face = character.querySelector('.face-motion');
+    const cheeks = character.querySelector('.cheeks-motion');
+    const mouth = character.querySelector('.mouth-motion');
+    const pupils = [...character.querySelectorAll('.pupil')];
+    const smileEyes = [...character.querySelectorAll('.smile-eye-follow')];
+
+    const cx = number(character, 'centerX');
+    const cy = number(character, 'centerY');
+    const originX = number(character, 'originX', cx);
+    const originY = number(character, 'originY', cy);
+    const radius = number(character, 'radius', 90);
+    const eyeMax = number(character, 'eyeMax', 3);
+    const faceX = number(character, 'faceX', 1.4);
+    const faceY = number(character, 'faceY', 0.9);
+    const tiltMax = number(character, 'tilt', 5);
+    const mouthX = number(character, 'mouthX', cx);
+    const mouthY = number(character, 'mouthY', cy);
+
+    return {
+      character,
+      body,
+      face,
+      cheeks,
+      mouth,
+      pupils,
+      smileEyes,
+      cx,
+      cy,
+      originX,
+      originY,
+      radius,
+      eyeMax,
+      faceX,
+      faceY,
+      tiltMax,
+      mouthX,
+      mouthY,
+      stateX: 0,
+      stateY: 0,
+      statePower: 0
+    };
+  });
+
+  function updateCharacter(item) {
+    const targetX = pointer.active ? pointer.x : 115.5;
+    const targetY = pointer.active ? pointer.y : 93;
+
+    const dx = targetX - item.cx;
+    const dy = targetY - item.cy;
+    const distance = Math.hypot(dx, dy) || 1;
+    const power = clamp(distance / item.radius, 0, 1);
+
+    const nx = (dx / distance) * power;
+    const ny = (dy / distance) * power;
+
+    const followSpeed = prefersReducedMotion ? 1 : 0.14;
+    item.stateX = lerp(item.stateX, nx, followSpeed);
+    item.stateY = lerp(item.stateY, ny, followSpeed);
+    item.statePower = lerp(item.statePower, power, followSpeed);
+
+    const sx = item.stateX;
+    const sy = item.stateY;
+    const absX = Math.abs(sx);
+    const absY = Math.abs(sy);
+
+    // 1. Badan lebih tenang: Kurangi drastis efek miring dan melar
+    const tilt = sx * item.tiltMax * 0.35; 
+    const stretchFromLookingUp = -sy;
+    const scaleY = clamp(1 + stretchFromLookingUp * 0.02 - absX * 0.01, 0.97, 1.03);
+    const scaleX = clamp(1 - stretchFromLookingUp * 0.01 + absX * 0.02, 0.97, 1.03);
+    setAround(item.body, item.originX, item.originY, tilt, scaleX, scaleY, 0, 0);
+
+    // 2. Wajah bergeser lebih jauh: Putih mata, pipi, mulut dikalikan angka lebih besar
+    const faceMoveX = sx * item.faceX * 6.5; 
+    const faceMoveY = sy * item.faceY * 4.5;
+    const faceTilt = tilt * 0.5;
+    setAround(item.face, item.cx, item.cy, faceTilt, 1, 1, faceMoveX, faceMoveY);
+
+    // 3. Pupil bergerak sedikit di dalam area putih matanya
+    const eyeX = sx * item.eyeMax * 0.8;
+    const eyeY = sy * item.eyeMax * 0.6;
+    item.pupils.forEach((pupil) => setTranslate(pupil, eyeX, eyeY));
+
+    // Mata orange (berbentuk senyum) ikut condong
+    item.smileEyes.forEach((eye) => {
+      const turn = Number(eye.dataset.turn || 1);
+      const rotate = (sx * 6 + sy * 2) * turn;
+      const ox = number(eye, 'originX', item.cx);
+      const oy = number(eye, 'originY', item.cy);
+      setAround(eye, ox, oy, rotate, 1, 1, eyeX * 0.5, eyeY * 0.3);
+    });
+
+    // 4. Mulut ditambah pergerakan dan distorsi agar lebih hidup
+    if (item.mouth) {
+      const mouthMoveX = sx * 1.5;
+      const mouthMoveY = sy * 1.5;
+      const mouthWide = clamp(1 + absX * 0.15, 0.95, 1.2);
+      const mouthTall = clamp(1 + Math.max(0, sy) * 0.18 - Math.max(0, -sy) * 0.05 + absY * 0.02, 0.9, 1.15);
+      const mouthTilt = sx * 3;
+      setAround(item.mouth, item.mouthX, item.mouthY, mouthTilt, mouthWide, mouthTall, mouthMoveX, mouthMoveY);
+    }
+
+    if (item.cheeks) {
+      const cheekScale = clamp(1 + item.statePower * 0.025, 1, 1.03);
+      setAround(item.cheeks, item.cx, item.cy, 0, cheekScale, cheekScale, sx * 0.45, sy * 0.22);
+    }
+  }
+
+  function animate() {
+    characters.forEach(updateCharacter);
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+})();
+</script>
+</body>
+</html>
