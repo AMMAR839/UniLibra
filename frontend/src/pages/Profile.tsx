@@ -1,3 +1,6 @@
+import { useState } from "react";
+import HistorySection from "./History";
+
 const profileStats = [
   { label: "Buku dipinjamkan", value: "12", helper: "8 aktif di katalog" },
   { label: "Transaksi selesai", value: "34", helper: "4 berjalan bulan ini" },
@@ -74,7 +77,34 @@ const profitRows = [
   { label: "Keuntungan bersih", value: "Rp 286.000" },
 ];
 
-function ProfilePage() {
+type ProfileSection = "history" | "books" | "transactions";
+
+const profileTabs: Array<{
+  id: ProfileSection;
+  label: string;
+}> = [
+  {
+    id: "history",
+    label: "Riwayat Peminjaman",
+  },
+  {
+    id: "books",
+    label: "Buku Saya",
+  },
+  {
+    id: "transactions",
+    label: "Transaksi",
+  },
+];
+
+type ProfilePageProps = {
+  onBorrowBook: () => void;
+};
+
+function ProfilePage({ onBorrowBook }: ProfilePageProps) {
+  const [activeSection, setActiveSection] = useState<ProfileSection>("history");
+  const activeTab = profileTabs.find((tab) => tab.id === activeSection) ?? profileTabs[0];
+
   return (
     <main className="profile-page">
       <section className="profile-shell">
@@ -102,86 +132,142 @@ function ProfilePage() {
           </div>
         </header>
 
-        <section className="profile-grid">
-          <section className="profile-panel profile-books-panel">
-            <div className="profile-panel-head">
-              <div>
-                <span>Koleksi</span>
-                <h2>Buku yang Dipinjamkan</h2>
-              </div>
-              <strong>{lentBooks.length} buku</strong>
-            </div>
-
-            <div className="profile-book-list">
-              {lentBooks.map((book) => (
-                <article className="profile-book-card" key={book.title}>
-                  <div className={`profile-book-cover ${book.coverClass}`}>
-                    {book.title}
-                  </div>
-                  <div className="profile-book-detail">
-                    <div className="profile-book-topline">
-                      <div>
-                        <span className="profile-book-status">{book.status}</span>
-                        <h3>{book.title}</h3>
-                        <p>{book.author}</p>
-                      </div>
-                      <button type="button">Edit</button>
-                    </div>
-                    <span className="profile-approval-badge">
-                      {book.approval}
-                    </span>
-                    <div className="profile-book-meta">
-                      <small>{book.price}</small>
-                      <small>Peminjam: {book.borrower}</small>
-                      <small>Jatuh tempo: {book.dueDate}</small>
-                    </div>
-                  </div>
-                </article>
+        <section className="profile-panel profile-section-panel">
+          <nav className="profile-section-nav" aria-label="Navigasi halaman profil">
+            <div className="profile-section-tabs" role="tablist" aria-label="Bagian profil">
+              {profileTabs.map((tab) => (
+                <button
+                  aria-controls={`profile-panel-${tab.id}`}
+                  aria-selected={activeSection === tab.id}
+                  className={activeSection === tab.id ? "is-active" : undefined}
+                  id={`profile-tab-${tab.id}`}
+                  key={tab.id}
+                  onClick={() => setActiveSection(tab.id)}
+                  role="tab"
+                  type="button"
+                >
+                  <span>{tab.label}</span>
+                </button>
               ))}
             </div>
+          </nav>
+
+          <section
+            aria-labelledby={`profile-tab-${activeTab.id}`}
+            className="profile-tab-panel"
+            id={`profile-panel-${activeTab.id}`}
+            role="tabpanel"
+          >
+            {activeSection === "history" ? (
+              <ProfileHistoryPanel onBorrowBook={onBorrowBook} />
+            ) : activeSection === "books" ? (
+              <ProfileBooksPanel />
+            ) : (
+              <ProfileTransactionsPanel />
+            )}
           </section>
-        </section>
-
-        <section className="profile-panel profile-transaction-panel">
-          <div className="profile-panel-head">
-            <div>
-              <span>Transaksi</span>
-              <h2>Riwayat Transaksi</h2>
-            </div>
-            <strong>{transactions.length} transaksi</strong>
-          </div>
-
-          <div className="profile-transaction-summary">
-            {profitRows.map((row) => (
-              <span key={row.label}>
-                {row.label}
-                <strong>{row.value}</strong>
-              </span>
-            ))}
-          </div>
-
-          <div className="profile-table">
-            <div className="profile-table-head">
-              <span>Buku</span>
-              <span>Peminjam</span>
-              <span>Tanggal</span>
-              <span>Status</span>
-              <span>Nominal</span>
-            </div>
-
-            {transactions.map((transaction) => (
-              <div className="profile-table-row" key={`${transaction.book}-${transaction.date}`}>
-                <span>{transaction.book}</span>
-                <span>{transaction.borrower}</span>
-                <span>{transaction.date}</span>
-                <span>{transaction.status}</span>
-                <strong>{transaction.amount}</strong>
-              </div>
-            ))}
-          </div>
         </section>
       </section>
     </main>
+  );
+}
+
+function ProfileHistoryPanel({ onBorrowBook }: ProfilePageProps) {
+  return (
+    <>
+      <div className="profile-panel-head">
+        <div>
+          <span>Aktivitas</span>
+          <h2>Riwayat Peminjaman</h2>
+        </div>
+        <strong>Lihat dari profil</strong>
+      </div>
+
+      <HistorySection onBorrowBook={onBorrowBook} />
+    </>
+  );
+}
+
+function ProfileBooksPanel() {
+  return (
+    <>
+      <div className="profile-panel-head">
+        <div>
+          <span>Koleksi</span>
+          <h2>Buku Saya</h2>
+        </div>
+        <strong>{lentBooks.length} buku</strong>
+      </div>
+
+      <div className="profile-book-list">
+        {lentBooks.map((book) => (
+          <article className="profile-book-card" key={book.title}>
+            <div className={`profile-book-cover ${book.coverClass}`}>
+              {book.title}
+            </div>
+            <div className="profile-book-detail">
+              <div className="profile-book-topline">
+                <div>
+                  <span className="profile-book-status">{book.status}</span>
+                  <h3>{book.title}</h3>
+                  <p>{book.author}</p>
+                </div>
+                <button type="button">Edit</button>
+              </div>
+              <span className="profile-approval-badge">{book.approval}</span>
+              <div className="profile-book-meta">
+                <small>{book.price}</small>
+                <small>Peminjam: {book.borrower}</small>
+                <small>Jatuh tempo: {book.dueDate}</small>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function ProfileTransactionsPanel() {
+  return (
+    <>
+      <div className="profile-panel-head">
+        <div>
+          <span>Transaksi</span>
+          <h2>Riwayat Transaksi</h2>
+        </div>
+        <strong>{transactions.length} transaksi</strong>
+      </div>
+
+      <div className="profile-transaction-summary">
+        {profitRows.map((row) => (
+          <span key={row.label}>
+            {row.label}
+            <strong>{row.value}</strong>
+          </span>
+        ))}
+      </div>
+
+      <div className="profile-table">
+        <div className="profile-table-head">
+          <span>Buku</span>
+          <span>Peminjam</span>
+          <span>Tanggal</span>
+          <span>Status</span>
+          <span>Nominal</span>
+        </div>
+
+        {transactions.map((transaction) => (
+          <div className="profile-table-row" key={`${transaction.book}-${transaction.date}`}>
+            <span>{transaction.book}</span>
+            <span>{transaction.borrower}</span>
+            <span>{transaction.date}</span>
+            <span>{transaction.status}</span>
+            <strong>{transaction.amount}</strong>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 

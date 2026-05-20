@@ -15,7 +15,7 @@ type HistoryItem = {
   }>;
 };
 
-type HistoryPageProps = {
+type HistorySectionProps = {
   onBorrowBook: () => void;
 };
 
@@ -102,14 +102,14 @@ const historyItems: HistoryItem[] = [
   },
 ];
 
-function HistoryPage({ onBorrowBook }: HistoryPageProps) {
+function HistorySection({ onBorrowBook }: HistorySectionProps) {
   function openNavbarChat() {
     window.dispatchEvent(new Event("unilibra:open-chat"));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
-    <main className="history-page">
+    <div className="history-section">
       <section className="history-toolbar" aria-label="Cari dan filter riwayat">
         <label className="history-search">
           <SearchIcon />
@@ -157,7 +157,7 @@ function HistoryPage({ onBorrowBook }: HistoryPageProps) {
           ))}
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -255,4 +255,4 @@ function SearchIcon() {
   );
 }
 
-export default HistoryPage;
+export default HistorySection;

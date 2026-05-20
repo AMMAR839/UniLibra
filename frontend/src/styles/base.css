@@ -125,6 +125,48 @@ nav {
   position: relative;
 }
 
+.nav-notification-link {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  text-decoration: none;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.nav-notification-link:hover,
+.nav-notification-link.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--amber-light);
+}
+
+.nav-notification-link strong {
+  min-width: 17px;
+  height: 17px;
+  border-radius: 999px;
+  background: var(--amber);
+  border: 1px solid rgba(245, 240, 232, 0.88);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  line-height: 1;
+  position: absolute;
+  right: -3px;
+  top: -3px;
+}
+
 .nav-chat-trigger {
   min-height: 38px;
   display: inline-flex;

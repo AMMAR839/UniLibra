@@ -6,10 +6,10 @@ import AdminPage from "./pages/Admin";
 import BorrowBookPage from "./pages/BorrowBook";
 import CatalogPage from "./pages/Catalog";
 import ContactPage from "./pages/Contact";
-import HistoryPage from "./pages/History";
 import HomePage from "./pages/Home";
 import LendBookPage from "./pages/LendBook";
 import Login from "./pages/login";
+import NotificationPage from "./pages/Notification";
 import ProfilePage from "./pages/Profile";
 import Register from "./pages/register";
 
@@ -18,8 +18,8 @@ type AppPage =
   | "catalog"
   | "lend"
   | "borrow"
-  | "history"
   | "contact"
+  | "notification"
   | "profile"
   | "admin"
   | "login"
@@ -47,11 +47,19 @@ function pageFromPath(pathname: string): AppPage {
   }
 
   if (pathname === "/riwayat" || pathname === "/history") {
-    return "history";
+    return "profile";
   }
 
   if (pathname === "/kontak" || pathname === "/contact") {
     return "contact";
+  }
+
+  if (
+    pathname === "/notifikasi" ||
+    pathname === "/notification" ||
+    pathname === "/notifications"
+  ) {
+    return "notification";
   }
 
   if (pathname === "/profil" || pathname === "/profile") {
@@ -123,10 +131,10 @@ function App() {
             ? "catalog"
             : page === "lend"
               ? "lend"
-              : page === "history"
-                ? "history"
-                : page === "contact"
-                  ? "contact"
+              : page === "contact"
+                ? "contact"
+                : page === "notification"
+                  ? "notification"
                   : page === "profile"
                     ? "profile"
                     : "home"
@@ -145,12 +153,12 @@ function App() {
         <LendBookPage />
       ) : page === "borrow" ? (
         <BorrowBookPage onBackToCatalog={() => navigateTo("/katalog")} />
-      ) : page === "history" ? (
-        <HistoryPage onBorrowBook={() => navigateTo("/meminjam")} />
       ) : page === "contact" ? (
         <ContactPage />
+      ) : page === "notification" ? (
+        <NotificationPage />
       ) : page === "profile" ? (
-        <ProfilePage />
+        <ProfilePage onBorrowBook={() => navigateTo("/meminjam")} />
       ) : (
         <HomePage onExploreCatalog={() => navigateTo("/katalog")} />
       )}

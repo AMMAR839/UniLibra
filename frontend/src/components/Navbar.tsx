@@ -22,7 +22,7 @@ type ChatConversation = {
 
 type NavbarProps = {
   isLoggedIn: boolean;
-  activePage?: "home" | "catalog" | "lend" | "history" | "contact" | "profile";
+  activePage?: "home" | "catalog" | "lend" | "contact" | "notification" | "profile";
   onLoginClick?: () => void;
   onNavigate?: (path: string) => void;
 };
@@ -217,15 +217,6 @@ function Navbar({
         </li>
         <li>
           <a
-            className={activePage === "history" ? "is-active" : undefined}
-            href="/riwayat"
-            onClick={handleNavigate("/riwayat")}
-          >
-            Riwayat
-          </a>
-        </li>
-        <li>
-          <a
             className={activePage === "contact" ? "is-active" : undefined}
             href="/kontak"
             onClick={handleNavigate("/kontak")}
@@ -358,14 +349,28 @@ function Navbar({
         </div>
 
         {isLoggedIn ? (
-          <a
-            className={`avatar-chip ${activePage === "profile" ? "is-active" : ""}`.trim()}
-            href="/profil"
-            onClick={handleNavigate("/profil")}
-          >
-            <div className="avatar">NS</div>
-            <span>Nicholas S.</span>
-          </a>
+          <>
+            <a
+              aria-label="Buka notifikasi"
+              className={`nav-notification-link ${
+                activePage === "notification" ? "is-active" : ""
+              }`.trim()}
+              href="/notifikasi"
+              onClick={handleNavigate("/notifikasi")}
+              title="Notifikasi"
+            >
+              <BellIcon />
+              <strong aria-label="3 notifikasi belum dibaca">3</strong>
+            </a>
+            <a
+              className={`avatar-chip ${activePage === "profile" ? "is-active" : ""}`.trim()}
+              href="/profil"
+              onClick={handleNavigate("/profil")}
+            >
+              <div className="avatar">NS</div>
+              <span>Nicholas S.</span>
+            </a>
+          </>
         ) : (
           <button className="btn-ghost" type="button" onClick={onLoginClick}>
             Masuk / Daftar
@@ -411,6 +416,26 @@ function ChatIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M7 8h10M7 12h6m-8 8 3.2-2.4c.35-.26.78-.4 1.22-.4H17a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v6.2A4 4 0 0 0 7 17h.2L5 20Z"
+      />
+    </svg>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="18"
+      height="18"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15 17H9m8-2V10a5 5 0 0 0-10 0v5l-2 2h14l-2-2Zm-3 4a2 2 0 0 1-4 0"
       />
     </svg>
   );
