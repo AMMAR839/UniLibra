@@ -1,6 +1,7 @@
 # UniLibra
 ### Platform Peminjaman Buku Universal
 
+# EDIT UNTUK INHAL MODUL 2 (Christian Kevin Andhika Danidaiva - 23/513576/TK/56433
 
 ## Anggota Kelompok:  
 | Nama | NIM | Role |
