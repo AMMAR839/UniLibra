@@ -1,10 +1,5 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-} from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import { apiFetch } from "../lib/api";
 
 type LendBookForm = {
   title: string;
@@ -16,7 +11,6 @@ type LendBookForm = {
   duration: string;
   handover: string;
   bookPhoto: File | null;
-  isbnBarcodePhoto: File | null;
   description: string;
   agreed: boolean;
 };
@@ -31,7 +25,6 @@ const initialForm: LendBookForm = {
   duration: "",
   handover: "",
   bookPhoto: null,
-  isbnBarcodePhoto: null,
   description: "",
   agreed: false,
 };
@@ -39,27 +32,8 @@ const initialForm: LendBookForm = {
 function LendBookPage() {
   const [form, setForm] = useState<LendBookForm>(initialForm);
   const [submitted, setSubmitted] = useState(false);
-  const [isIsbnCameraOpen, setIsIsbnCameraOpen] = useState(false);
-  const [isbnCameraError, setIsbnCameraError] = useState("");
-  const [isbnPreviewUrl, setIsbnPreviewUrl] = useState("");
-  const isbnVideoRef = useRef<HTMLVideoElement | null>(null);
-  const isbnCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const isbnStreamRef = useRef<MediaStream | null>(null);
-
-  useEffect(() => {
-    if (!isIsbnCameraOpen || !isbnVideoRef.current || !isbnStreamRef.current) {
-      return;
-    }
-
-    isbnVideoRef.current.srcObject = isbnStreamRef.current;
-    void isbnVideoRef.current.play();
-  }, [isIsbnCameraOpen]);
-
-  useEffect(() => {
-    return () => {
-      isbnStreamRef.current?.getTracks().forEach((track) => track.stop());
-    };
-  }, []);
+  const [submitMessage, setSubmitMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleChange(
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -87,112 +61,45 @@ function LendBookPage() {
     }
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
+    setIsSubmitting(true);
+    setSubmitMessage("");
+
+    const payload = new FormData();
+    payload.set("title", form.title);
+    payload.set("author", form.author);
+    payload.set("category", form.category);
+    payload.set("condition", form.condition);
+    payload.set("location", form.location);
+    payload.set("max_duration", form.duration);
+    payload.set("handover", form.handover);
+    payload.set("description", form.description);
+    payload.set("rental_price", form.price || "0");
+    if (form.bookPhoto) {
+      payload.set("cover", form.bookPhoto);
+    }
+
+    try {
+      await apiFetch("/api/books", {
+        method: "POST",
+        body: payload,
+      });
+      setSubmitted(true);
+      setSubmitMessage("Listing buku berhasil dikirim ke katalog.");
+    } catch (error) {
+      setSubmitMessage(
+        error instanceof Error ? error.message : "Listing buku belum bisa dikirim.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function handleReset() {
-    closeIsbnCamera();
     setForm(initialForm);
     setSubmitted(false);
-    setIsbnCameraError("");
-    setIsbnPreviewUrl((currentUrl) => {
-      if (currentUrl) {
-        URL.revokeObjectURL(currentUrl);
-      }
-
-      return "";
-    });
-  }
-
-  async function openIsbnCamera() {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setIsbnCameraError("Browser ini belum mendukung akses kamera langsung.");
-      return;
-    }
-
-    setIsbnCameraError("");
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          facingMode: { ideal: "environment" },
-        },
-      });
-
-      isbnStreamRef.current = stream;
-      setIsIsbnCameraOpen(true);
-    } catch {
-      setIsbnCameraError(
-        "Kamera tidak bisa dibuka. Pastikan izin kamera sudah diberikan.",
-      );
-    }
-  }
-
-  function closeIsbnCamera() {
-    isbnStreamRef.current?.getTracks().forEach((track) => track.stop());
-    isbnStreamRef.current = null;
-
-    if (isbnVideoRef.current) {
-      isbnVideoRef.current.srcObject = null;
-    }
-
-    setIsIsbnCameraOpen(false);
-  }
-
-  function captureIsbnBarcode() {
-    const video = isbnVideoRef.current;
-    const canvas = isbnCanvasRef.current;
-
-    if (!video || !canvas) {
-      setIsbnCameraError("Kamera belum siap. Coba buka ulang kamera.");
-      return;
-    }
-
-    const width = video.videoWidth || 1280;
-    const height = video.videoHeight || 720;
-    const context = canvas.getContext("2d");
-
-    if (!context) {
-      setIsbnCameraError("Foto barcode belum bisa diproses di browser ini.");
-      return;
-    }
-
-    canvas.width = width;
-    canvas.height = height;
-    context.drawImage(video, 0, 0, width, height);
-
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          setIsbnCameraError("Foto barcode gagal diambil. Coba ulangi.");
-          return;
-        }
-
-        const file = new File([blob], `isbn-barcode-${Date.now()}.jpg`, {
-          type: "image/jpeg",
-        });
-        const previewUrl = URL.createObjectURL(file);
-
-        setForm((currentForm) => ({
-          ...currentForm,
-          isbnBarcodePhoto: file,
-        }));
-        setSubmitted(false);
-        setIsbnPreviewUrl((currentUrl) => {
-          if (currentUrl) {
-            URL.revokeObjectURL(currentUrl);
-          }
-
-          return previewUrl;
-        });
-        closeIsbnCamera();
-      },
-      "image/jpeg",
-      0.9,
-    );
+    setSubmitMessage("");
   }
 
   return (
@@ -296,7 +203,7 @@ function LendBookPage() {
 
           <div className="lend-upload-grid">
             <label>
-              Foto buku
+              Cover buku
               <input
                 accept="image/png,image/jpeg,image/webp"
                 name="bookPhoto"
@@ -304,60 +211,6 @@ function LendBookPage() {
                 type="file"
               />
             </label>
-
-            <div className="lend-camera-field">
-              <span>Foto barcode ISBN</span>
-              <div className="lend-camera-box">
-                {isIsbnCameraOpen ? (
-                  <>
-                    <video
-                      className="lend-camera-preview"
-                      muted
-                      playsInline
-                      ref={isbnVideoRef}
-                    />
-                    <div className="lend-camera-actions">
-                      <button type="button" onClick={captureIsbnBarcode}>
-                        Ambil Foto
-                      </button>
-                      <button type="button" onClick={closeIsbnCamera}>
-                        Tutup Kamera
-                      </button>
-                    </div>
-                  </>
-                ) : isbnPreviewUrl ? (
-                  <>
-                    <img
-                      alt="Hasil foto barcode ISBN"
-                      className="lend-camera-preview"
-                      src={isbnPreviewUrl}
-                    />
-                    <div className="lend-camera-actions">
-                      <button type="button" onClick={openIsbnCamera}>
-                        Foto Ulang Barcode
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <button
-                    className="lend-camera-open"
-                    type="button"
-                    onClick={openIsbnCamera}
-                  >
-                    Buka Kamera Barcode ISBN
-                  </button>
-                )}
-                <small>Barcode ISBN harus difoto langsung dari kamera.</small>
-                {isbnCameraError ? (
-                  <p className="lend-camera-error">{isbnCameraError}</p>
-                ) : null}
-                <canvas
-                  aria-hidden="true"
-                  className="lend-camera-canvas"
-                  ref={isbnCanvasRef}
-                />
-              </div>
-            </div>
           </div>
 
           <label className="lend-full-field">
@@ -385,16 +238,15 @@ function LendBookPage() {
             </span>
           </label>
 
-          {submitted ? (
+          {submitMessage ? (
             <div className="lend-submit-note" role="status">
-              Listing awal berhasil disimulasikan. Data buku dan foto yang kamu
-              pilih sudah masuk ke form.
+              {submitMessage}
             </div>
           ) : null}
 
           <div className="lend-form-actions">
-            <button className="btn-primary" type="submit">
-              Kirim Listing Buku
+            <button className="btn-primary" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Mengirim..." : "Kirim Listing Buku"}
             </button>
             <button className="btn-ghost" type="reset" onClick={handleReset}>
               Reset Form

@@ -1,10 +1,13 @@
+import os
+
 from google import genai
 
-# Ganti dengan API Key Anda yang diawali AIzaSy...
-API_KEY = "AIzaSyAdrdA53mGj-iGCuX_TYTh5rjsbzmeajNA"
 
-# Inisialisasi menggunakan format SDK terbaru
-client = genai.Client(api_key=API_KEY)
+api_key = os.getenv("GEMINI_API")
+if not api_key:
+    raise RuntimeError("Set GEMINI_API sebelum menjalankan cek_modul.py")
+
+client = genai.Client(api_key=api_key)
 
 print("Daftar model yang BISA digunakan oleh API Key Anda:")
 print("-" * 50)

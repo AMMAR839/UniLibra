@@ -3,6 +3,7 @@ package controllers
 import (
 	"math"
 	"net/http"
+	"strings"
 	"time"
 
 	"unilibra-backend/internal/pkg/config"
@@ -15,6 +16,9 @@ type BorrowBookInput struct {
 	BookID             uint      `json:"book_id" binding:"required"`
 	BorrowDate         time.Time `json:"borrow_date" binding:"required"`
 	ExpectedReturnDate time.Time `json:"expected_return_date" binding:"required"`
+	Handover           string    `json:"handover"`
+	Location           string    `json:"location"`
+	Note               string    `json:"note"`
 }
 
 func RequestBorrow(c *gin.Context) {
@@ -54,13 +58,20 @@ func RequestBorrow(c *gin.Context) {
 	if days <= 0 {
 		days = 1
 	}
-	totalPrice := int(float64(days) * book.RentalPrice)
+	weeks := int(math.Ceil(float64(days) / 7))
+	if weeks <= 0 {
+		weeks = 1
+	}
+	totalPrice := int(float64(weeks) * book.RentalPrice)
 
 	transaction := models.Transaction{
 		BookID:             book.ID,
 		BorrowerID:         borrowerID,
 		BorrowDate:         input.BorrowDate,
 		ExpectedReturnDate: input.ExpectedReturnDate,
+		Handover:           cleanTransactionText(input.Handover, 100),
+		Location:           cleanTransactionText(input.Location, 160),
+		Note:               cleanTransactionText(input.Note, 1200),
 		Status:             "PENDING_APPROVAL",
 		TotalPrice:         totalPrice,
 	}
@@ -69,6 +80,14 @@ func RequestBorrow(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengajukan peminjaman"})
 		return
 	}
+
+	createNotification(
+		book.OwnerID,
+		"transaction",
+		"Permintaan peminjaman baru",
+		"Ada pengguna yang ingin meminjam "+book.Title+".",
+		"/profil",
+	)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Permintaan peminjaman berhasil dikirim ke pemilik buku",
@@ -130,6 +149,18 @@ func RespondToBorrowRequest(c *gin.Context) {
 		config.DB.Save(&book)
 	}
 
+	notificationTitle := "Permintaan peminjaman ditolak"
+	if input.Status == "ACCEPTED" {
+		notificationTitle = "Permintaan peminjaman diterima"
+	}
+	createNotification(
+		transaction.BorrowerID,
+		"transaction",
+		notificationTitle,
+		"Status peminjaman "+book.Title+" berubah menjadi "+input.Status+".",
+		"/profil",
+	)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Status transaksi berhasil diperbarui menjadi " + input.Status,
 		"data":    transaction,
@@ -163,6 +194,14 @@ func InitiateReturn(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengupdate status transaksi"})
 		return
 	}
+
+	createNotification(
+		bookOwnerID(transaction.BookID),
+		"transaction",
+		"Permintaan pengembalian baru",
+		"Peminjam mengajukan pengembalian buku.",
+		"/profil",
+	)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Permintaan pengembalian dikirim ke pemilik buku",
@@ -210,8 +249,34 @@ func ConfirmReturn(c *gin.Context) {
 		return
 	}
 
+	createNotification(
+		transaction.BorrowerID,
+		"transaction",
+		"Pengembalian selesai",
+		"Pemilik telah mengonfirmasi pengembalian "+book.Title+".",
+		"/profil",
+	)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Transaksi selesai! Buku kembali tersedia.",
 		"data":    transaction,
 	})
+}
+
+func bookOwnerID(bookID uint) uint {
+	var book models.Book
+	if err := config.DB.Select("owner_id").First(&book, bookID).Error; err != nil {
+		return 0
+	}
+
+	return book.OwnerID
+}
+
+func cleanTransactionText(value string, limit int) string {
+	value = strings.TrimSpace(value)
+	if len([]rune(value)) <= limit {
+		return value
+	}
+
+	return string([]rune(value)[:limit])
 }

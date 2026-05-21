@@ -32,7 +32,14 @@ func ConnectDatabase() {
 
 	database.Exec("CREATE EXTENSION IF NOT EXISTS vector")
 
-	err = database.AutoMigrate(&models.User{}, &models.Book{}, &models.Transaction{})
+	err = database.AutoMigrate(
+		&models.User{},
+		&models.Book{},
+		&models.Transaction{},
+		&models.Notification{},
+		&models.ChatThread{},
+		&models.ChatMessage{},
+	)
 	if err != nil {
 		log.Fatal("Gagal melakukan Auto-Migrate:", err)
 	}

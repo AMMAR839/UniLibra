@@ -76,7 +76,6 @@
 
 .lend-form-card label,
 .lend-upload-grid label,
-.lend-camera-field,
 .lend-full-field,
 .lend-checkbox {
   color: var(--ink);
@@ -84,10 +83,6 @@
   gap: 8px;
   font-size: 0.82rem;
   font-weight: 800;
-}
-
-.lend-camera-field > span {
-  display: block;
 }
 
 .lend-form-card input,
@@ -140,71 +135,6 @@
   font-size: 0.78rem;
   font-weight: 800;
   padding: 9px 12px;
-}
-
-.lend-camera-box {
-  border: 1px solid rgba(26, 18, 8, 0.13);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.76);
-  display: grid;
-  gap: 10px;
-  padding: 11px;
-}
-
-.lend-camera-open,
-.lend-camera-actions button {
-  min-height: 42px;
-  border: 0;
-  border-radius: 7px;
-  background: var(--ink);
-  color: var(--amber-light);
-  cursor: pointer;
-  font-family: "DM Sans", sans-serif;
-  font-size: 0.78rem;
-  font-weight: 800;
-  padding: 9px 12px;
-}
-
-.lend-camera-open {
-  width: 100%;
-}
-
-.lend-camera-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.lend-camera-actions button:nth-child(2) {
-  border: 1px solid var(--border);
-  background: white;
-  color: var(--ink);
-}
-
-.lend-camera-preview {
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  border-radius: 8px;
-  background: #130d08;
-  display: block;
-  object-fit: cover;
-}
-
-.lend-camera-box small {
-  color: var(--text-muted);
-  font-size: 0.74rem;
-  font-weight: 700;
-  line-height: 1.5;
-}
-
-.lend-camera-error {
-  color: var(--rust);
-  font-size: 0.78rem;
-  line-height: 1.5;
-}
-
-.lend-camera-canvas {
-  display: none;
 }
 
 .lend-full-field {

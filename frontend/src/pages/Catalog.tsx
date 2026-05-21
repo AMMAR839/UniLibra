@@ -1,118 +1,69 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ChangeEvent, KeyboardEvent } from "react";
-import bulanCover from "../assets/novel_bulan_tere_liye.jpg";
-import dilanCover from "../assets/Dilan.webp";
-import harryCover from "../assets/book_harry.webp";
-
-type CatalogBook = {
-  title: string;
-  author: string;
-  genre: string;
-  badge: string;
-  badgeClass: string;
-  rating: string;
-  distance: string;
-  price: string;
-  coverSrc?: string;
-  coverClass: string;
-};
-
-const catalogBooks: CatalogBook[] = [
-  {
-    title: "Dilan 1990",
-    author: "Pidi Baiq",
-    genre: "Romansa",
-    badge: "Populer",
-    badgeClass: "badge-popular",
-    rating: "4.9",
-    distance: "1.1 km",
-    price: "Rp 7.000",
-    coverSrc: dilanCover,
-    coverClass: "bc-photo",
-  },
-  {
-    title: "Bulan",
-    author: "Tere Liye",
-    genre: "Fantasi",
-    badge: "Tersedia",
-    badgeClass: "badge-available",
-    rating: "4.8",
-    distance: "1.4 km",
-    price: "Rp 8.000",
-    coverSrc: bulanCover,
-    coverClass: "bc-photo",
-  },
-  {
-    title: "Harry Potter and the Philosopher's Stone",
-    author: "J.K. Rowling",
-    genre: "Fantasi",
-    badge: "Favorit",
-    badgeClass: "badge-popular",
-    rating: "4.9",
-    distance: "1.6 km",
-    price: "Rp 9.000",
-    coverSrc: harryCover,
-    coverClass: "bc-photo",
-  },
-  {
-    title: "Laskar Pelangi",
-    author: "Andrea Hirata",
-    genre: "Fiksi Indonesia",
-    badge: "Tersedia",
-    badgeClass: "badge-available",
-    rating: "4.9",
-    distance: "1.8 km",
-    price: "Rp 7.000",
-    coverSrc: "/image.png",
-    coverClass: "bc-photo",
-  },
-  {
-    title: "Atomic Habits",
-    author: "James Clear",
-    genre: "Pengembangan diri",
-    badge: "Paling dicari",
-    badgeClass: "badge-popular",
-    rating: "4.8",
-    distance: "1.5 km",
-    price: "Rp 7.000",
-    coverSrc: "/2.png",
-    coverClass: "bc-photo",
-  },
-  {
-    title: "Bumi Manusia",
-    author: "Pramoedya Ananta Toer",
-    genre: "Sastra",
-    badge: "Tersedia",
-    badgeClass: "badge-available",
-    rating: "4.7",
-    distance: "2.1 km",
-    price: "Rp 6.000",
-    coverClass: "bc-5",
-  },
-];
+import { apiFetch, formatCurrency, mediaURL, type Book } from "../lib/api";
 
 type CatalogPageProps = {
-  onBorrowBook?: () => void;
+  onBorrowBook?: (bookID: number) => void;
   onLendBook?: () => void;
 };
 
 function CatalogPage({ onBorrowBook, onLendBook }: CatalogPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const normalizedSearch = searchQuery.trim().toLowerCase();
-  const filteredBooks = useMemo(
-    () =>
-      catalogBooks.filter((book) => {
-        if (!normalizedSearch) {
-          return true;
-        }
+  const [books, setBooks] = useState<Book[]>([]);
+  const [popularBooks, setPopularBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState("");
 
-        return [book.title, book.author, book.genre]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedSearch);
-      }),
-    [normalizedSearch],
-  );
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      setNotice("");
+      try {
+        const query = searchQuery.trim();
+        if (query) {
+          const response = await apiFetch<{
+            results: Book[];
+            fallback?: boolean;
+            warning?: string;
+          }>(`/api/ai/search?q=${encodeURIComponent(query)}`, {
+            auth: false,
+            signal: controller.signal,
+          });
+          setBooks(response.results ?? []);
+          setNotice(response.warning || "");
+        } else {
+          const response = await apiFetch<{ data: Book[] }>("/api/books", {
+            auth: false,
+            signal: controller.signal,
+          });
+          setBooks(response.data);
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setBooks([]);
+          setNotice(error instanceof Error ? error.message : "Katalog belum bisa dimuat.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchQuery]);
+
+  useEffect(() => {
+    apiFetch<{ popular_books?: Book[]; results?: Book[] }>("/api/ai/popular", {
+      auth: false,
+    })
+      .then((response) => setPopularBooks(response.popular_books ?? response.results ?? []))
+      .catch(() => setPopularBooks([]));
+  }, []);
 
   function handleSearchChange(event: ChangeEvent<HTMLInputElement>) {
     setSearchQuery(event.target.value);
@@ -127,7 +78,7 @@ function CatalogPage({ onBorrowBook, onLendBook }: CatalogPageProps) {
             <h2 className="section-title">Pilih Buku yang Mau Dipinjam</h2>
           </div>
           <div className="catalog-section-meta">
-            <span>{filteredBooks.length} buku cocok</span>
+            <span>{books.length} buku cocok</span>
             <a href="#catalog-books" className="section-link">
               Lihat semua
               <ArrowIcon />
@@ -151,17 +102,35 @@ function CatalogPage({ onBorrowBook, onLendBook }: CatalogPageProps) {
         </label>
 
         <div className="book-grid catalog-book-grid">
-          {filteredBooks.map((book) => (
-            <BookCard book={book} key={book.title} onBorrowBook={onBorrowBook} />
+          {books.map((book) => (
+            <BookCard book={book} key={book.id} onBorrowBook={onBorrowBook} />
           ))}
         </div>
 
-        {filteredBooks.length === 0 ? (
+        {loading ? <div className="catalog-empty-state">Memuat katalog...</div> : null}
+        {notice ? <div className="catalog-empty-state">{notice}</div> : null}
+        {!loading && books.length === 0 ? (
           <div className="catalog-empty-state">
             Tidak ada buku yang cocok dengan pencarianmu.
           </div>
         ) : null}
       </section>
+
+      {popularBooks.length > 0 && !searchQuery.trim() ? (
+        <section className="books-section catalog-books-section">
+          <div className="catalog-section-header">
+            <div>
+              <span className="section-number">Rekomendasi AI</span>
+              <h2 className="section-title">Buku yang Banyak Dilirik</h2>
+            </div>
+          </div>
+          <div className="book-grid catalog-book-grid">
+            {popularBooks.slice(0, 4).map((book) => (
+              <BookCard book={book} key={`popular-${book.id}`} onBorrowBook={onBorrowBook} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="banner-strip catalog-banner">
         <div>
@@ -184,13 +153,13 @@ function BookCard({
   book,
   onBorrowBook,
 }: {
-  book: CatalogBook;
-  onBorrowBook?: () => void;
+  book: Book;
+  onBorrowBook?: (bookID: number) => void;
 }) {
   function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      onBorrowBook?.();
+      onBorrowBook?.(book.id);
     }
   }
 
@@ -198,41 +167,41 @@ function BookCard({
     <article
       aria-label={`Pinjam buku ${book.title}`}
       className="book-card catalog-book-card"
-      onClick={onBorrowBook}
+      onClick={() => onBorrowBook?.(book.id)}
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
     >
       <div className="book-cover-wrap">
-        {book.coverSrc ? (
+        {book.cover_url ? (
           <img
-            className={`book-cover-img ${book.coverClass}`}
-            src={book.coverSrc}
+            className="book-cover-img bc-photo"
+            src={mediaURL(book.cover_url)}
             alt={book.title}
           />
         ) : (
-          <div className={`book-cover-img ${book.coverClass}`}>{book.title}</div>
+          <div className="book-cover-img bc-5">{book.title}</div>
         )}
-        <span className={`book-badge ${book.badgeClass}`}>{book.badge}</span>
+        <span className="book-badge badge-available">Tersedia</span>
       </div>
       <div className="book-body">
-        <span className="catalog-book-genre">{book.genre}</span>
+        <span className="catalog-book-genre">{book.category || "Katalog"}</span>
         <div className="book-title">{book.title}</div>
         <div className="book-author">{book.author}</div>
         <div className="book-meta">
           <div className="book-rating">
             <StarIcon />
-            {book.rating}
+            {book.owner?.name || "Pemilik"}
           </div>
           <div className="book-dist">
             <PinIcon />
-            {book.distance}
+            {book.location || "Lokasi belum diisi"}
           </div>
         </div>
       </div>
       <div className="book-footer">
         <div className="book-price">
-          <strong>{book.price}</strong> / minggu
+          <strong>{formatCurrency(book.rental_price)}</strong> / minggu
         </div>
       </div>
     </article>

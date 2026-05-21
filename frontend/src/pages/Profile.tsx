@@ -1,100 +1,28 @@
-import { useState } from "react";
-import HistorySection from "./History";
-
-const profileStats = [
-  { label: "Buku dipinjamkan", value: "12", helper: "8 aktif di katalog" },
-  { label: "Transaksi selesai", value: "34", helper: "4 berjalan bulan ini" },
-  { label: "Keuntungan bersih", value: "Rp 286.000", helper: "Akumulasi tahun ini" },
-];
-
-const lentBooks = [
-  {
-    title: "Atomic Habits",
-    author: "James Clear",
-    status: "Sedang dipinjam",
-    price: "Rp 7.000 / minggu",
-    borrower: "Ammar Ali",
-    dueDate: "16 Apr 2026",
-    coverClass: "profile-cover-yellow",
-    approval: "Disetujui sistem",
-  },
-  {
-    title: "Filosofi Teras",
-    author: "Henry Manampiring",
-    status: "Tersedia",
-    price: "Rp 6.000 / minggu",
-    borrower: "-",
-    dueDate: "-",
-    coverClass: "profile-cover-green",
-    approval: "Disetujui sistem",
-  },
-  {
-    title: "Sapiens",
-    author: "Yuval Noah Harari",
-    status: "Menunggu konfirmasi",
-    price: "Rp 9.000 / minggu",
-    borrower: "Raka D.",
-    dueDate: "Request baru",
-    coverClass: "profile-cover-blue",
-    approval: "Menunggu approval",
-  },
-];
-
-const transactions = [
-  {
-    book: "Atomic Habits",
-    borrower: "Ammar Ali",
-    date: "2 Apr 2026",
-    status: "Aktif",
-    amount: "Rp 16.000",
-  },
-  {
-    book: "Bumi Manusia",
-    borrower: "Sinta M.",
-    date: "14 Jan 2026",
-    status: "Selesai",
-    amount: "Rp 6.000",
-  },
-  {
-    book: "Filosofi Teras",
-    borrower: "Nanda P.",
-    date: "4 Apr 2026",
-    status: "Menunggu",
-    amount: "Rp 12.000",
-  },
-  {
-    book: "Sapiens",
-    borrower: "Raka D.",
-    date: "12 Mar 2026",
-    status: "Selesai",
-    amount: "Rp 14.000",
-  },
-];
-
-const profitRows = [
-  { label: "Pendapatan kotor", value: "Rp 344.000" },
-  { label: "Biaya layanan", value: "Rp 58.000" },
-  { label: "Keuntungan bersih", value: "Rp 286.000" },
-];
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
+import {
+  apiFetch,
+  formatCurrency,
+  formatDate,
+  initials,
+  mediaURL,
+  type Book,
+  type Transaction,
+  type User,
+} from "../lib/api";
 
 type ProfileSection = "history" | "books" | "transactions";
 
-const profileTabs: Array<{
-  id: ProfileSection;
-  label: string;
-}> = [
-  {
-    id: "history",
-    label: "Riwayat Peminjaman",
-  },
-  {
-    id: "books",
-    label: "Buku Saya",
-  },
-  {
-    id: "transactions",
-    label: "Transaksi",
-  },
+const profileTabs: Array<{ id: ProfileSection; label: string }> = [
+  { id: "history", label: "Riwayat Peminjaman" },
+  { id: "books", label: "Buku Saya" },
+  { id: "transactions", label: "Transaksi" },
 ];
 
 type ProfilePageProps = {
@@ -103,32 +31,91 @@ type ProfilePageProps = {
 
 function ProfilePage({ onBorrowBook }: ProfilePageProps) {
   const [activeSection, setActiveSection] = useState<ProfileSection>("history");
+  const [user, setUser] = useState<User | null>(null);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [borrowings, setBorrowings] = useState<Transaction[]>([]);
+  const [lendings, setLendings] = useState<Transaction[]>([]);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const loadProfile = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [profile, myBooks, myBorrowings, myLendings] = await Promise.all([
+        apiFetch<{ data: User }>("/api/profile"),
+        apiFetch<{ data: Book[] }>("/api/my-books"),
+        apiFetch<{ data: Transaction[] }>("/api/transactions/borrowings"),
+        apiFetch<{ data: Transaction[] }>("/api/transactions/lendings"),
+      ]);
+      setUser(profile.data);
+      setBooks(myBooks.data);
+      setBorrowings(myBorrowings.data);
+      setLendings(myLendings.data);
+      setMessage("");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Profil belum bisa dimuat.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
+
+  const completedIncome = useMemo(
+    () =>
+      lendings
+        .filter((transaction) => transaction.status === "COMPLETED")
+        .reduce((total, transaction) => total + transaction.total_price, 0),
+    [lendings],
+  );
   const activeTab = profileTabs.find((tab) => tab.id === activeSection) ?? profileTabs[0];
+
+  async function actOnTransaction(
+    transactionID: number,
+    action: "respond" | "return" | "complete",
+    status?: "ACCEPTED" | "REJECTED",
+  ) {
+    try {
+      await apiFetch(`/api/transactions/${transactionID}/${action}`, {
+        method: "PUT",
+        body: status ? JSON.stringify({ status }) : undefined,
+      });
+      await loadProfile();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Transaksi belum bisa diproses.");
+    }
+  }
 
   return (
     <main className="profile-page">
       <section className="profile-shell">
         <header className="profile-header">
           <div className="profile-identity">
-            <div className="profile-avatar">NS</div>
+            <div className="profile-avatar">{initials(user?.name)}</div>
             <div>
               <span>Profil Pemilik Buku</span>
-              <h1>Nicholas S.</h1>
+              <h1>{user?.name || "Profil UniLibra"}</h1>
               <p>
-                Pemilik koleksi aktif di Sleman. Mengelola buku yang
-                dipinjamkan, riwayat transaksi, dan keuntungan dari satu tempat.
+                Kelola buku milikmu, riwayat peminjaman, transaksi, dan
+                notifikasi pemilik dari satu halaman profil.
               </p>
             </div>
           </div>
 
           <div className="profile-stats">
-            {profileStats.map((stat) => (
-              <article className="profile-stat-card" key={stat.label}>
-                <span>{stat.label}</span>
-                <strong>{stat.value}</strong>
-                <small>{stat.helper}</small>
-              </article>
-            ))}
+            <ProfileStat label="Buku saya" value={`${books.length}`} helper="Listing tercatat" />
+            <ProfileStat
+              label="Transaksi masuk"
+              value={`${lendings.length}`}
+              helper={`${lendings.filter((item) => item.status !== "COMPLETED").length} aktif`}
+            />
+            <ProfileStat
+              label="Pendapatan selesai"
+              value={formatCurrency(completedIncome)}
+              helper="Dari transaksi selesai"
+            />
           </div>
         </header>
 
@@ -158,13 +145,30 @@ function ProfilePage({ onBorrowBook }: ProfilePageProps) {
             id={`profile-panel-${activeTab.id}`}
             role="tabpanel"
           >
-            {activeSection === "history" ? (
-              <ProfileHistoryPanel onBorrowBook={onBorrowBook} />
-            ) : activeSection === "books" ? (
-              <ProfileBooksPanel />
-            ) : (
-              <ProfileTransactionsPanel />
-            )}
+            {message ? <div className="borrow-submit-note">{message}</div> : null}
+            {loading ? <div className="borrow-submit-note">Memuat profil...</div> : null}
+            {!loading && activeSection === "history" ? (
+              <BorrowingPanel
+                borrowings={borrowings}
+                onBorrowBook={onBorrowBook}
+                onReturn={(id) => actOnTransaction(id, "return")}
+              />
+            ) : null}
+            {!loading && activeSection === "books" ? (
+              <BooksPanel
+                books={books}
+                onChanged={loadProfile}
+                onNotice={setMessage}
+              />
+            ) : null}
+            {!loading && activeSection === "transactions" ? (
+              <TransactionsPanel
+                completedIncome={completedIncome}
+                lendings={lendings}
+                onComplete={(id) => actOnTransaction(id, "complete")}
+                onRespond={(id, status) => actOnTransaction(id, "respond", status)}
+              />
+            ) : null}
           </section>
         </section>
       </section>
@@ -172,7 +176,33 @@ function ProfilePage({ onBorrowBook }: ProfilePageProps) {
   );
 }
 
-function ProfileHistoryPanel({ onBorrowBook }: ProfilePageProps) {
+function ProfileStat({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+}) {
+  return (
+    <article className="profile-stat-card">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{helper}</small>
+    </article>
+  );
+}
+
+function BorrowingPanel({
+  borrowings,
+  onBorrowBook,
+  onReturn,
+}: {
+  borrowings: Transaction[];
+  onBorrowBook: () => void;
+  onReturn: (id: number) => void;
+}) {
   return (
     <>
       <div className="profile-panel-head">
@@ -180,15 +210,150 @@ function ProfileHistoryPanel({ onBorrowBook }: ProfilePageProps) {
           <span>Aktivitas</span>
           <h2>Riwayat Peminjaman</h2>
         </div>
-        <strong>Lihat dari profil</strong>
+        <strong>{borrowings.length} riwayat</strong>
       </div>
-
-      <HistorySection onBorrowBook={onBorrowBook} />
+      {borrowings.length === 0 ? (
+        <button className="btn-primary" type="button" onClick={onBorrowBook}>
+          Cari Buku untuk Dipinjam
+        </button>
+      ) : (
+        <div className="profile-table">
+          <TableHead labels={["Buku", "Pemilik", "Mulai", "Status", "Aksi"]} />
+          {borrowings.map((transaction) => (
+            <div className="profile-table-row" key={transaction.id}>
+              <span>{transaction.book?.title || `Buku #${transaction.book_id}`}</span>
+              <span>
+                {transaction.book?.owner?.name || "-"}
+                <TransactionPlan transaction={transaction} />
+              </span>
+              <span>{formatDate(transaction.borrow_date)}</span>
+              <span>{transaction.status}</span>
+              {transaction.status === "ACCEPTED" ? (
+                <button type="button" onClick={() => onReturn(transaction.id)}>
+                  Ajukan Kembali
+                </button>
+              ) : (
+                <strong>{formatDate(transaction.expected_return_date)}</strong>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }
 
-function ProfileBooksPanel() {
+type BookEditForm = {
+  id: number;
+  title: string;
+  author: string;
+  category: string;
+  condition: string;
+  rentalPrice: string;
+  location: string;
+  maxDuration: string;
+  handover: string;
+  description: string;
+  cover: File | null;
+};
+
+function BooksPanel({
+  books,
+  onChanged,
+  onNotice,
+}: {
+  books: Book[];
+  onChanged: () => Promise<void>;
+  onNotice: (message: string) => void;
+}) {
+  const [editForm, setEditForm] = useState<BookEditForm | null>(null);
+  const [busyBookID, setBusyBookID] = useState<number | null>(null);
+
+  function beginEdit(book: Book) {
+    setEditForm({
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      category: book.category || "",
+      condition: book.condition || "",
+      rentalPrice: `${book.rental_price}`,
+      location: book.location || "",
+      maxDuration: book.max_duration || "",
+      handover: book.handover || "",
+      description: book.description || "",
+      cover: null,
+    });
+    onNotice("");
+  }
+
+  function handleEditChange(
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) {
+    const { name } = event.target;
+    const value =
+      event.target instanceof HTMLInputElement && event.target.type === "file"
+        ? event.target.files?.[0] ?? null
+        : event.target.value;
+
+    setEditForm((currentForm) =>
+      currentForm ? { ...currentForm, [name]: value } : currentForm,
+    );
+  }
+
+  async function saveBook(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editForm) {
+      return;
+    }
+
+    setBusyBookID(editForm.id);
+    const payload = new FormData();
+    payload.set("title", editForm.title);
+    payload.set("author", editForm.author);
+    payload.set("category", editForm.category);
+    payload.set("condition", editForm.condition);
+    payload.set("rental_price", editForm.rentalPrice || "0");
+    payload.set("location", editForm.location);
+    payload.set("max_duration", editForm.maxDuration);
+    payload.set("handover", editForm.handover);
+    payload.set("description", editForm.description);
+    if (editForm.cover) {
+      payload.set("cover", editForm.cover);
+    }
+
+    try {
+      await apiFetch(`/api/books/${editForm.id}`, {
+        method: "PUT",
+        body: payload,
+      });
+      setEditForm(null);
+      onNotice("Listing buku berhasil diperbarui.");
+      await onChanged();
+    } catch (error) {
+      onNotice(error instanceof Error ? error.message : "Listing buku belum bisa diperbarui.");
+    } finally {
+      setBusyBookID(null);
+    }
+  }
+
+  async function removeBook(book: Book) {
+    if (!window.confirm(`Tarik "${book.title}" dari katalog?`)) {
+      return;
+    }
+
+    setBusyBookID(book.id);
+    try {
+      await apiFetch(`/api/books/${book.id}`, { method: "DELETE" });
+      setEditForm((currentForm) => (currentForm?.id === book.id ? null : currentForm));
+      onNotice("Listing buku ditarik dari katalog.");
+      await onChanged();
+    } catch (error) {
+      onNotice(error instanceof Error ? error.message : "Listing buku belum bisa ditarik.");
+    } finally {
+      setBusyBookID(null);
+    }
+  }
+
   return (
     <>
       <div className="profile-panel-head">
@@ -196,14 +361,13 @@ function ProfileBooksPanel() {
           <span>Koleksi</span>
           <h2>Buku Saya</h2>
         </div>
-        <strong>{lentBooks.length} buku</strong>
+        <strong>{books.length} buku</strong>
       </div>
-
       <div className="profile-book-list">
-        {lentBooks.map((book) => (
-          <article className="profile-book-card" key={book.title}>
-            <div className={`profile-book-cover ${book.coverClass}`}>
-              {book.title}
+        {books.map((book) => (
+          <article className="profile-book-card" key={book.id}>
+            <div className="profile-book-cover">
+              {book.cover_url ? <img src={mediaURL(book.cover_url)} alt={book.title} /> : book.title}
             </div>
             <div className="profile-book-detail">
               <div className="profile-book-topline">
@@ -212,14 +376,126 @@ function ProfileBooksPanel() {
                   <h3>{book.title}</h3>
                   <p>{book.author}</p>
                 </div>
-                <button type="button">Edit</button>
+                <div className="profile-book-actions">
+                  <button type="button" onClick={() => beginEdit(book)}>
+                    Edit
+                  </button>
+                  <button
+                    className="is-danger"
+                    disabled={busyBookID === book.id}
+                    onClick={() => removeBook(book)}
+                    type="button"
+                  >
+                    Tarik
+                  </button>
+                </div>
               </div>
-              <span className="profile-approval-badge">{book.approval}</span>
               <div className="profile-book-meta">
-                <small>{book.price}</small>
-                <small>Peminjam: {book.borrower}</small>
-                <small>Jatuh tempo: {book.dueDate}</small>
+                <small>{formatCurrency(book.rental_price)} / minggu</small>
+                <small>{book.category || "Kategori belum diisi"}</small>
+                <small>{book.location || "Lokasi belum diisi"}</small>
               </div>
+              {editForm?.id === book.id ? (
+                <form className="profile-book-form" onSubmit={saveBook}>
+                  <div className="profile-book-form-grid">
+                    <label>
+                      Judul
+                      <input
+                        name="title"
+                        onChange={handleEditChange}
+                        required
+                        value={editForm.title}
+                      />
+                    </label>
+                    <label>
+                      Penulis
+                      <input
+                        name="author"
+                        onChange={handleEditChange}
+                        required
+                        value={editForm.author}
+                      />
+                    </label>
+                    <label>
+                      Kategori
+                      <input
+                        name="category"
+                        onChange={handleEditChange}
+                        value={editForm.category}
+                      />
+                    </label>
+                    <label>
+                      Kondisi
+                      <input
+                        name="condition"
+                        onChange={handleEditChange}
+                        value={editForm.condition}
+                      />
+                    </label>
+                    <label>
+                      Harga / minggu
+                      <input
+                        min="0"
+                        name="rentalPrice"
+                        onChange={handleEditChange}
+                        required
+                        type="number"
+                        value={editForm.rentalPrice}
+                      />
+                    </label>
+                    <label>
+                      Lokasi
+                      <input
+                        name="location"
+                        onChange={handleEditChange}
+                        value={editForm.location}
+                      />
+                    </label>
+                    <label>
+                      Durasi maksimum
+                      <input
+                        name="maxDuration"
+                        onChange={handleEditChange}
+                        value={editForm.maxDuration}
+                      />
+                    </label>
+                    <label>
+                      Serah terima
+                      <input
+                        name="handover"
+                        onChange={handleEditChange}
+                        value={editForm.handover}
+                      />
+                    </label>
+                    <label className="profile-book-form-wide">
+                      Ganti cover
+                      <input
+                        accept="image/png,image/jpeg,image/webp"
+                        name="cover"
+                        onChange={handleEditChange}
+                        type="file"
+                      />
+                    </label>
+                    <label className="profile-book-form-wide">
+                      Deskripsi
+                      <textarea
+                        name="description"
+                        onChange={handleEditChange}
+                        rows={3}
+                        value={editForm.description}
+                      />
+                    </label>
+                  </div>
+                  <div className="profile-book-form-actions">
+                    <button disabled={busyBookID === book.id} type="submit">
+                      {busyBookID === book.id ? "Menyimpan..." : "Simpan"}
+                    </button>
+                    <button type="button" onClick={() => setEditForm(null)}>
+                      Batal
+                    </button>
+                  </div>
+                </form>
+              ) : null}
             </div>
           </article>
         ))}
@@ -228,46 +504,90 @@ function ProfileBooksPanel() {
   );
 }
 
-function ProfileTransactionsPanel() {
+function TransactionsPanel({
+  completedIncome,
+  lendings,
+  onRespond,
+  onComplete,
+}: {
+  completedIncome: number;
+  lendings: Transaction[];
+  onRespond: (id: number, status: "ACCEPTED" | "REJECTED") => void;
+  onComplete: (id: number) => void;
+}) {
   return (
     <>
       <div className="profile-panel-head">
         <div>
           <span>Transaksi</span>
-          <h2>Riwayat Transaksi</h2>
+          <h2>Permintaan pada Buku Saya</h2>
         </div>
-        <strong>{transactions.length} transaksi</strong>
+        <strong>{lendings.length} transaksi</strong>
       </div>
-
       <div className="profile-transaction-summary">
-        {profitRows.map((row) => (
-          <span key={row.label}>
-            {row.label}
-            <strong>{row.value}</strong>
-          </span>
-        ))}
+        <span>
+          Pendapatan selesai
+          <strong>{formatCurrency(completedIncome)}</strong>
+        </span>
+        <span>
+          Menunggu approval
+          <strong>{lendings.filter((item) => item.status === "PENDING_APPROVAL").length}</strong>
+        </span>
+        <span>
+          Menunggu konfirmasi kembali
+          <strong>{lendings.filter((item) => item.status === "RETURN_PENDING").length}</strong>
+        </span>
       </div>
-
       <div className="profile-table">
-        <div className="profile-table-head">
-          <span>Buku</span>
-          <span>Peminjam</span>
-          <span>Tanggal</span>
-          <span>Status</span>
-          <span>Nominal</span>
-        </div>
-
-        {transactions.map((transaction) => (
-          <div className="profile-table-row" key={`${transaction.book}-${transaction.date}`}>
-            <span>{transaction.book}</span>
-            <span>{transaction.borrower}</span>
-            <span>{transaction.date}</span>
+        <TableHead labels={["Buku", "Peminjam", "Tanggal", "Status", "Nominal"]} />
+        {lendings.map((transaction) => (
+          <div className="profile-table-row" key={transaction.id}>
+            <span>{transaction.book?.title || `Buku #${transaction.book_id}`}</span>
+            <span>
+              {transaction.borrower?.name || "-"}
+              <TransactionPlan transaction={transaction} />
+            </span>
+            <span>{formatDate(transaction.created_at)}</span>
             <span>{transaction.status}</span>
-            <strong>{transaction.amount}</strong>
+            {transaction.status === "PENDING_APPROVAL" ? (
+              <span>
+                <button type="button" onClick={() => onRespond(transaction.id, "ACCEPTED")}>
+                  Terima
+                </button>
+                <button type="button" onClick={() => onRespond(transaction.id, "REJECTED")}>
+                  Tolak
+                </button>
+              </span>
+            ) : transaction.status === "RETURN_PENDING" ? (
+              <button type="button" onClick={() => onComplete(transaction.id)}>
+                Selesaikan
+              </button>
+            ) : (
+              <strong>{formatCurrency(transaction.total_price)}</strong>
+            )}
           </div>
         ))}
       </div>
     </>
+  );
+}
+
+function TransactionPlan({ transaction }: { transaction: Transaction }) {
+  const plan = [transaction.handover, transaction.location, transaction.note].filter(Boolean);
+  if (plan.length === 0) {
+    return null;
+  }
+
+  return <small className="profile-transaction-plan">{plan.join(" - ")}</small>;
+}
+
+function TableHead({ labels }: { labels: string[] }) {
+  return (
+    <div className="profile-table-head">
+      {labels.map((label) => (
+        <span key={label}>{label}</span>
+      ))}
+    </div>
   );
 }
 

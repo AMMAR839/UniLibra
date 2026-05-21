@@ -18,9 +18,6 @@ func GetUserProfile(c *gin.Context) {
 		return
 	}
 
-	// Sembunyikan password hash
-	user.PasswordHash = ""
-
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Profil berhasil diambil",
 		"data":    user,
@@ -68,7 +65,7 @@ func GetMyBooks(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	var books []models.Book
 
-	if err := config.DB.Where("owner_id = ?", uint(userID.(float64))).Find(&books).Error; err != nil {
+	if err := config.DB.Preload("Owner").Where("owner_id = ?", uint(userID.(float64))).Find(&books).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil daftar buku Anda"})
 		return
 	}
@@ -84,7 +81,10 @@ func GetMyBorrowings(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	var transactions []models.Transaction
 
-	if err := config.DB.Where("borrower_id = ?", uint(userID.(float64))).Find(&transactions).Error; err != nil {
+	if err := config.DB.Preload("Book").Preload("Book.Owner").Preload("Borrower").
+		Where("borrower_id = ?", uint(userID.(float64))).
+		Order("created_at DESC").
+		Find(&transactions).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil riwayat peminjaman"})
 		return
 	}
@@ -101,8 +101,10 @@ func GetMyLendings(c *gin.Context) {
 	var transactions []models.Transaction
 
 	// Join dengan tabel books untuk mendapatkan transaksi dari buku milik user
-	err := config.DB.Joins("JOIN books ON transactions.book_id = books.id").
+	err := config.DB.Preload("Book").Preload("Book.Owner").Preload("Borrower").
+		Joins("JOIN books ON transactions.book_id = books.id").
 		Where("books.owner_id = ?", uint(userID.(float64))).
+		Order("transactions.created_at DESC").
 		Find(&transactions).Error
 
 	if err != nil {

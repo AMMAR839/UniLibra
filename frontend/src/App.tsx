@@ -12,6 +12,7 @@ import Login from "./pages/login";
 import NotificationPage from "./pages/Notification";
 import ProfilePage from "./pages/Profile";
 import Register from "./pages/register";
+import { getToken, setToken } from "./lib/api";
 
 type AppPage =
   | "home"
@@ -23,7 +24,16 @@ type AppPage =
   | "profile"
   | "admin"
   | "login"
-  | "register";
+  | "register"
+  | "auth-callback";
+
+const protectedPages = new Set<AppPage>([
+  "lend",
+  "borrow",
+  "notification",
+  "profile",
+  "admin",
+]);
 
 function pageFromPath(pathname: string): AppPage {
   if (pathname === "/login") {
@@ -32,6 +42,10 @@ function pageFromPath(pathname: string): AppPage {
 
   if (pathname === "/register") {
     return "register";
+  }
+
+  if (pathname === "/auth/callback") {
+    return "auth-callback";
   }
 
   if (pathname === "/katalog" || pathname === "/catalog") {
@@ -77,7 +91,7 @@ function App() {
   const [page, setPage] = useState<AppPage>(() =>
     pageFromPath(window.location.pathname),
   );
-  const isLoggedIn = Boolean(localStorage.getItem("token"));
+  const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(getToken()));
 
   useEffect(() => {
     function syncPageWithUrl() {
@@ -85,17 +99,36 @@ function App() {
     }
 
     window.addEventListener("popstate", syncPageWithUrl);
+    window.addEventListener("unilibra:auth-changed", syncPageWithUrl);
 
-    return () => window.removeEventListener("popstate", syncPageWithUrl);
+    return () => {
+      window.removeEventListener("popstate", syncPageWithUrl);
+      window.removeEventListener("unilibra:auth-changed", syncPageWithUrl);
+    };
+  }, []);
+
+  useEffect(() => {
+    function syncAuth() {
+      setIsLoggedIn(Boolean(getToken()));
+    }
+
+    window.addEventListener("storage", syncAuth);
+    window.addEventListener("unilibra:auth-changed", syncAuth);
+
+    return () => {
+      window.removeEventListener("storage", syncAuth);
+      window.removeEventListener("unilibra:auth-changed", syncAuth);
+    };
   }, []);
 
   function navigateTo(target: string) {
     const nextUrl = new URL(target, window.location.origin);
     const nextPath = nextUrl.pathname;
+    const nextSearch = nextUrl.search;
     const nextHash = nextUrl.hash;
 
     setPage(pageFromPath(nextPath));
-    window.history.pushState({}, "", `${nextPath}${nextHash}`);
+    window.history.pushState({}, "", `${nextPath}${nextSearch}${nextHash}`);
 
     window.setTimeout(() => {
       if (nextHash) {
@@ -117,6 +150,14 @@ function App() {
 
   if (page === "register") {
     return <Register onLoginClick={() => navigateTo("/login")} />;
+  }
+
+  if (page === "auth-callback") {
+    return <OAuthCallback onDone={() => navigateTo("/")} />;
+  }
+
+  if (!isLoggedIn && protectedPages.has(page)) {
+    return <LoginRedirect onRedirect={openLogin} />;
   }
 
   if (page === "admin") {
@@ -146,19 +187,22 @@ function App() {
 
       {page === "catalog" ? (
         <CatalogPage
-          onBorrowBook={() => navigateTo("/meminjam")}
+          onBorrowBook={(bookID) => navigateTo(`/meminjam?book=${bookID}`)}
           onLendBook={() => navigateTo("/pinjamkan")}
         />
       ) : page === "lend" ? (
         <LendBookPage />
       ) : page === "borrow" ? (
-        <BorrowBookPage onBackToCatalog={() => navigateTo("/katalog")} />
+        <BorrowBookPage
+          onBackToCatalog={() => navigateTo("/katalog")}
+          onBorrowBook={(bookID) => navigateTo(`/meminjam?book=${bookID}`)}
+        />
       ) : page === "contact" ? (
         <ContactPage />
       ) : page === "notification" ? (
         <NotificationPage />
       ) : page === "profile" ? (
-        <ProfilePage onBorrowBook={() => navigateTo("/meminjam")} />
+        <ProfilePage onBorrowBook={() => navigateTo("/katalog")} />
       ) : (
         <HomePage onExploreCatalog={() => navigateTo("/katalog")} />
       )}
@@ -169,3 +213,31 @@ function App() {
 }
 
 export default App;
+
+function LoginRedirect({ onRedirect }: { onRedirect: () => void }) {
+  useEffect(() => {
+    onRedirect();
+  }, [onRedirect]);
+
+  return (
+    <main className="auth-callback-page">
+      <p>Mengarahkan ke halaman masuk...</p>
+    </main>
+  );
+}
+
+function OAuthCallback({ onDone }: { onDone: () => void }) {
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.hash.slice(1)).get("token");
+    if (token) {
+      setToken(token);
+    }
+    onDone();
+  }, [onDone]);
+
+  return (
+    <main className="auth-callback-page">
+      <p>Memproses login Google...</p>
+    </main>
+  );
+}

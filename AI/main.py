@@ -2,13 +2,13 @@ import os
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from sentence_transformers import SentenceTransformer
 from google import genai
 from pydantic import BaseModel
 import torch
 
-app = FastAPI(title="Unilibra AI API", description="Sistem Rekomendasi, Pencarian, dan Chatbot")
+app = FastAPI(title="Unilibra AI API", description="Sistem rekomendasi dan pencarian semantik")
 load_dotenv()
 # --- 1. INISIALISASI MODEL & KONFIGURASI ---
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -17,11 +17,15 @@ ai_model = SentenceTransformer('all-MiniLM-L6-v2', device=device)
 
 DB_URL = os.getenv("DATABASE_URL")
 GEMINI_API_KEY = os.getenv("GEMINI_API")
+AI_INTERNAL_TOKEN = os.getenv("AI_INTERNAL_TOKEN")
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 class ChatRequest(BaseModel):
     pesan: str
+
+class BookEmbeddingRequest(BaseModel):
+    book_id: int
 
 # --- 2. FUNGSI UTILITAS ---
 def get_db_connection():
@@ -38,8 +42,11 @@ def execute_semantic_search(query_text, limit=5):
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT id, book_name, author, genre, average_rating, embedding
+            SELECT id, title, author, description, category, rental_price,
+                   status, cover_url, owner_id
             FROM books
+            WHERE status = 'available'
+              AND embedding IS NOT NULL
             ORDER BY embedding <=> %s::vector
             LIMIT %s
         """, (query_vector, limit))
@@ -48,11 +55,33 @@ def execute_semantic_search(query_text, limit=5):
         cur.close()
         conn.close()
 
+def embedding_text(book):
+    return " ".join(
+        value for value in [
+            book.get("title", ""),
+            book.get("author", ""),
+            book.get("category", ""),
+            book.get("description", ""),
+        ] if value
+    )
+
+def require_internal_token(token):
+    if AI_INTERNAL_TOKEN and token != AI_INTERNAL_TOKEN:
+        raise HTTPException(status_code=401, detail="AI internal token tidak valid")
+
 # --- 3. ENDPOINT API ---
 
 @app.get("/")
 def root():
     return {"message": "Unilibra AI Engine is Running!"}
+
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "device": device,
+        "embedding_model": "all-MiniLM-L6-v2",
+    }
 
 @app.get("/search")
 def search_books(query: str, limit: int = 5):
@@ -68,13 +97,16 @@ def recommend_similar_books(book_id: int, limit: int = 5):
         cur.execute("SELECT embedding FROM books WHERE id = %s", (book_id,))
         target = cur.fetchone()
 
-        if not target:
-            raise HTTPException(status_code=404, detail="Buku tidak ditemukan")
+        if not target or target["embedding"] is None:
+            raise HTTPException(status_code=404, detail="Embedding buku belum tersedia")
             
         cur.execute("""
-            SELECT id, book_name, author, genre, average_rating
+            SELECT id, title, author, description, category, rental_price,
+                   status, cover_url, owner_id
             FROM books
             WHERE id != %s
+              AND status = 'available'
+              AND embedding IS NOT NULL
             ORDER BY embedding <=> %s::vector
             LIMIT %s
         """, (book_id, target['embedding'], limit))
@@ -90,9 +122,14 @@ def get_popular_books(limit: int = 5):
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT id, book_name, author, genre, average_rating
-            FROM books
-            ORDER BY average_rating DESC
+            SELECT b.id, b.title, b.author, b.description, b.category,
+                   b.rental_price, b.status, b.cover_url, b.owner_id,
+                   COUNT(t.id) AS transaction_count
+            FROM books b
+            LEFT JOIN transactions t ON t.book_id = b.id
+            WHERE b.status = 'available'
+            GROUP BY b.id
+            ORDER BY COUNT(t.id) DESC, b.updated_at DESC
             LIMIT %s
         """, (limit,))
         popular = cur.fetchall()
@@ -101,16 +138,48 @@ def get_popular_books(limit: int = 5):
         cur.close()
         conn.close()
 
+@app.post("/embeddings/books")
+def refresh_book_embedding(
+    req: BookEmbeddingRequest,
+    x_ai_internal_token: str | None = Header(default=None),
+):
+    require_internal_token(x_ai_internal_token)
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT id, title, author, description, category
+            FROM books
+            WHERE id = %s
+        """, (req.book_id,))
+        book = cur.fetchone()
+        if not book:
+            raise HTTPException(status_code=404, detail="Buku tidak ditemukan")
+
+        vector = ai_model.encode(embedding_text(book)).tolist()
+        cur.execute(
+            "UPDATE books SET embedding = %s::vector, updated_at = NOW() WHERE id = %s",
+            (vector, req.book_id),
+        )
+        conn.commit()
+        return {"book_id": req.book_id, "status": "embedded"}
+    finally:
+        cur.close()
+        conn.close()
+
 @app.post("/api/chat")
 def chatbot_unilibra(req: ChatRequest):
     try:
+        if client is None:
+            raise HTTPException(status_code=503, detail="GEMINI_API belum dikonfigurasi")
+
         # Langkah 1: Retrieval (Menggunakan fungsi utilitas yang sama dengan /search)
         buku_relevan = execute_semantic_search(req.pesan, limit=1500)
         
         konteks_buku = ""
         if buku_relevan:
             for idx, b in enumerate(buku_relevan, 1):
-                konteks_buku += f"{idx}. '{b['book_name']}' oleh {b['author']} (Genre: {b['genre']})\n"
+                konteks_buku += f"{idx}. '{b['title']}' oleh {b['author']} ({b.get('category') or 'Kategori belum diisi'})\n"
         else:
             konteks_buku = "Tidak ada buku spesifik yang relevan di database."
 
