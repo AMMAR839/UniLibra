@@ -422,6 +422,13 @@
 
 .home-poster {
   min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
 }
 
 .home-poster-cover {
@@ -432,9 +439,25 @@
   display: flex;
   align-items: flex-end;
   padding: 18px;
+  background: linear-gradient(160deg, #503a15, #2d1f08 58%, #c8831a);
   transition:
     transform 0.28s ease,
     box-shadow 0.28s ease;
+}
+
+.home-poster-cover img {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.01);
+}
+
+.home-poster:focus-visible .home-poster-cover {
+  outline: 3px solid rgba(245, 208, 97, 0.72);
+  outline-offset: 4px;
 }
 
 .home-poster:hover .home-poster-cover {
@@ -492,6 +515,13 @@
 .home-poster-body p {
   color: rgba(245, 240, 232, 0.54);
   font-size: 0.82rem;
+}
+
+.home-data-note {
+  color: rgba(245, 240, 232, 0.64);
+  font-size: 0.88rem;
+  line-height: 1.65;
+  margin: -8px 0 22px;
 }
 
 .home-story-band {

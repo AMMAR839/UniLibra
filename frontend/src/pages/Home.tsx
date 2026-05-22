@@ -1,85 +1,16 @@
 import { useEffect, useState } from "react";
-import bulanHero from "../assets/bulan-hero.png";
-import harryHero from "../assets/book_harry-hero.webp";
-import harryBookCover from "../assets/book_harry.webp";
-import dilanHero from "../assets/Dilan.png";
-import dilanBookCover from "../assets/Dilan.webp";
-import bulanBookCover from "../assets/novel_bulan_tere_liye.jpg";
+import { apiFetch, formatCurrency, mediaURL, type Book } from "../lib/api";
 
 type HomeProps = {
   onExploreCatalog: () => void;
+  onBorrowBook?: (bookID: number) => void;
 };
 
-const heroSlides = [
-  {
-    title: "Dilan 1990",
-    author: "Pidi Baiq",
-    kicker: "Sedang dipinjam minggu ini",
-    heroImage: dilanHero,
-    bookCover: dilanBookCover,
-    description:
-      "Novel remaja populer tentang Dilan dan Milea yang ringan, hangat, dan sering dicari pembaca baru.",
-    meta: ["4.9 rating", "Rp 7.000 / minggu"],
-  },
-  {
-    title: "Bulan",
-    author: "Tere Liye",
-    kicker: "Petualangan favorit pembaca",
-    heroImage: bulanHero,
-    bookCover: bulanBookCover,
-    description:
-      "Lanjutan dunia fantasi Tere Liye yang membawa pembaca ke perjalanan besar penuh rahasia dan keberanian.",
-    meta: ["4.8 rating", "Rp 8.000 / minggu"],
-  },
-  {
-    title: "Harry Potter",
-    author: "J.K. Rowling",
-    kicker: "Fantasi klasik pilihan pembaca",
-    heroImage: harryHero,
-    bookCover: harryBookCover,
-    description:
-      "Kisah awal dunia sihir yang tetap seru dibaca ulang, cocok untuk pembaca fantasi dan petualangan.",
-    meta: ["4.9 rating", "Rp 9.000 / minggu"],
-  },
-];
-
-const trendingBooks = [
-  {
-    title: "Laskar Pelangi",
-    author: "Andrea Hirata",
-    meta: "1.8 km",
-    coverClass: "home-cover-laskar",
-    label: "Populer",
-  },
-  {
-    title: "Atomic Habits",
-    author: "James Clear",
-    meta: "1.5 km",
-    coverClass: "home-cover-atomic",
-    label: "Paling dicari",
-  },
-  {
-    title: "Bumi Manusia",
-    author: "Pramoedya Ananta Toer",
-    meta: "2.1 km",
-    coverClass: "home-cover-bumi",
-    label: "Sastra",
-  },
-  {
-    title: "Sapiens",
-    author: "Yuval Noah Harari",
-    meta: "1.5 km",
-    coverClass: "home-cover-sapiens",
-    label: "Nonfiksi",
-  },
-  {
-    title: "Ronggeng Dukuh Peruk",
-    author: "Ahmad Tohari",
-    meta: "1.8 km",
-    coverClass: "home-cover-ronggeng",
-    label: "Tersedia",
-  },
-];
+type AIRecommendationResponse = {
+  popular_books?: Book[];
+  results?: Book[];
+  warning?: string;
+};
 
 const readingPaths = [
   "Bacaan ringan setelah kuliah",
@@ -107,37 +38,94 @@ const benefits = [
   },
 ];
 
-function HomePage({ onExploreCatalog }: HomeProps) {
+function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
   const [activeSlide, setActiveSlide] = useState(0);
-  const featuredSlide = heroSlides[activeSlide];
-  const nextSlide = (activeSlide + 1) % heroSlides.length;
+  const [backendBooks, setBackendBooks] = useState<Book[]>([]);
+  const [aiBooks, setAiBooks] = useState<Book[]>([]);
+  const [homeNotice, setHomeNotice] = useState("");
+  const heroBooks = (aiBooks.length > 0 ? aiBooks : backendBooks).slice(0, 4);
+  const featuredBook = heroBooks[activeSlide] ?? heroBooks[0];
+  const nextSlide = heroBooks.length > 0 ? (activeSlide + 1) % heroBooks.length : 0;
+  const backendRailBooks = backendBooks.slice(0, 10);
 
   useEffect(() => {
+    const controller = new AbortController();
+    Promise.allSettled([
+      apiFetch<{ data: Book[] }>("/api/books", {
+        auth: false,
+        signal: controller.signal,
+      }),
+      apiFetch<AIRecommendationResponse>("/api/ai/popular", {
+        auth: false,
+        signal: controller.signal,
+      }),
+    ]).then(([backendResult, aiResult]) => {
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      if (backendResult.status === "fulfilled") {
+        setBackendBooks(backendResult.value.data);
+      } else {
+        setHomeNotice("Katalog backend belum bisa dimuat.");
+      }
+
+      if (aiResult.status === "fulfilled") {
+        setAiBooks(aiResult.value.popular_books ?? aiResult.value.results ?? []);
+        if (aiResult.value.warning) {
+          setHomeNotice(aiResult.value.warning);
+        }
+      }
+    });
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (activeSlide >= heroBooks.length) {
+      setActiveSlide(0);
+    }
+  }, [activeSlide, heroBooks.length]);
+
+  useEffect(() => {
+    if (heroBooks.length <= 1) {
+      return;
+    }
+
     const slideTimer = window.setInterval(() => {
-      setActiveSlide((currentSlide) => (currentSlide + 1) % heroSlides.length);
+      setActiveSlide((currentSlide) => (currentSlide + 1) % heroBooks.length);
     }, 5600);
 
     return () => window.clearInterval(slideTimer);
-  }, []);
+  }, [heroBooks.length]);
+
+  function openBook(bookID: number) {
+    if (onBorrowBook) {
+      onBorrowBook(bookID);
+      return;
+    }
+
+    onExploreCatalog();
+  }
 
   return (
     <main className="home-page">
       <section className="home-hero" id="tentang">
         <div className="home-hero-bg" aria-hidden="true">
           <div className="home-hero-carousel">
-            {heroSlides.map((slide, index) => (
+            {heroBooks.map((book, index) => (
               <div
                 className={`home-hero-slide ${
                   index === activeSlide ? "is-active" : ""
                 }`}
-                key={slide.title}
+                key={`hero-${book.id}`}
               >
-                <img src={slide.heroImage} alt="" />
+                {book.cover_url ? <img src={mediaURL(book.cover_url)} alt="" /> : null}
               </div>
             ))}
           </div>
           <div className="home-featured-stack">
-            {heroSlides.map((slide, index) => (
+            {heroBooks.map((book, index) => (
               <div
                 className={`home-featured-slide ${
                   index === activeSlide
@@ -146,11 +134,11 @@ function HomePage({ onExploreCatalog }: HomeProps) {
                       ? "is-next"
                       : "is-previous"
                 }`}
-                key={slide.title}
+                key={`featured-${book.id}`}
               >
                 <div className="home-featured-book">
-                  <img src={slide.bookCover} alt="" />
-                  <span>{slide.title}</span>
+                  {book.cover_url ? <img src={mediaURL(book.cover_url)} alt="" /> : null}
+                  <span>{cleanBookTitle(book.title)}</span>
                 </div>
               </div>
             ))}
@@ -168,22 +156,33 @@ function HomePage({ onExploreCatalog }: HomeProps) {
         </div>
 
         <div className="home-hero-panel">
-          <span className="home-panel-kicker">{featuredSlide.kicker}</span>
-          <strong>{featuredSlide.title}</strong>
-          <span className="home-panel-author">{featuredSlide.author}</span>
-          <p>{featuredSlide.description}</p>
+          <span className="home-panel-kicker">
+            {aiBooks.length > 0 ? "Rekomendasi AI" : "Katalog backend"}
+          </span>
+          <strong>{featuredBook ? cleanBookTitle(featuredBook.title) : "Buku UniLibra"}</strong>
+          <span className="home-panel-author">
+            {featuredBook?.author || "Data dari backend"}
+          </span>
+          <p>
+            {featuredBook?.description ||
+              "Buku dari katalog backend akan tampil di sini lengkap dengan cover yang tersimpan di backend."}
+          </p>
           <div className="home-panel-meta">
-            {featuredSlide.meta.map((item) => (
-              <span key={item}>{item}</span>
-            ))}
+            {featuredBook ? (
+              <>
+                <span>{featuredBook.category || "Katalog"}</span>
+                <span>{formatCurrency(featuredBook.rental_price)} / minggu</span>
+                <span>{featuredBook.location || "Lokasi belum diisi"}</span>
+              </>
+            ) : null}
           </div>
           <div className="home-hero-dots" aria-label="Pilihan buku hero">
-            {heroSlides.map((slide, index) => (
+            {heroBooks.map((book, index) => (
               <button
-                aria-label={`Tampilkan ${slide.title}`}
+                aria-label={`Tampilkan ${book.title}`}
                 aria-pressed={index === activeSlide}
                 className={index === activeSlide ? "is-active" : ""}
-                key={slide.title}
+                key={`dot-${book.id}`}
                 onClick={() => setActiveSlide(index)}
                 type="button"
               />
@@ -206,28 +205,36 @@ function HomePage({ onExploreCatalog }: HomeProps) {
       <section className="home-rail-section" id="sedang-ramai">
         <div className="home-section-heading">
           <div>
-            <span>Trending di UniLibra</span>
-            <h2>Buku yang bikin orang berhenti scroll.</h2>
+            <span>Dari Backend</span>
+            <h2>Buku terbaru langsung dari database.</h2>
           </div>
           <button className="btn-ghost" type="button" onClick={onExploreCatalog}>
             Buka katalog
           </button>
         </div>
 
+        {homeNotice ? <p className="home-data-note">{homeNotice}</p> : null}
+
         <div className="home-book-rail">
-          {trendingBooks.map((book) => (
-            <article className="home-poster" key={book.title}>
-              <div className={`home-poster-cover ${book.coverClass}`}>
-                <span>{book.title}</span>
+          {backendRailBooks.map((book) => (
+            <button
+              className="home-poster"
+              key={book.id}
+              onClick={() => openBook(book.id)}
+              type="button"
+            >
+              <div className="home-poster-cover">
+                {book.cover_url ? <img src={mediaURL(book.cover_url)} alt="" /> : null}
+                <span>{cleanBookTitle(book.title)}</span>
               </div>
               <div className="home-poster-body">
-                <span>{book.label}</span>
-                <h3>{book.title}</h3>
+                <span>{book.category || "Katalog"}</span>
+                <h3>{cleanBookTitle(book.title)}</h3>
                 <p>
-                  {book.author} &bull; {book.meta}
+                  {book.author} &bull; {formatCurrency(book.rental_price)}
                 </p>
               </div>
-            </article>
+            </button>
           ))}
         </div>
       </section>
@@ -312,6 +319,10 @@ function ArrowIcon() {
       />
     </svg>
   );
+}
+
+function cleanBookTitle(title: string) {
+  return title.replace(/^\[DEMO\]\s*/i, "");
 }
 
 export default HomePage;

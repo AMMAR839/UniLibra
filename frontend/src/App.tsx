@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import FloatingAIButton from "./components/FloatingAIButton";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
+import AIPage from "./pages/AIPage";
 import AdminPage from "./pages/Admin";
 import BorrowBookPage from "./pages/BorrowBook";
 import CatalogPage from "./pages/Catalog";
@@ -23,6 +25,7 @@ type AppPage =
   | "notification"
   | "profile"
   | "admin"
+  | "ai"
   | "login"
   | "register"
   | "auth-callback";
@@ -82,6 +85,10 @@ function pageFromPath(pathname: string): AppPage {
 
   if (pathname === "/admin") {
     return "admin";
+  }
+
+  if (pathname === "/ai" || pathname === "/unibot") {
+    return "ai";
   }
 
   return "home";
@@ -144,24 +151,53 @@ function App() {
     navigateTo("/login");
   }
 
+  const aiButton = (
+    <FloatingAIButton isActive={page === "ai"} onOpen={() => navigateTo("/ai")} />
+  );
+
   if (page === "login") {
-    return <Login onRegisterClick={() => navigateTo("/register")} />;
+    return (
+      <>
+        <Login onRegisterClick={() => navigateTo("/register")} />
+        {aiButton}
+      </>
+    );
   }
 
   if (page === "register") {
-    return <Register onLoginClick={() => navigateTo("/login")} />;
+    return (
+      <>
+        <Register onLoginClick={() => navigateTo("/login")} />
+        {aiButton}
+      </>
+    );
   }
 
   if (page === "auth-callback") {
-    return <OAuthCallback onDone={() => navigateTo("/")} />;
+    return (
+      <>
+        <OAuthCallback onDone={() => navigateTo("/")} />
+        {aiButton}
+      </>
+    );
   }
 
   if (!isLoggedIn && protectedPages.has(page)) {
-    return <LoginRedirect onRedirect={openLogin} />;
+    return (
+      <>
+        <LoginRedirect onRedirect={openLogin} />
+        {aiButton}
+      </>
+    );
   }
 
   if (page === "admin") {
-    return <AdminPage />;
+    return (
+      <>
+        <AdminPage />
+        {aiButton}
+      </>
+    );
   }
 
   return (
@@ -203,11 +239,17 @@ function App() {
         <NotificationPage />
       ) : page === "profile" ? (
         <ProfilePage onBorrowBook={() => navigateTo("/katalog")} />
+      ) : page === "ai" ? (
+        <AIPage onBorrowBook={(bookID) => navigateTo(`/meminjam?book=${bookID}`)} />
       ) : (
-        <HomePage onExploreCatalog={() => navigateTo("/katalog")} />
+        <HomePage
+          onExploreCatalog={() => navigateTo("/katalog")}
+          onBorrowBook={(bookID) => navigateTo(`/meminjam?book=${bookID}`)}
+        />
       )}
 
       <Footer onNavigate={navigateTo} />
+      {aiButton}
     </>
   );
 }
