@@ -7,6 +7,7 @@ from sentence_transformers import SentenceTransformer
 from google import genai
 from pydantic import BaseModel
 import torch
+from math import asin, cos, radians, sin, sqrt
 
 app = FastAPI(title="Unilibra AI API", description="Sistem rekomendasi dan pencarian semantik")
 load_dotenv()
@@ -23,6 +24,8 @@ client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 class ChatRequest(BaseModel):
     pesan: str
+    latitude: float | None = None
+    longitude: float | None = None
 
 class BookEmbeddingRequest(BaseModel):
     book_id: int
@@ -36,21 +39,89 @@ def get_db_connection():
         raise HTTPException(status_code=500, detail="Database connection failed")
 
 # Pengganti cari_buku_relevan: Digunakan oleh /search dan /api/chat
-def execute_semantic_search(query_text, limit=5):
+def calculate_distance_km(origin_lat, origin_lng, book):
+    if origin_lat is None or origin_lng is None:
+        return None
+    book_lat = book.get("latitude")
+    book_lng = book.get("longitude")
+    if not book_lat or not book_lng:
+        return None
+
+    lat1, lng1, lat2, lng2 = map(radians, [origin_lat, origin_lng, book_lat, book_lng])
+    dlat = lat2 - lat1
+    dlng = lng2 - lng1
+    value = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlng / 2) ** 2
+    return round(6371 * 2 * asin(sqrt(value)), 2)
+
+def execute_semantic_search(query_text, limit=5, latitude=None, longitude=None):
     query_vector = ai_model.encode(query_text).tolist()
     conn = get_db_connection()
     cur = conn.cursor()
     try:
         cur.execute("""
             SELECT id, title, author, description, category, rental_price,
-                   status, cover_url, owner_id
+                   status, cover_url, owner_id, location, latitude, longitude
             FROM books
             WHERE status = 'available'
               AND embedding IS NOT NULL
             ORDER BY embedding <=> %s::vector
             LIMIT %s
-        """, (query_vector, limit))
-        return cur.fetchall()
+        """, (query_vector, max(limit, 40)))
+        results = [dict(book) for book in cur.fetchall()]
+
+        normalized_query = "".join(query_text.lower().split())
+        cur.execute("""
+            SELECT id, title, author, description, category, rental_price,
+                   status, cover_url, owner_id, location, latitude, longitude
+            FROM books
+            WHERE status = 'available'
+            ORDER BY updated_at DESC
+            LIMIT 200
+        """)
+        catalog_books = [dict(book) for book in cur.fetchall()]
+        exact_books = []
+        for book in catalog_books:
+            compact_haystack = "".join(" ".join([
+                str(book.get("title") or ""),
+                str(book.get("author") or ""),
+                str(book.get("category") or ""),
+                str(book.get("location") or ""),
+            ]).lower().split())
+            if normalized_query and normalized_query in compact_haystack:
+                exact_books.append(book)
+
+        merged_results = []
+        seen_ids = set()
+        for book in exact_books + results:
+            if book["id"] in seen_ids:
+                continue
+            seen_ids.add(book["id"])
+            merged_results.append(book)
+
+        if not merged_results and latitude is not None and longitude is not None:
+            merged_results = catalog_books
+
+        for book in merged_results:
+            book["distance_km"] = calculate_distance_km(latitude, longitude, book)
+            haystack = " ".join([
+                str(book.get("title") or ""),
+                str(book.get("author") or ""),
+                str(book.get("category") or ""),
+                str(book.get("location") or ""),
+            ]).lower()
+            compact_haystack = "".join(haystack.split())
+            book["exact_match"] = bool(normalized_query and normalized_query in compact_haystack)
+
+        if latitude is not None and longitude is not None:
+            merged_results.sort(key=lambda book: (
+                not book["exact_match"],
+                book["distance_km"] is None,
+                book["distance_km"] if book["distance_km"] is not None else 999999,
+            ))
+        else:
+            merged_results.sort(key=lambda book: (not book["exact_match"],))
+
+        return merged_results[:limit]
     finally:
         cur.close()
         conn.close()
@@ -61,8 +132,45 @@ def embedding_text(book):
             book.get("title", ""),
             book.get("author", ""),
             book.get("category", ""),
+            book.get("location", ""),
             book.get("description", ""),
         ] if value
+    )
+
+def book_line(book):
+    distance = ""
+    if book.get("distance_km") is not None:
+        distance = f" - sekitar {book['distance_km']} km dari kamu"
+    price = book.get("rental_price") or 0
+    return (
+        f"{book['title']} oleh {book['author']} | "
+        f"{book.get('category') or 'Kategori belum diisi'} | "
+        f"{book.get('location') or 'Lokasi belum diisi'}{distance} | "
+        f"Rp {int(price):,}/minggu"
+    ).replace(",", ".")
+
+def build_chat_fallback_answer(message, books, has_location):
+    if not books:
+        return (
+            "Aku belum menemukan buku yang cocok di katalog tersedia. "
+            "Coba sebutkan judul, penulis, genre, atau area yang lebih spesifik."
+        )
+
+    nearby_text = " yang paling dekat dari lokasimu" if has_location else ""
+    recommendations = []
+    for book in books[:3]:
+        distance = ""
+        if book.get("distance_km") is not None:
+            distance = f" sekitar {book['distance_km']} km dari kamu,"
+        recommendations.append(
+            f"{book['title']} oleh {book['author']} tersedia di {book.get('location') or 'lokasi belum diisi'},{distance} "
+            f"dengan biaya pinjam Rp {int(book.get('rental_price') or 0):,}/minggu.".replace(",", ".")
+        )
+
+    return (
+        f"Aku menemukan {len(books)} buku tersedia{nearby_text}. "
+        + " ".join(recommendations)
+        + " Kamu bisa membuka salah satu rekomendasi itu untuk lanjut ke proses peminjaman."
     )
 
 def require_internal_token(token):
@@ -148,7 +256,7 @@ def refresh_book_embedding(
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT id, title, author, description, category
+            SELECT id, title, author, description, category, location
             FROM books
             WHERE id = %s
         """, (req.book_id,))
@@ -170,24 +278,45 @@ def refresh_book_embedding(
 @app.post("/api/chat")
 def chatbot_unilibra(req: ChatRequest):
     try:
-        if client is None:
-            raise HTTPException(status_code=503, detail="GEMINI_API belum dikonfigurasi")
-
         # Langkah 1: Retrieval (Menggunakan fungsi utilitas yang sama dengan /search)
-        buku_relevan = execute_semantic_search(req.pesan, limit=1500)
+        buku_relevan = execute_semantic_search(
+            req.pesan,
+            limit=12,
+            latitude=req.latitude,
+            longitude=req.longitude,
+        )
         
         konteks_buku = ""
         if buku_relevan:
             for idx, b in enumerate(buku_relevan, 1):
-                konteks_buku += f"{idx}. '{b['title']}' oleh {b['author']} ({b.get('category') or 'Kategori belum diisi'})\n"
+                konteks_buku += f"{idx}. {book_line(b)}\n"
         else:
             konteks_buku = "Tidak ada buku spesifik yang relevan di database."
+
+        if client is None:
+            return {
+                "status": "success",
+                "jawaban": build_chat_fallback_answer(
+                    req.pesan,
+                    buku_relevan,
+                    req.latitude is not None and req.longitude is not None,
+                ),
+                "buku_referensi": buku_relevan,
+                "actions": [
+                    {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
+                    for b in buku_relevan[:3]
+                ],
+                "engine": "semantic-fallback",
+            }
 
         # Langkah 2: Augmented Prompt
         prompt = f"""
         Kamu adalah 'UniBot' dari aplikasi web UniLibra, asisten virtual ramah untuk platform peminjaman buku 'Unilibra'.
         Tugasmu adalah menjawab pertanyaan pengguna HANYA berdasarkan konteks buku yang tersedia di bawah ini. 
         Jika pengguna bertanya hal di luar konteks buku atau perpustakaan, arahkan kembali ke topik peminjaman buku.
+        Jika ada lokasi pengguna dan distance_km, prioritaskan buku yang paling dekat.
+        Jika pengguna bertanya apakah buku/penulis tertentu masih ada, jawab berdasarkan status buku di konteks.
+        Jangan mengarang buku di luar konteks.
         
         Konteks Buku yang Tersedia di Database Saat Ini:
         {konteks_buku}
@@ -206,7 +335,12 @@ def chatbot_unilibra(req: ChatRequest):
         return {
             "status": "success",
             "jawaban": response.text,
-            "buku_referensi": buku_relevan 
+            "buku_referensi": buku_relevan,
+            "actions": [
+                {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
+                for b in buku_relevan[:3]
+            ],
+            "engine": "gemini",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

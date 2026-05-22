@@ -33,6 +33,7 @@ func SetupRouter() *gin.Engine {
 		api.GET("/ai/search", controllers.SearchBooksAI)
 		api.GET("/ai/similar/:id", controllers.GetSimilarBooks)
 		api.GET("/ai/popular", controllers.GetPopularBooks)
+		api.POST("/ai/chat", controllers.ChatWithAI)
 
 		protected := api.Group("/")
 		protected.Use(middlewares.AuthRequired())

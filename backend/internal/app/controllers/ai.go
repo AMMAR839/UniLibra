@@ -51,6 +51,36 @@ func GetPopularBooks(c *gin.Context) {
 	})
 }
 
+func ChatWithAI(c *gin.Context) {
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Pesan chatbot tidak valid."})
+		return
+	}
+
+	request, err := http.NewRequest(http.MethodPost, getAIURL()+"/api/chat", bytes.NewReader(body))
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "AI Engine tidak tersedia."})
+		return
+	}
+	request.Header.Set("Content-Type", "application/json")
+
+	resp, err := (&http.Client{}).Do(request)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "AI Engine tidak tersedia."})
+		return
+	}
+	defer resp.Body.Close()
+
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Jawaban AI tidak bisa dibaca."})
+		return
+	}
+
+	c.Data(resp.StatusCode, "application/json", responseBody)
+}
+
 func forwardRequestToAI(c *gin.Context, targetURL string, fallback func()) {
 	resp, err := http.Get(targetURL)
 	if err != nil {
