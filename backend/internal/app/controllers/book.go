@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"unilibra-backend/internal/pkg/storage"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm/clause"
 )
 
 type CreateBookInput struct {
@@ -19,6 +21,7 @@ type CreateBookInput struct {
 	Author      string  `json:"author" binding:"required"`
 	Description string  `json:"description"`
 	Category    string  `json:"category"`
+	Theme       string  `json:"theme"`
 	Condition   string  `json:"condition"`
 	Location    string  `json:"location"`
 	MaxDuration string  `json:"max_duration"`
@@ -26,6 +29,19 @@ type CreateBookInput struct {
 	RentalPrice float64 `json:"rental_price" binding:"required,min=0"`
 	Latitude    float64 `json:"latitude"`
 	Longitude   float64 `json:"longitude"`
+}
+
+type BookFilters struct {
+	Query     string
+	Category  string
+	Theme     string
+	MinPrice  *float64
+	MaxPrice  *float64
+	MinDistance *float64
+	MaxDistance *float64
+	Sort      string
+	Latitude  *float64
+	Longitude *float64
 }
 
 func CreateBook(c *gin.Context) {
@@ -48,6 +64,7 @@ func CreateBook(c *gin.Context) {
 		Author:      input.Author,
 		Description: input.Description,
 		Category:    input.Category,
+		Theme:       input.Theme,
 		Condition:   input.Condition,
 		Location:    input.Location,
 		MaxDuration: input.MaxDuration,
@@ -82,7 +99,7 @@ func CreateBook(c *gin.Context) {
 }
 
 func GetBooks(c *gin.Context) {
-	books, err := availableBooks(c.Query("q"), 48)
+	books, err := availableBooks(bookFiltersFromQuery(c), 48)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data katalog buku."})
 		return
@@ -94,14 +111,15 @@ func GetBooks(c *gin.Context) {
 	})
 }
 
-func availableBooks(query string, limit int) ([]models.Book, error) {
+func availableBooks(filters BookFilters, limit int) ([]models.Book, error) {
 	var books []models.Book
 	db := config.DB.Preload("Owner").Where("books.status = ?", "available")
 
-	if normalizedQuery := strings.ToLower(strings.TrimSpace(query)); normalizedQuery != "" {
+	if normalizedQuery := strings.ToLower(strings.TrimSpace(filters.Query)); normalizedQuery != "" {
 		like := "%" + normalizedQuery + "%"
 		db = db.Where(
-			"LOWER(books.title) LIKE ? OR LOWER(books.author) LIKE ? OR LOWER(books.description) LIKE ? OR LOWER(books.category) LIKE ?",
+			"LOWER(books.title) LIKE ? OR LOWER(books.author) LIKE ? OR LOWER(books.description) LIKE ? OR LOWER(books.category) LIKE ? OR LOWER(books.theme) LIKE ?",
+			like,
 			like,
 			like,
 			like,
@@ -109,8 +127,66 @@ func availableBooks(query string, limit int) ([]models.Book, error) {
 		)
 	}
 
+	if category := strings.ToLower(strings.TrimSpace(filters.Category)); category != "" {
+		db = db.Where("LOWER(books.category) = ?", category)
+	}
+
+	if theme := strings.ToLower(strings.TrimSpace(filters.Theme)); theme != "" {
+		db = db.Where("LOWER(books.theme) = ?", theme)
+	}
+
+	if filters.MinPrice != nil {
+		db = db.Where("books.rental_price >= ?", *filters.MinPrice)
+	}
+
+	if filters.MaxPrice != nil {
+		db = db.Where("books.rental_price <= ?", *filters.MaxPrice)
+	}
+
+	if filters.Latitude != nil && filters.Longitude != nil {
+		if filters.MinDistance != nil {
+			db = db.Where(
+				"books.latitude != 0 AND books.longitude != 0 AND (6371 * 2 * ASIN(SQRT(POWER(SIN(RADIANS(books.latitude - ?) / 2), 2) + COS(RADIANS(?)) * COS(RADIANS(books.latitude)) * POWER(SIN(RADIANS(books.longitude - ?) / 2), 2)))) >= ?",
+				*filters.Latitude,
+				*filters.Latitude,
+				*filters.Longitude,
+				*filters.MinDistance,
+			)
+		}
+		if filters.MaxDistance != nil {
+			db = db.Where(
+				"books.latitude != 0 AND books.longitude != 0 AND (6371 * 2 * ASIN(SQRT(POWER(SIN(RADIANS(books.latitude - ?) / 2), 2) + COS(RADIANS(?)) * COS(RADIANS(books.latitude)) * POWER(SIN(RADIANS(books.longitude - ?) / 2), 2)))) <= ?",
+				*filters.Latitude,
+				*filters.Latitude,
+				*filters.Longitude,
+				*filters.MaxDistance,
+			)
+		}
+	}
+
 	if limit > 0 {
 		db = db.Limit(limit)
+	}
+
+	switch filters.Sort {
+	case "nearest":
+		if filters.Latitude != nil && filters.Longitude != nil {
+			db = db.Clauses(clause.OrderBy{
+				Expression: clause.Expr{
+					SQL: "CASE WHEN books.latitude = 0 OR books.longitude = 0 THEN 1 ELSE 0 END, (6371 * 2 * ASIN(SQRT(POWER(SIN(RADIANS(books.latitude - ?) / 2), 2) + COS(RADIANS(?)) * COS(RADIANS(books.latitude)) * POWER(SIN(RADIANS(books.longitude - ?) / 2), 2)))) ASC",
+					Vars: []any{
+						*filters.Latitude,
+						*filters.Latitude,
+						*filters.Longitude,
+					},
+					WithoutParentheses: true,
+				},
+			})
+		}
+	case "price_asc":
+		db = db.Order("books.rental_price ASC")
+	case "price_desc":
+		db = db.Order("books.rental_price DESC")
 	}
 
 	return books, db.Order("books.updated_at DESC").Find(&books).Error
@@ -157,6 +233,7 @@ func UpdateBook(c *gin.Context) {
 		"author":       input.Author,
 		"description":  input.Description,
 		"category":     input.Category,
+		"theme":        input.Theme,
 		"condition":    input.Condition,
 		"location":     input.Location,
 		"max_duration": input.MaxDuration,
@@ -221,6 +298,7 @@ func bindBookInput(c *gin.Context) (CreateBookInput, *multipart.FileHeader, erro
 			Author:      strings.TrimSpace(c.PostForm("author")),
 			Description: strings.TrimSpace(c.PostForm("description")),
 			Category:    strings.TrimSpace(c.PostForm("category")),
+			Theme:       strings.TrimSpace(c.PostForm("theme")),
 			Condition:   strings.TrimSpace(c.PostForm("condition")),
 			Location:    strings.TrimSpace(c.PostForm("location")),
 			MaxDuration: strings.TrimSpace(c.PostForm("max_duration")),
@@ -253,4 +331,46 @@ func bindBookInput(c *gin.Context) (CreateBookInput, *multipart.FileHeader, erro
 	}
 
 	return input, nil, nil
+}
+
+func bookFiltersFromQuery(c *gin.Context) BookFilters {
+	filters := BookFilters{
+		Query:    c.Query("q"),
+		Category: c.Query("category"),
+		Theme:    c.Query("theme"),
+		Sort:     c.Query("sort"),
+	}
+
+	if minPrice, ok := parseOptionalFloat(c.Query("min_price")); ok {
+		filters.MinPrice = &minPrice
+	}
+	if maxPrice, ok := parseOptionalFloat(c.Query("max_price")); ok {
+		filters.MaxPrice = &maxPrice
+	}
+	if minDistance, ok := parseOptionalFloat(c.Query("min_distance")); ok {
+		filters.MinDistance = &minDistance
+	}
+	if maxDistance, ok := parseOptionalFloat(c.Query("max_distance")); ok {
+		filters.MaxDistance = &maxDistance
+	}
+	if latitude, ok := parseOptionalFloat(c.Query("latitude")); ok {
+		latitude = math.Max(math.Min(latitude, 90), -90)
+		filters.Latitude = &latitude
+	}
+	if longitude, ok := parseOptionalFloat(c.Query("longitude")); ok {
+		longitude = math.Max(math.Min(longitude, 180), -180)
+		filters.Longitude = &longitude
+	}
+
+	return filters
+}
+
+func parseOptionalFloat(value string) (float64, bool) {
+	trimmedValue := strings.TrimSpace(value)
+	if trimmedValue == "" {
+		return 0, false
+	}
+
+	parsedValue, err := strconv.ParseFloat(trimmedValue, 64)
+	return parsedValue, err == nil
 }

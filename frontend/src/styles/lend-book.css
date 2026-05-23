@@ -137,6 +137,95 @@
   padding: 9px 12px;
 }
 
+.lend-location-fields {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.lend-location-address {
+  display: grid;
+  gap: 8px;
+}
+
+.lend-location-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lend-map-action {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(74, 103, 65, 0.22);
+  border-radius: 8px;
+  background: rgba(74, 103, 65, 0.08);
+  color: var(--sage);
+  cursor: pointer;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0 12px;
+  text-decoration: none;
+}
+
+.lend-map-action:hover {
+  background: rgba(74, 103, 65, 0.16);
+  border-color: rgba(74, 103, 65, 0.36);
+  color: var(--ink);
+}
+
+.lend-location-bottom {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-items: end;
+}
+
+.lend-location-bottom label {
+  display: grid;
+  gap: 8px;
+}
+
+.lend-maps-link-field {
+  display: grid;
+  gap: 8px;
+}
+
+.lend-maps-link-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.lend-maps-link-bar button {
+  min-height: 48px;
+  border: 1px solid rgba(26, 18, 8, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--sage);
+  cursor: pointer;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 0 13px;
+  white-space: nowrap;
+}
+
+.lend-maps-link-bar button:hover {
+  background: rgba(74, 103, 65, 0.12);
+  border-color: rgba(74, 103, 65, 0.32);
+  color: var(--ink);
+}
+
+.lend-coordinate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .lend-full-field {
   margin-top: 16px;
 }
@@ -196,6 +285,19 @@
   .lend-form-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .lend-location-bottom {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .lend-coordinate-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lend-maps-link-bar {
+    grid-template-columns: 1fr;
   }
 
 }

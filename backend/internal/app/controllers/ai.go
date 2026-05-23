@@ -126,7 +126,7 @@ func refreshBookEmbedding(bookID uint) {
 }
 
 func writeBookFallback(c *gin.Context, query string, warning string) {
-	books, err := availableBooks(query, 8)
+	books, err := availableBooks(BookFilters{Query: query}, 8)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "AI Engine tidak tersedia dan fallback katalog gagal."})
 		return

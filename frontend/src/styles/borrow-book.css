@@ -20,7 +20,6 @@
 
 .borrow-book-card,
 .borrow-request-card,
-.borrow-process-card,
 .borrow-recommendation-card {
   border: 1px solid rgba(26, 18, 8, 0.1);
   border-radius: 18px;
@@ -185,7 +184,6 @@
 }
 
 .borrow-request-card,
-.borrow-process-card,
 .borrow-recommendation-card {
   padding: 26px;
 }
@@ -373,48 +371,6 @@
   margin-top: 20px;
 }
 
-.borrow-process-list {
-  display: grid;
-  gap: 20px;
-  list-style: none;
-}
-
-.borrow-process-list li {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 14px;
-  color: var(--text-muted);
-}
-
-.borrow-process-list li > span {
-  width: 18px;
-  height: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #d7d2c9;
-  color: transparent;
-  margin-top: 3px;
-  box-shadow: 0 0 0 6px rgba(215, 210, 201, 0.22);
-}
-
-.borrow-process-list li.is-active > span {
-  background: var(--amber);
-  box-shadow: 0 0 0 6px rgba(200, 131, 26, 0.16);
-}
-
-.borrow-process-list strong {
-  color: var(--ink);
-  display: block;
-  margin-bottom: 5px;
-}
-
-.borrow-process-list p {
-  line-height: 1.7;
-  font-size: 0.88rem;
-}
-
 @media (max-width: 1120px) {
   .borrow-layout {
     width: min(100% - 40px, 820px);
@@ -442,14 +398,12 @@
 
   .borrow-book-card,
   .borrow-request-card,
-  .borrow-process-card,
   .borrow-recommendation-card {
     padding: 20px;
   }
 
   .borrow-book-card,
   .borrow-request-card,
-  .borrow-process-card,
   .borrow-recommendation-card {
     border-radius: 14px;
   }

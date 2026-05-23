@@ -55,6 +55,10 @@ Pastikan file ini sudah ada:
 - `frontend/package.json`
 - `.env.example`
 - `frontend/.env.example`
+- `.env.production.example`
+- `frontend/.env.production.example`
+- `frontend/public/staticwebapp.config.json`
+- `.github/workflows/azure-deploy.yml`
 
 Jangan deploy memakai `.env` local. Production secret harus disimpan di secret manager/cloud configuration.
 
@@ -144,6 +148,8 @@ Build dan push backend:
 docker build -t acunilibra.azurecr.io/unilibra-backend:latest ./backend
 docker push acunilibra.azurecr.io/unilibra-backend:latest
 ```
+
+`backend/Dockerfile` memiliki target `dev` untuk Docker Compose local dan target final production untuk Azure. `docker build ./backend` otomatis memakai target production, sedangkan `docker-compose.yml` memakai target `dev`.
 
 Build dan push AI:
 
@@ -252,6 +258,8 @@ Jika memakai Azure Static Web Apps dari GitHub, set:
 - Output location: `dist`
 - Build command: `npm run build`
 
+Repo sudah menyediakan `frontend/public/staticwebapp.config.json` dengan `navigationFallback` ke `/index.html` agar route React seperti `/login`, `/register`, `/auth/callback`, dan `/profil` tidak 404 ketika dibuka langsung.
+
 Setelah frontend mendapatkan domain production, update env backend:
 
 ```env
@@ -351,6 +359,15 @@ Jika ingin refresh massal, buat script kecil terpisah yang membaca semua `books.
 
 Gunakan GitHub Actions.
 
+Repo sudah menyediakan workflow awal di `.github/workflows/azure-deploy.yml`. Workflow ini melakukan:
+
+1. `go test ./...` untuk backend.
+2. `npm ci` dan `npm run build` untuk frontend.
+3. `python -m py_compile` untuk service AI.
+4. Build dan push image backend/AI ke Azure Container Registry.
+5. Update Azure Container Apps backend/AI ke image tag commit SHA.
+6. Deploy frontend ke Azure Static Web Apps.
+
 Pull request:
 
 1. Backend:
@@ -384,11 +401,19 @@ Secret GitHub Actions yang biasanya diperlukan:
 
 ```text
 AZURE_CREDENTIALS
+AZURE_STATIC_WEB_APPS_API_TOKEN
+```
+
+Variables GitHub Actions yang biasanya diperlukan:
+
+```text
 AZURE_RESOURCE_GROUP
 AZURE_CONTAINER_REGISTRY
 BACKEND_CONTAINER_APP
 AI_CONTAINER_APP
-STATIC_WEB_APP_DEPLOY_TOKEN
+VITE_API_URL
+VITE_WS_URL
+VITE_GOOGLE_LOGIN_URL
 ```
 
 Runtime secret aplikasi tetap disimpan di Azure Container Apps secrets atau Key Vault, bukan di repository.

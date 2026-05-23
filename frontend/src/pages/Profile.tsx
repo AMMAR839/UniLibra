@@ -16,6 +16,7 @@ import {
   type Transaction,
   type User,
 } from "../lib/api";
+import { bookCategories, themesForCategory } from "../lib/bookTaxonomy";
 
 type ProfileSection = "history" | "books" | "transactions";
 
@@ -248,9 +249,12 @@ type BookEditForm = {
   title: string;
   author: string;
   category: string;
+  theme: string;
   condition: string;
   rentalPrice: string;
   location: string;
+  latitude: string;
+  longitude: string;
   maxDuration: string;
   handover: string;
   description: string;
@@ -275,9 +279,12 @@ function BooksPanel({
       title: book.title,
       author: book.author,
       category: book.category || "",
+      theme: book.theme || "",
       condition: book.condition || "",
       rentalPrice: `${book.rental_price}`,
       location: book.location || "",
+      latitude: `${book.latitude || 0}`,
+      longitude: `${book.longitude || 0}`,
       maxDuration: book.max_duration || "",
       handover: book.handover || "",
       description: book.description || "",
@@ -296,7 +303,13 @@ function BooksPanel({
         : event.target.value;
 
     setEditForm((currentForm) =>
-      currentForm ? { ...currentForm, [name]: value } : currentForm,
+      currentForm
+        ? {
+            ...currentForm,
+            [name]: value,
+            ...(name === "category" ? { theme: "" } : {}),
+          }
+        : currentForm,
     );
   }
 
@@ -311,9 +324,12 @@ function BooksPanel({
     payload.set("title", editForm.title);
     payload.set("author", editForm.author);
     payload.set("category", editForm.category);
+    payload.set("theme", editForm.theme);
     payload.set("condition", editForm.condition);
     payload.set("rental_price", editForm.rentalPrice || "0");
     payload.set("location", editForm.location);
+    payload.set("latitude", editForm.latitude);
+    payload.set("longitude", editForm.longitude);
     payload.set("max_duration", editForm.maxDuration);
     payload.set("handover", editForm.handover);
     payload.set("description", editForm.description);
@@ -393,6 +409,7 @@ function BooksPanel({
               <div className="profile-book-meta">
                 <small>{formatCurrency(book.rental_price)} / minggu</small>
                 <small>{book.category || "Kategori belum diisi"}</small>
+                <small>{book.theme || "Tema belum diisi"}</small>
                 <small>{book.location || "Lokasi belum diisi"}</small>
               </div>
               {editForm?.id === book.id ? (
@@ -418,11 +435,36 @@ function BooksPanel({
                     </label>
                     <label>
                       Kategori
-                      <input
+                      <select
                         name="category"
                         onChange={handleEditChange}
                         value={editForm.category}
-                      />
+                      >
+                        <option value="">Pilih kategori</option>
+                        {bookCategories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Tema
+                      <select
+                        disabled={!editForm.category}
+                        name="theme"
+                        onChange={handleEditChange}
+                        value={editForm.theme}
+                      >
+                        <option value="">
+                          {editForm.category ? "Pilih tema" : "Pilih kategori dulu"}
+                        </option>
+                        {themesForCategory(editForm.category).map((theme) => (
+                          <option key={theme} value={theme}>
+                            {theme}
+                          </option>
+                        ))}
+                      </select>
                     </label>
                     <label>
                       Kondisi

@@ -24,13 +24,13 @@ def migrate_Data():
     
     for index, row in df.iterrows():
         deskripsi = f"Buku dengan genre {row['genre']}."
-        text_to_embed = f"Buku berjudul {row['Book Name']} ditulis oleh {row['Author']} {deskripsi}"
+        text_to_embed = f"Buku berjudul {row['Book Name']} ditulis oleh {row['Author']} bertema {row['genre']} {deskripsi}"
         embedding = model.encode(text_to_embed).tolist()
         
         curr.execute(
-            """INSERT INTO books (title, author, description, category, owner_id, rental_price, status, embedding, created_at, updated_at)
-               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-            (row['Book Name'], row['Author'], deskripsi, row['genre'], owner_id, 5000.0, 'available', embedding, datetime.now(), datetime.now())
+            """INSERT INTO books (title, author, description, category, theme, owner_id, rental_price, status, embedding, created_at, updated_at)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+            (row['Book Name'], row['Author'], deskripsi, row['genre'], row['genre'], owner_id, 5000.0, 'available', embedding, datetime.now(), datetime.now())
         )
 
         if index % 100 == 0 and index > 0:

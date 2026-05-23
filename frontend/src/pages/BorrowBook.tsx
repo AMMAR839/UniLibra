@@ -35,29 +35,6 @@ const initialBorrowForm: BorrowForm = {
   note: "Halo kak, saya ingin pinjam buku ini untuk 2 minggu. Saya fleksibel untuk ketemu Kamis sore atau Jumat siang.",
 };
 
-const processSteps = [
-  {
-    title: "Request dikirim",
-    text: "Data durasi, tanggal, dan catatanmu sudah terkirim ke pemilik buku.",
-    active: true,
-  },
-  {
-    title: "Pemilik meninjau request",
-    text: "Pemilik akan mengecek ketersediaan, waktu kosong, dan menyepakati metode serah terima.",
-    active: false,
-  },
-  {
-    title: "Waktu & lokasi dikonfirmasi",
-    text: "Kamu dan pemilik menyepakati detail pengambilan lewat chat.",
-    active: false,
-  },
-  {
-    title: "Buku dipinjam",
-    text: "Status akan berubah jadi aktif, dan sistem bisa menampilkan tenggat pengembalian.",
-    active: false,
-  },
-];
-
 type SimilarBooksResponse = {
   results?: Book[];
   data?: Book[];
@@ -234,6 +211,10 @@ function BorrowBookPage({ onBackToCatalog, onBorrowBook }: BorrowBookPageProps) 
                   {book.category || "Belum diisi"}
                 </span>
                 <span>
+                  <small>Tema</small>
+                  {book.theme || "Belum diisi"}
+                </span>
+                <span>
                   <small>Rating</small>
                   {book.status}
                 </span>
@@ -358,25 +339,6 @@ function BorrowBookPage({ onBackToCatalog, onBorrowBook }: BorrowBookPageProps) 
               </button>
             </div>
           </form>
-
-          <section className="borrow-process-card">
-            <div className="borrow-card-head">
-              <h2>Status Proses Peminjaman</h2>
-              <p>Setelah request dikirim, alurnya akan berjalan seperti ini.</p>
-            </div>
-
-            <ol className="borrow-process-list">
-              {processSteps.map((step, index) => (
-                <li className={step.active ? "is-active" : undefined} key={step.title}>
-                  <span>{index + 1}</span>
-                  <div>
-                    <strong>{step.title}</strong>
-                    <p>{step.text}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </section>
 
           {similarBooks.length ? (
             <section className="borrow-recommendation-card">

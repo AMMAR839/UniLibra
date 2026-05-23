@@ -29,6 +29,7 @@ type Book struct {
 	Author      string    `gorm:"not null" json:"author"`
 	Description string    `gorm:"type:text" json:"description"`
 	Category    string    `gorm:"type:varchar(100)" json:"category"`
+	Theme       string    `gorm:"type:varchar(100)" json:"theme"`
 	Condition   string    `gorm:"type:varchar(100)" json:"condition"`
 	Location    string    `gorm:"type:varchar(160)" json:"location"`
 	MaxDuration string    `gorm:"type:varchar(40)" json:"max_duration"`

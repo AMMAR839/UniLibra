@@ -59,7 +59,7 @@ def execute_semantic_search(query_text, limit=5, latitude=None, longitude=None):
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT id, title, author, description, category, rental_price,
+            SELECT id, title, author, description, category, theme, rental_price,
                    status, cover_url, owner_id, location, latitude, longitude
             FROM books
             WHERE status = 'available'
@@ -71,7 +71,7 @@ def execute_semantic_search(query_text, limit=5, latitude=None, longitude=None):
 
         normalized_query = "".join(query_text.lower().split())
         cur.execute("""
-            SELECT id, title, author, description, category, rental_price,
+            SELECT id, title, author, description, category, theme, rental_price,
                    status, cover_url, owner_id, location, latitude, longitude
             FROM books
             WHERE status = 'available'
@@ -85,6 +85,7 @@ def execute_semantic_search(query_text, limit=5, latitude=None, longitude=None):
                 str(book.get("title") or ""),
                 str(book.get("author") or ""),
                 str(book.get("category") or ""),
+                str(book.get("theme") or ""),
                 str(book.get("location") or ""),
             ]).lower().split())
             if normalized_query and normalized_query in compact_haystack:
@@ -107,6 +108,7 @@ def execute_semantic_search(query_text, limit=5, latitude=None, longitude=None):
                 str(book.get("title") or ""),
                 str(book.get("author") or ""),
                 str(book.get("category") or ""),
+                str(book.get("theme") or ""),
                 str(book.get("location") or ""),
             ]).lower()
             compact_haystack = "".join(haystack.split())
@@ -132,6 +134,7 @@ def embedding_text(book):
             book.get("title", ""),
             book.get("author", ""),
             book.get("category", ""),
+            book.get("theme", ""),
             book.get("location", ""),
             book.get("description", ""),
         ] if value
@@ -145,6 +148,7 @@ def book_line(book):
     return (
         f"{book['title']} oleh {book['author']} | "
         f"{book.get('category') or 'Kategori belum diisi'} | "
+        f"{book.get('theme') or 'Tema belum diisi'} | "
         f"{book.get('location') or 'Lokasi belum diisi'}{distance} | "
         f"Rp {int(price):,}/minggu"
     ).replace(",", ".")
@@ -209,7 +213,7 @@ def recommend_similar_books(book_id: int, limit: int = 5):
             raise HTTPException(status_code=404, detail="Embedding buku belum tersedia")
             
         cur.execute("""
-            SELECT id, title, author, description, category, rental_price,
+            SELECT id, title, author, description, category, theme, rental_price,
                    status, cover_url, owner_id
             FROM books
             WHERE id != %s
@@ -230,7 +234,7 @@ def get_popular_books(limit: int = 5):
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT b.id, b.title, b.author, b.description, b.category,
+            SELECT b.id, b.title, b.author, b.description, b.category, b.theme,
                    b.rental_price, b.status, b.cover_url, b.owner_id,
                    COUNT(t.id) AS transaction_count
             FROM books b
@@ -256,7 +260,7 @@ def refresh_book_embedding(
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT id, title, author, description, category, location
+            SELECT id, title, author, description, category, theme, location
             FROM books
             WHERE id = %s
         """, (req.book_id,))

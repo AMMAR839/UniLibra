@@ -16,6 +16,7 @@ export type Book = {
   author: string;
   description: string;
   category?: string;
+  theme?: string;
   condition?: string;
   location?: string;
   max_duration?: string;
@@ -23,6 +24,8 @@ export type Book = {
   owner_id: number;
   owner?: User;
   rental_price: number;
+  latitude?: number;
+  longitude?: number;
   status: string;
   cover_url?: string;
   created_at: string;
@@ -122,6 +125,10 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}) {
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
+    if (response.status === 401 && options.auth !== false) {
+      clearToken();
+    }
+
     throw new Error(payload?.error || "Permintaan ke server gagal.");
   }
 

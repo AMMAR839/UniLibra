@@ -26,6 +26,7 @@ func SetupRouter() *gin.Engine {
 		api.GET("/auth/google", controllers.StartGoogleOAuth)
 		api.GET("/auth/google/callback", controllers.FinishGoogleOAuth)
 		api.GET("/realtime", controllers.ServeRealtime)
+		api.GET("/maps/resolve", controllers.ResolveMapsLink)
 
 		api.GET("/books", controllers.GetBooks)
 		api.GET("/books/:id", controllers.GetBookByID)
