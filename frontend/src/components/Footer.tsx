@@ -1,21 +1,8 @@
-import type { MouseEvent } from "react";
-
 type FooterProps = {
   onNavigate?: (path: string) => void;
 };
 
-function Footer({ onNavigate }: FooterProps) {
-  function handleNavigate(path: string) {
-    return (event: MouseEvent<HTMLAnchorElement>) => {
-      if (!onNavigate) {
-        return;
-      }
-
-      event.preventDefault();
-      onNavigate(path);
-    };
-  }
-
+function Footer(_props: FooterProps) {
   return (
     <footer>
       <div className="footer-top">
@@ -25,57 +12,6 @@ function Footer({ onNavigate }: FooterProps) {
             Platform pinjam buku fisik berbasis komunitas. Membaca lebih
             terjangkau, koleksi lebih termanfaatkan.
           </p>
-        </div>
-
-        <div className="footer-col">
-          <h4>Hubungi Kami</h4>
-          <ul>
-            <li>
-              <a href="#">Dinara&ndash;Tana</a>
-            </li>
-            <li>
-              <a href="#">Katalog Privat</a>
-            </li>
-            <li>
-              <a href="/kontak" onClick={handleNavigate("/kontak")}>
-                Hubungi Kami
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <div className="footer-col">
-          <h4>Karir</h4>
-          <ul>
-            <li>
-              <a href="#">Lowongan</a>
-            </li>
-            <li>
-              <a href="/katalog" onClick={handleNavigate("/katalog")}>
-                Katalog Buku
-              </a>
-            </li>
-            <li>
-              <a href="#">Petunjuk Buku</a>
-            </li>
-          </ul>
-        </div>
-
-        <div className="footer-col">
-          <h4>Kebijakan</h4>
-          <ul>
-            <li>
-              <a href="#">Privasi</a>
-            </li>
-            <li>
-              <a href="#">Blog</a>
-            </li>
-            <li>
-              <a href="/kontak" onClick={handleNavigate("/kontak")}>
-                Kontak
-              </a>
-            </li>
-          </ul>
         </div>
       </div>
 

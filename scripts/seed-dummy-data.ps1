@@ -153,25 +153,32 @@ function Get-OpenLibraryCover {
   param(
     [string]$Title,
     [string]$Author,
-    [string]$FallbackPath
+    [string]$FallbackPath,
+    [int]$VariantIndex = 1
   )
 
   $safeTitle = $Title
   $slug = ConvertTo-Slug -Value "$safeTitle-$Author"
-  $targetPath = Join-Path $coverDir "web-$slug.jpg"
+  $targetPath = Join-Path $coverDir "openlibrary-$slug-$VariantIndex.jpg"
+
+  $cachedFile = Get-Item -Path $targetPath -ErrorAction SilentlyContinue
+  if ($cachedFile -and $cachedFile.Length -gt 1024) {
+    return $targetPath
+  }
 
   try {
-    $searchUrl = "https://openlibrary.org/search.json?title=$([uri]::EscapeDataString($safeTitle))&author=$([uri]::EscapeDataString($Author))&limit=3"
+    $searchUrl = "https://openlibrary.org/search.json?title=$([uri]::EscapeDataString($safeTitle))&author=$([uri]::EscapeDataString($Author))&limit=12"
     $headers = @{ "User-Agent" = "UniLibra local seed script" }
-    $result = Invoke-RestMethod -Uri $searchUrl -Method Get -Headers $headers -TimeoutSec 20
-    $match = $result.docs | Where-Object { $_.cover_i } | Select-Object -First 1
+    $result = Invoke-RestMethod -Uri $searchUrl -Method Get -Headers $headers -TimeoutSec 8
+    $matches = @($result.docs | Where-Object { $_.cover_i } | Select-Object -First 12)
 
-    if (-not $match) {
+    if ($matches.Count -eq 0) {
       return $FallbackPath
     }
 
+    $match = $matches[($VariantIndex - 1) % $matches.Count]
     $coverUrl = "https://covers.openlibrary.org/b/id/$($match.cover_i)-L.jpg"
-    Invoke-WebRequest -Uri $coverUrl -Headers $headers -OutFile $targetPath -TimeoutSec 30 | Out-Null
+    Invoke-WebRequest -Uri $coverUrl -Headers $headers -OutFile $targetPath -TimeoutSec 12 | Out-Null
 
     $file = Get-Item -Path $targetPath -ErrorAction Stop
     if ($file.Length -lt 1024) {
@@ -183,6 +190,71 @@ function Get-OpenLibraryCover {
   } catch {
     return $FallbackPath
   }
+}
+
+function Get-GoogleBooksCover {
+  param(
+    [string]$Title,
+    [string]$Author,
+    [string]$FallbackPath,
+    [int]$VariantIndex = 1
+  )
+
+  $slug = ConvertTo-Slug -Value "$Title-$Author"
+  $targetPath = Join-Path $coverDir "google-$slug-$VariantIndex.jpg"
+
+  $cachedFile = Get-Item -Path $targetPath -ErrorAction SilentlyContinue
+  if ($cachedFile -and $cachedFile.Length -gt 1024) {
+    return $targetPath
+  }
+
+  try {
+    $query = "intitle:$Title inauthor:$Author"
+    $searchUrl = "https://www.googleapis.com/books/v1/volumes?q=$([uri]::EscapeDataString($query))&maxResults=20&printType=books"
+    $headers = @{ "User-Agent" = "UniLibra local seed script" }
+    $result = Invoke-RestMethod -Uri $searchUrl -Method Get -Headers $headers -TimeoutSec 8
+    $items = @($result.items | Where-Object {
+      $_.volumeInfo.imageLinks.thumbnail -or $_.volumeInfo.imageLinks.smallThumbnail
+    })
+
+    if ($items.Count -eq 0) {
+      return $FallbackPath
+    }
+
+    $item = $items[($VariantIndex - 1) % $items.Count]
+    $coverUrl = $item.volumeInfo.imageLinks.thumbnail
+    if (-not $coverUrl) {
+      $coverUrl = $item.volumeInfo.imageLinks.smallThumbnail
+    }
+    $coverUrl = ($coverUrl -replace "^http://", "https://") -replace "zoom=1", "zoom=2"
+    Invoke-WebRequest -Uri $coverUrl -Headers $headers -OutFile $targetPath -TimeoutSec 12 | Out-Null
+
+    $file = Get-Item -Path $targetPath -ErrorAction Stop
+    if ($file.Length -lt 1024) {
+      Remove-Item -LiteralPath $targetPath -ErrorAction SilentlyContinue
+      return $FallbackPath
+    }
+
+    return $targetPath
+  } catch {
+    return $FallbackPath
+  }
+}
+
+function Get-BookCover {
+  param(
+    [string]$Title,
+    [string]$Author,
+    [string]$FallbackPath,
+    [int]$VariantIndex = 1
+  )
+
+  $googleCover = Get-GoogleBooksCover -Title $Title -Author $Author -FallbackPath $FallbackPath -VariantIndex $VariantIndex
+  if ($googleCover -ne $FallbackPath) {
+    return $googleCover
+  }
+
+  return Get-OpenLibraryCover -Title $Title -Author $Author -FallbackPath $FallbackPath -VariantIndex $VariantIndex
 }
 
 function Get-AssetCover {
@@ -426,27 +498,27 @@ $intan = Register-User -Name "Intan Permata" -Email "intan.demo@unilibra.local" 
 $galih = Register-User -Name "Galih Pradana" -Email "galih.demo@unilibra.local" -City "Godean"
 
 $covers = @(
-  Get-OpenLibraryCover -Title "Filosofi Teras" -Author "Henry Manampiring" -FallbackPath (New-CoverImage -Filename "filosofi-teras.png" -Title "Filosofi Teras" -Author "Henry Manampiring" -ColorA "#F2C14E" -ColorB "#B8651B")
-  Get-OpenLibraryCover -Title "Atomic Habits" -Author "James Clear" -FallbackPath (New-CoverImage -Filename "atomic-habits.png" -Title "Atomic Habits" -Author "James Clear" -ColorA "#2F6F73" -ColorB "#172A3A")
-  Get-OpenLibraryCover -Title "Laskar Pelangi" -Author "Andrea Hirata" -FallbackPath (New-CoverImage -Filename "laskar-pelangi.png" -Title "Laskar Pelangi" -Author "Andrea Hirata" -ColorA "#5B8E7D" -ColorB "#1D4E35")
-  Get-OpenLibraryCover -Title "Bumi Manusia" -Author "Pramoedya Ananta Toer" -FallbackPath (New-CoverImage -Filename "bumi-manusia.png" -Title "Bumi Manusia" -Author "Pramoedya A. Toer" -ColorA "#9E2A2B" -ColorB "#540B0E")
-  Get-OpenLibraryCover -Title "Algoritma Dasar" -Author "Rinaldi Munir" -FallbackPath (New-CoverImage -Filename "algoritma.png" -Title "Algoritma Dasar" -Author "Rinaldi Munir" -ColorA "#3D5A80" -ColorB "#1D3557")
-  Get-OpenLibraryCover -Title "Clean Code" -Author "Robert C. Martin" -FallbackPath (New-CoverImage -Filename "clean-code.png" -Title "Clean Code" -Author "Robert C. Martin" -ColorA "#2B2D42" -ColorB "#8D99AE")
-  Get-OpenLibraryCover -Title "Psikologi Uang" -Author "Morgan Housel" -FallbackPath (New-CoverImage -Filename "psikologi-uang.png" -Title "Psikologi Uang" -Author "Morgan Housel" -ColorA "#BC6C25" -ColorB "#283618")
-  Get-OpenLibraryCover -Title "Laut Bercerita" -Author "Leila S. Chudori" -FallbackPath (New-CoverImage -Filename "laut-bercerita.png" -Title "Laut Bercerita" -Author "Leila S. Chudori" -ColorA "#006D77" -ColorB "#003049")
-  Get-OpenLibraryCover -Title "Data Science from Scratch" -Author "Joel Grus" -FallbackPath (New-CoverImage -Filename "data-science.png" -Title "Data Science" -Author "Joel Grus" -ColorA "#7B2CBF" -ColorB "#240046")
-  Get-OpenLibraryCover -Title "Deep Work" -Author "Cal Newport" -FallbackPath (New-CoverImage -Filename "deep-work.png" -Title "Deep Work" -Author "Cal Newport" -ColorA "#264653" -ColorB "#0A192F")
-  Get-OpenLibraryCover -Title "The Lean Startup" -Author "Eric Ries" -FallbackPath (New-CoverImage -Filename "lean-startup.png" -Title "The Lean Startup" -Author "Eric Ries" -ColorA "#2A9D8F" -ColorB "#1B4332")
-  Get-OpenLibraryCover -Title "Change by Design" -Author "Tim Brown" -FallbackPath (New-CoverImage -Filename "design-thinking.png" -Title "Design Thinking" -Author "Tim Brown" -ColorA "#E76F51" -ColorB "#6D2E46")
-  Get-OpenLibraryCover -Title "Negeri 5 Menara" -Author "A. Fuadi" -FallbackPath (New-CoverImage -Filename "negeri-5-menara.png" -Title "Negeri 5 Menara" -Author "A. Fuadi" -ColorA "#457B9D" -ColorB "#1D3557")
-  Get-OpenLibraryCover -Title "Cantik Itu Luka" -Author "Eka Kurniawan" -FallbackPath (New-CoverImage -Filename "cantik-itu-luka.png" -Title "Cantik Itu Luka" -Author "Eka Kurniawan" -ColorA "#9D0208" -ColorB "#370617")
-  Get-OpenLibraryCover -Title "Calculus" -Author "Purcell" -FallbackPath (New-CoverImage -Filename "kalkulus-dasar.png" -Title "Kalkulus Dasar" -Author "Purcell" -ColorA "#4361EE" -ColorB "#03045E")
-  Get-OpenLibraryCover -Title "Database System Concepts" -Author "Silberschatz" -FallbackPath (New-CoverImage -Filename "database-system.png" -Title "Database System" -Author "Silberschatz" -ColorA "#3A0CA3" -ColorB "#10002B")
-  Get-OpenLibraryCover -Title "The Pragmatic Programmer" -Author "Andrew Hunt" -FallbackPath (New-CoverImage -Filename "pragmatic-programmer.png" -Title "Pragmatic Programmer" -Author "Hunt & Thomas" -ColorA "#343A40" -ColorB "#111111")
-  Get-OpenLibraryCover -Title "Sapiens" -Author "Yuval Noah Harari" -FallbackPath (New-CoverImage -Filename "sapiens.png" -Title "Sapiens" -Author "Yuval Noah Harari" -ColorA "#A98467" -ColorB "#4E342E")
-  Get-OpenLibraryCover -Title "Rich Dad Poor Dad" -Author "Robert Kiyosaki" -FallbackPath (New-CoverImage -Filename "rich-dad-poor-dad.png" -Title "Rich Dad Poor Dad" -Author "Robert Kiyosaki" -ColorA "#F4A261" -ColorB "#99582A")
-  Get-OpenLibraryCover -Title "Matematika Diskrit" -Author "Rinaldi Munir" -FallbackPath (New-CoverImage -Filename "matematika-diskrit.png" -Title "Matematika Diskrit" -Author "Rinaldi Munir" -ColorA "#023E8A" -ColorB "#001845")
-  Get-OpenLibraryCover -Title "Eloquent JavaScript" -Author "Marijn Haverbeke" -FallbackPath (New-CoverImage -Filename "eloquent-javascript.png" -Title "Eloquent JavaScript" -Author "Marijn Haverbeke" -ColorA "#F7B801" -ColorB "#6A4C93")
+  Get-BookCover -Title "Filosofi Teras" -Author "Henry Manampiring" -FallbackPath (New-CoverImage -Filename "filosofi-teras.png" -Title "Filosofi Teras" -Author "Henry Manampiring" -ColorA "#F2C14E" -ColorB "#B8651B")
+  Get-BookCover -Title "Atomic Habits" -Author "James Clear" -FallbackPath (New-CoverImage -Filename "atomic-habits.png" -Title "Atomic Habits" -Author "James Clear" -ColorA "#2F6F73" -ColorB "#172A3A")
+  Get-BookCover -Title "Laskar Pelangi" -Author "Andrea Hirata" -FallbackPath (New-CoverImage -Filename "laskar-pelangi.png" -Title "Laskar Pelangi" -Author "Andrea Hirata" -ColorA "#5B8E7D" -ColorB "#1D4E35")
+  Get-BookCover -Title "Bumi Manusia" -Author "Pramoedya Ananta Toer" -FallbackPath (New-CoverImage -Filename "bumi-manusia.png" -Title "Bumi Manusia" -Author "Pramoedya A. Toer" -ColorA "#9E2A2B" -ColorB "#540B0E")
+  Get-BookCover -Title "Algoritma Dasar" -Author "Rinaldi Munir" -FallbackPath (New-CoverImage -Filename "algoritma.png" -Title "Algoritma Dasar" -Author "Rinaldi Munir" -ColorA "#3D5A80" -ColorB "#1D3557")
+  Get-BookCover -Title "Clean Code" -Author "Robert C. Martin" -FallbackPath (New-CoverImage -Filename "clean-code.png" -Title "Clean Code" -Author "Robert C. Martin" -ColorA "#2B2D42" -ColorB "#8D99AE")
+  Get-BookCover -Title "Psikologi Uang" -Author "Morgan Housel" -FallbackPath (New-CoverImage -Filename "psikologi-uang.png" -Title "Psikologi Uang" -Author "Morgan Housel" -ColorA "#BC6C25" -ColorB "#283618")
+  Get-BookCover -Title "Laut Bercerita" -Author "Leila S. Chudori" -FallbackPath (New-CoverImage -Filename "laut-bercerita.png" -Title "Laut Bercerita" -Author "Leila S. Chudori" -ColorA "#006D77" -ColorB "#003049")
+  Get-BookCover -Title "Data Science from Scratch" -Author "Joel Grus" -FallbackPath (New-CoverImage -Filename "data-science.png" -Title "Data Science" -Author "Joel Grus" -ColorA "#7B2CBF" -ColorB "#240046")
+  Get-BookCover -Title "Deep Work" -Author "Cal Newport" -FallbackPath (New-CoverImage -Filename "deep-work.png" -Title "Deep Work" -Author "Cal Newport" -ColorA "#264653" -ColorB "#0A192F")
+  Get-BookCover -Title "The Lean Startup" -Author "Eric Ries" -FallbackPath (New-CoverImage -Filename "lean-startup.png" -Title "The Lean Startup" -Author "Eric Ries" -ColorA "#2A9D8F" -ColorB "#1B4332")
+  Get-BookCover -Title "Change by Design" -Author "Tim Brown" -FallbackPath (New-CoverImage -Filename "design-thinking.png" -Title "Design Thinking" -Author "Tim Brown" -ColorA "#E76F51" -ColorB "#6D2E46")
+  Get-BookCover -Title "Negeri 5 Menara" -Author "A. Fuadi" -FallbackPath (New-CoverImage -Filename "negeri-5-menara.png" -Title "Negeri 5 Menara" -Author "A. Fuadi" -ColorA "#457B9D" -ColorB "#1D3557")
+  Get-BookCover -Title "Cantik Itu Luka" -Author "Eka Kurniawan" -FallbackPath (New-CoverImage -Filename "cantik-itu-luka.png" -Title "Cantik Itu Luka" -Author "Eka Kurniawan" -ColorA "#9D0208" -ColorB "#370617")
+  Get-BookCover -Title "Calculus" -Author "Purcell" -FallbackPath (New-CoverImage -Filename "kalkulus-dasar.png" -Title "Kalkulus Dasar" -Author "Purcell" -ColorA "#4361EE" -ColorB "#03045E")
+  Get-BookCover -Title "Database System Concepts" -Author "Silberschatz" -FallbackPath (New-CoverImage -Filename "database-system.png" -Title "Database System" -Author "Silberschatz" -ColorA "#3A0CA3" -ColorB "#10002B")
+  Get-BookCover -Title "The Pragmatic Programmer" -Author "Andrew Hunt" -FallbackPath (New-CoverImage -Filename "pragmatic-programmer.png" -Title "Pragmatic Programmer" -Author "Hunt & Thomas" -ColorA "#343A40" -ColorB "#111111")
+  Get-BookCover -Title "Sapiens" -Author "Yuval Noah Harari" -FallbackPath (New-CoverImage -Filename "sapiens.png" -Title "Sapiens" -Author "Yuval Noah Harari" -ColorA "#A98467" -ColorB "#4E342E")
+  Get-BookCover -Title "Rich Dad Poor Dad" -Author "Robert Kiyosaki" -FallbackPath (New-CoverImage -Filename "rich-dad-poor-dad.png" -Title "Rich Dad Poor Dad" -Author "Robert Kiyosaki" -ColorA "#F4A261" -ColorB "#99582A")
+  Get-BookCover -Title "Matematika Diskrit" -Author "Rinaldi Munir" -FallbackPath (New-CoverImage -Filename "matematika-diskrit.png" -Title "Matematika Diskrit" -Author "Rinaldi Munir" -ColorA "#023E8A" -ColorB "#001845")
+  Get-BookCover -Title "Eloquent JavaScript" -Author "Marijn Haverbeke" -FallbackPath (New-CoverImage -Filename "eloquent-javascript.png" -Title "Eloquent JavaScript" -Author "Marijn Haverbeke" -ColorA "#F7B801" -ColorB "#6A4C93")
   Get-AssetCover -Filename "Dilan.webp"
   Get-AssetCover -Filename "novel_bulan_tere_liye.jpg"
   Get-AssetCover -Filename "book_harry.webp"
@@ -543,17 +615,6 @@ $bookSeeds += @(
   @{ owner = $adit; cover = $covers[5]; title = "Clean Code"; author = "Robert C. Martin"; category = "Teknologi"; theme = "Pemrograman"; condition = "Baik"; location = "Jalan Kaliurang"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 14500; latitude = -7.743; longitude = 110.380; description = "Edisi rapi untuk belajar prinsip clean code dan refactoring dasar." }
 )
 
-$variantPalettes = @(
-  @("#F2C14E", "#B8651B"),
-  @("#2F6F73", "#172A3A"),
-  @("#7B2CBF", "#240046"),
-  @("#E76F51", "#6D2E46"),
-  @("#4361EE", "#03045E"),
-  @("#A98467", "#4E342E"),
-  @("#2A9D8F", "#1B4332"),
-  @("#9D0208", "#370617")
-)
-
 $titleOccurrences = @{}
 foreach ($seed in $bookSeeds) {
   $titleKey = ConvertTo-Slug -Value $seed.title
@@ -562,15 +623,11 @@ foreach ($seed in $bookSeeds) {
   }
   $titleOccurrences[$titleKey]++
 
-  if ($titleOccurrences[$titleKey] -gt 1) {
-    $palette = $variantPalettes[($titleOccurrences[$titleKey] - 2) % $variantPalettes.Count]
-    $seed.cover = New-CoverImage `
-      -Filename "$titleKey-owner-$($titleOccurrences[$titleKey]).png" `
-      -Title $seed.title `
-      -Author $seed.author `
-      -ColorA $palette[0] `
-      -ColorB $palette[1]
-  }
+  $seed.cover = Get-BookCover `
+    -Title $seed.title `
+    -Author $seed.author `
+    -FallbackPath $seed.cover `
+    -VariantIndex $titleOccurrences[$titleKey]
 }
 
 $createdBooks = @()

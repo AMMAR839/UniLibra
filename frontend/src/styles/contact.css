@@ -82,6 +82,12 @@
   font-weight: 900;
 }
 
+.contact-channel i svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
 .contact-channel span {
   min-width: 0;
   display: grid;

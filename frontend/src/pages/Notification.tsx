@@ -3,7 +3,6 @@ import { apiFetch, formatDate, type Notification } from "../lib/api";
 
 function NotificationPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [message, setMessage] = useState("");
 
@@ -26,7 +25,6 @@ function NotificationPage() {
         unread_count: number;
       }>("/api/notifications");
       setNotifications(response.data);
-      setUnreadCount(response.unread_count);
       window.dispatchEvent(
         new CustomEvent("unilibra:notifications-updated", {
           detail: {
@@ -51,27 +49,6 @@ function NotificationPage() {
   return (
     <main className="notification-page">
       <section className="notification-shell">
-        <header className="notification-header">
-          <div className="notification-copy">
-            <span>Pusat Notifikasi</span>
-            <h1>Aktivitas yang Perlu Kamu Lihat</h1>
-            <p>
-              Notifikasi berasal dari permintaan peminjaman, pengembalian, dan
-              pesan chat yang benar-benar masuk ke sistem.
-            </p>
-          </div>
-          <div className="notification-stats">
-            <article>
-              <span>Belum dibaca</span>
-              <strong>{unreadCount}</strong>
-            </article>
-            <article>
-              <span>Total</span>
-              <strong>{notifications.length}</strong>
-            </article>
-          </div>
-        </header>
-
         <section className="notification-stream" aria-label="Daftar notifikasi">
             <div className="notification-toolbar">
               <div className="notification-toolbar-copy">
