@@ -29,7 +29,10 @@ function NotificationPage() {
       setUnreadCount(response.unread_count);
       window.dispatchEvent(
         new CustomEvent("unilibra:notifications-updated", {
-          detail: { unreadCount: response.unread_count },
+          detail: {
+            unreadCount: response.unread_count,
+            chatUnreadCount: countUnreadChatNotifications(response.data),
+          },
         }),
       );
       setMessage("");
@@ -154,3 +157,9 @@ function NotificationPage() {
 }
 
 export default NotificationPage;
+
+function countUnreadChatNotifications(notifications: Notification[]) {
+  return notifications.filter(
+    (notification) => notification.type === "chat" && !notification.read_at,
+  ).length;
+}

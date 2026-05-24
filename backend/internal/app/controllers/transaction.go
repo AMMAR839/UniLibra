@@ -10,6 +10,7 @@ import (
 	"unilibra-backend/internal/pkg/models"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm/clause"
 )
 
 type BorrowBookInput struct {
@@ -97,6 +98,11 @@ func RequestBorrow(c *gin.Context) {
 
 type UpdateTransactionStatusInput struct {
 	Status string `json:"status" binding:"required"`
+}
+
+type RateTransactionInput struct {
+	Rating  int    `json:"rating" binding:"required,min=1,max=5"`
+	Comment string `json:"comment"`
 }
 
 func RespondToBorrowRequest(c *gin.Context) {
@@ -260,6 +266,55 @@ func ConfirmReturn(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Transaksi selesai! Buku kembali tersedia.",
 		"data":    transaction,
+	})
+}
+
+func RateCompletedTransaction(c *gin.Context) {
+	transactionID := c.Param("id")
+	var input RateTransactionInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Rating harus bernilai 1 sampai 5."})
+		return
+	}
+
+	userID, _ := c.Get("userID")
+	currentUserID := uint(userID.(float64))
+
+	var transaction models.Transaction
+	if err := config.DB.First(&transaction, transactionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Transaksi tidak ditemukan"})
+		return
+	}
+
+	if transaction.BorrowerID != currentUserID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Hanya peminjam buku ini yang bisa memberi rating."})
+		return
+	}
+
+	if transaction.Status != "COMPLETED" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Rating bisa diberikan setelah transaksi selesai."})
+		return
+	}
+
+	rating := models.BookRating{
+		BookID:        transaction.BookID,
+		UserID:        currentUserID,
+		TransactionID: transaction.ID,
+		Rating:        input.Rating,
+		Comment:       cleanTransactionText(input.Comment, 1000),
+	}
+
+	if err := config.DB.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "transaction_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"rating", "comment", "updated_at"}),
+	}).Create(&rating).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan rating buku."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Rating buku berhasil disimpan.",
+		"data":    rating,
 	})
 }
 

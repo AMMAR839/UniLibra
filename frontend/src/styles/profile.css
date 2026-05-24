@@ -463,6 +463,47 @@
   margin-top: 4px;
 }
 
+.profile-rating-note {
+  border: 1px solid rgba(200, 131, 26, 0.22);
+  border-radius: 10px;
+  background: rgba(200, 131, 26, 0.08);
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+}
+
+.profile-rating-buttons {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.profile-rating-buttons button {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(245, 240, 232, 0.86);
+  color: var(--amber);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+
+.profile-rating-buttons button:hover {
+  background: rgba(200, 131, 26, 0.16);
+  transform: translateY(-1px);
+}
+
 .profile-cover-yellow {
   background: linear-gradient(160deg, #f4c84a, #c9931d);
   color: var(--ink);

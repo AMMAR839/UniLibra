@@ -23,6 +23,11 @@ type RealtimeEnvelope = {
   payload: ChatMessage | Notification | { user_id: number };
 };
 
+type NotificationsResponse = {
+  data: Notification[];
+  unread_count: number;
+};
+
 function Navbar({
   isLoggedIn,
   activePage = "home",
@@ -36,6 +41,7 @@ function Navbar({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [profile, setProfile] = useState<User | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [chatNotice, setChatNotice] = useState("");
   const socketRef = useRef<WebSocket | null>(null);
 
@@ -59,9 +65,12 @@ function Navbar({
 
   useEffect(() => {
     function syncUnreadCount(event: Event) {
-      const unreadCount = (event as CustomEvent<{ unreadCount?: number }>).detail?.unreadCount;
-      if (typeof unreadCount === "number") {
-        setUnreadCount(unreadCount);
+      const detail = (event as CustomEvent<{ unreadCount?: number; chatUnreadCount?: number }>).detail;
+      if (typeof detail?.unreadCount === "number") {
+        setUnreadCount(detail.unreadCount);
+      }
+      if (typeof detail?.chatUnreadCount === "number") {
+        setChatUnreadCount(detail.chatUnreadCount);
       }
     }
 
@@ -76,6 +85,7 @@ function Navbar({
       setMessages([]);
       setProfile(null);
       setUnreadCount(0);
+      setChatUnreadCount(0);
       socketRef.current?.close();
       return;
     }
@@ -92,7 +102,11 @@ function Navbar({
     socket.onmessage = (event) => {
       const envelope = JSON.parse(event.data) as RealtimeEnvelope;
       if (envelope.type === "notification.created") {
+        const notification = envelope.payload as Notification;
         setUnreadCount((current) => current + 1);
+        if (notification.type === "chat") {
+          setChatUnreadCount((current) => current + 1);
+        }
       }
       if (envelope.type === "chat.message") {
         const message = envelope.payload as ChatMessage;
@@ -128,15 +142,20 @@ function Navbar({
   async function loadSessionData() {
     const [profileResponse, notificationResponse] = await Promise.allSettled([
       apiFetch<{ data: User }>("/api/profile"),
-      apiFetch<{ unread_count: number }>("/api/notifications"),
+      apiFetch<NotificationsResponse>("/api/notifications"),
     ]);
     if (profileResponse.status === "fulfilled") {
       setProfile(profileResponse.value.data);
     }
     if (notificationResponse.status === "fulfilled") {
-      setUnreadCount(notificationResponse.value.unread_count);
+      syncNotificationCounts(notificationResponse.value);
     }
     await loadThreads();
+  }
+
+  function syncNotificationCounts(response: NotificationsResponse) {
+    setUnreadCount(response.unread_count);
+    setChatUnreadCount(countUnreadChatNotifications(response.data));
   }
 
   async function loadThreads() {
@@ -158,6 +177,42 @@ function Navbar({
       setIsChatOpen(false);
       onNavigate(path);
     };
+  }
+
+  function toggleChat() {
+    setIsChatOpen((current) => {
+      const next = !current;
+      if (next) {
+        void markChatNotificationsRead();
+      }
+      return next;
+    });
+  }
+
+  async function markChatNotificationsRead() {
+    if (chatUnreadCount <= 0) {
+      return;
+    }
+
+    const clearedCount = chatUnreadCount;
+    setChatUnreadCount(0);
+    setUnreadCount((current) => Math.max(0, current - clearedCount));
+
+    try {
+      await apiFetch("/api/notifications/read-all?type=chat", { method: "PUT" });
+      const response = await apiFetch<NotificationsResponse>("/api/notifications");
+      syncNotificationCounts(response);
+      window.dispatchEvent(
+        new CustomEvent("unilibra:notifications-updated", {
+          detail: {
+            unreadCount: response.unread_count,
+            chatUnreadCount: countUnreadChatNotifications(response.data),
+          },
+        }),
+      );
+    } catch {
+      await loadSessionData();
+    }
   }
 
   async function sendMessage() {
@@ -207,12 +262,12 @@ function Navbar({
             aria-expanded={isChatOpen}
             aria-label="Buka chat"
             className="nav-chat-trigger"
-            onClick={() => setIsChatOpen((current) => !current)}
+            onClick={toggleChat}
             type="button"
           >
             <ChatIcon />
             <span>Chat</span>
-            <strong>{threads.length}</strong>
+            {chatUnreadCount > 0 ? <strong>{chatUnreadCount}</strong> : null}
           </button>
           {isChatOpen ? (
             <div className="nav-chat-popover" role="dialog" aria-label="Chat UniLibra">
@@ -354,6 +409,12 @@ function chatPeer(thread: ChatThread | null, profile: User | null) {
     return null;
   }
   return thread.created_by_id === profile?.id ? thread.recipient : thread.created_by;
+}
+
+function countUnreadChatNotifications(notifications: Notification[]) {
+  return notifications.filter(
+    (notification) => notification.type === "chat" && !notification.read_at,
+  ).length;
 }
 
 function ChatIcon() {

@@ -156,6 +156,7 @@ func GetBookVersions(c *gin.Context) {
 		}
 		books = append(books, book)
 	}
+	attachBookRatings(books)
 	sort.SliceStable(books, func(i, j int) bool {
 		if books[i].RentalPrice == books[j].RentalPrice {
 			return books[i].UpdatedAt.After(books[j].UpdatedAt)
@@ -410,6 +411,44 @@ func degreesToRadians(value float64) float64 {
 	return value * math.Pi / 180
 }
 
+type bookRatingStat struct {
+	BookID        uint
+	AverageRating float64
+	RatingCount   int64
+}
+
+func attachBookRatings(books []models.Book) {
+	if len(books) == 0 {
+		return
+	}
+
+	bookIDs := make([]uint, 0, len(books))
+	for _, book := range books {
+		bookIDs = append(bookIDs, book.ID)
+	}
+
+	var stats []bookRatingStat
+	if err := config.DB.Model(&models.BookRating{}).
+		Select("book_id, AVG(rating) AS average_rating, COUNT(*) AS rating_count").
+		Where("book_id IN ?", bookIDs).
+		Group("book_id").
+		Scan(&stats).Error; err != nil {
+		return
+	}
+
+	statsByBookID := make(map[uint]bookRatingStat, len(stats))
+	for _, stat := range stats {
+		statsByBookID[stat.BookID] = stat
+	}
+
+	for index := range books {
+		if stat, exists := statsByBookID[books[index].ID]; exists {
+			books[index].AverageRating = stat.AverageRating
+			books[index].RatingCount = stat.RatingCount
+		}
+	}
+}
+
 func normalizeBookTitleKey(title string) string {
 	normalized := strings.Map(func(r rune) rune {
 		if unicode.IsLetter(r) || unicode.IsNumber(r) {
@@ -429,6 +468,9 @@ func GetBookByID(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Buku tidak ditemukan di katalog."})
 		return
 	}
+	ratedBooks := []models.Book{book}
+	attachBookRatings(ratedBooks)
+	book = ratedBooks[0]
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Berhasil mengambil detail buku",

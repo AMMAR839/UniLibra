@@ -30,8 +30,8 @@
 .borrow-book-card {
   display: grid;
   grid-template-columns: minmax(230px, 0.78fr) minmax(0, 1fr);
-  gap: 28px;
-  padding: 26px;
+  gap: 34px;
+  padding: 32px;
 }
 
 .borrow-cover {
@@ -121,34 +121,90 @@
 .borrow-meta-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 22px;
 }
 
 .borrow-meta-grid span {
-  min-height: 76px;
+  min-height: 68px;
   display: grid;
   align-content: center;
-  gap: 6px;
-  border: 1px solid rgba(26, 18, 8, 0.12);
-  border-radius: 12px;
-  background: rgba(245, 240, 232, 0.7);
+  gap: 5px;
+  border: 1px solid rgba(26, 18, 8, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 250, 241, 0.72);
   color: var(--ink);
-  font-size: 0.86rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  font-size: 0.84rem;
   font-weight: 800;
-  padding: 12px;
+  line-height: 1.32;
+  padding: 12px 14px;
 }
 
 .borrow-meta-grid small {
   color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .borrow-description {
   color: var(--text-muted);
   line-height: 1.8;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
+}
+
+.borrow-rating-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--border);
+  padding: 16px 0;
+}
+
+.borrow-rating-summary > span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.borrow-rating-summary > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.borrow-rating-summary b {
+  display: inline-flex;
+  gap: 2px;
+  color: rgba(26, 18, 8, 0.2);
+  font-style: normal;
+  letter-spacing: 0;
+}
+
+.borrow-rating-summary i {
+  font-style: normal;
+}
+
+.borrow-rating-summary i.is-filled {
+  color: var(--amber);
+}
+
+.borrow-rating-summary strong {
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.borrow-rating-summary small {
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+.borrow-rating-summary.is-empty strong {
+  color: var(--text-muted);
+  font-size: 0.86rem;
 }
 
 .borrow-owner-row {
@@ -420,6 +476,12 @@
 
   .borrow-price {
     text-align: left;
+  }
+
+  .borrow-rating-summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .borrow-meta-grid {

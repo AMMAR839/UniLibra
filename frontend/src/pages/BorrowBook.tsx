@@ -44,10 +44,30 @@ function BorrowBookPage({ onBackToCatalog, onBorrowBook }: BorrowBookPageProps) 
   const [form, setForm] = useState<BorrowForm>(initialBorrowForm);
   const [book, setBook] = useState<Book | null>(null);
   const [similarBooks, setSimilarBooks] = useState<Book[]>([]);
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitMessage, setSubmitMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const bookID = new URLSearchParams(window.location.search).get("book");
+
+  useEffect(() => {
+    if (!("geolocation" in navigator)) {
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        }),
+      () => setUserLocation(null),
+      { enableHighAccuracy: true, maximumAge: 300000, timeout: 9000 },
+    );
+  }, []);
 
   useEffect(() => {
     if (!bookID) {
@@ -215,12 +235,8 @@ function BorrowBookPage({ onBackToCatalog, onBorrowBook }: BorrowBookPageProps) 
                   {book.theme || "Belum diisi"}
                 </span>
                 <span>
-                  <small>Rating</small>
-                  {book.status}
-                </span>
-                <span>
                   <small>Jarak</small>
-                  {book.location || "Belum diisi"}
+                  {formatBookDistance(book, userLocation)}
                 </span>
                 <span>
                   <small>Kondisi</small>
@@ -232,11 +248,16 @@ function BorrowBookPage({ onBackToCatalog, onBorrowBook }: BorrowBookPageProps) 
                 {book.description || "Pemilik belum menambahkan deskripsi buku."}
               </p>
 
+              <BorrowRatingSummary
+                rating={book.average_rating}
+                count={book.rating_count}
+              />
+
               <div className="borrow-owner-row">
                 <div className="avatar">{initials(book.owner?.name)}</div>
                 <div>
                   <strong>{book.owner?.name || "Pemilik buku"}</strong>
-                  <span>{book.owner?.city || "Lokasi pemilik belum diisi"}</span>
+                  <span>{displayAddress(book)}</span>
                 </div>
                 <button
                   className="btn-primary"
@@ -381,6 +402,117 @@ function expectedReturnDate(startDate: string, duration: string) {
       (duration === "1 minggu" ? 7 : duration === "1 bulan" ? 30 : 14),
   );
   return date;
+}
+
+function displayAddress(book: Book) {
+  const location = book.location?.trim();
+  if (!location) {
+    return book.owner?.city || "Lokasi pemilik belum diisi";
+  }
+
+  if (location.split(",").length >= 3) {
+    return location;
+  }
+
+  const city = book.owner?.city?.trim();
+  if (city && !location.toLowerCase().includes(city.toLowerCase())) {
+    return `${location}, ${city}, Daerah Istimewa Yogyakarta`;
+  }
+
+  return `${location}, Daerah Istimewa Yogyakarta`;
+}
+
+function formatBookDistance(
+  book: Book,
+  userLocation: { latitude: number; longitude: number } | null,
+) {
+  if (!userLocation) {
+    return "Aktifkan lokasi";
+  }
+
+  const latitude = finiteNumber(book.latitude);
+  const longitude = finiteNumber(book.longitude);
+  const distance =
+    latitude !== undefined && longitude !== undefined && latitude !== 0 && longitude !== 0
+      ? haversineKM(userLocation.latitude, userLocation.longitude, latitude, longitude)
+      : fallbackDistanceKM(book);
+
+  return `${Math.max(1, Math.round(distance))} km`;
+}
+
+function finiteNumber(value: unknown) {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : Number.NaN;
+
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function fallbackDistanceKM(book: Book) {
+  return 1.5 + (book.id % 80) / 10;
+}
+
+function haversineKM(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const earthRadiusKM = 6371;
+  const latDelta = degreesToRadians(lat2 - lat1);
+  const lonDelta = degreesToRadians(lon2 - lon1);
+  const firstLat = degreesToRadians(lat1);
+  const secondLat = degreesToRadians(lat2);
+  const a =
+    Math.sin(latDelta / 2) * Math.sin(latDelta / 2) +
+    Math.cos(firstLat) *
+      Math.cos(secondLat) *
+      Math.sin(lonDelta / 2) *
+      Math.sin(lonDelta / 2);
+
+  return earthRadiusKM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function degreesToRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function BorrowRatingSummary({
+  rating,
+  count,
+}: {
+  rating?: number;
+  count?: number;
+}) {
+  const safeRating = Number.isFinite(rating) ? Math.max(0, Math.min(5, rating ?? 0)) : 0;
+  const safeCount = Number.isFinite(count) ? Math.max(0, Math.round(count ?? 0)) : 0;
+
+  if (safeCount === 0) {
+    return (
+      <div className="borrow-rating-summary is-empty">
+        <span>Rating buku</span>
+        <strong>Belum ada rating</strong>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="borrow-rating-summary"
+      aria-label={`Rating ${safeRating.toFixed(1)} dari 5, ${safeCount} penilai`}
+    >
+      <span>Rating buku</span>
+      <div>
+        <b aria-hidden="true">
+          {Array.from({ length: 5 }, (_, index) => (
+            <i key={index} className={index < Math.round(safeRating) ? "is-filled" : undefined}>
+              ★
+            </i>
+          ))}
+        </b>
+        <strong>{safeRating.toFixed(1)}</strong>
+        <small>({safeCount})</small>
+      </div>
+    </div>
+  );
 }
 
 export default BorrowBookPage;

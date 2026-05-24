@@ -28,6 +28,8 @@ export type Book = {
   longitude?: number;
   status: string;
   cover_url?: string;
+  average_rating?: number;
+  rating_count?: number;
   created_at: string;
   updated_at: string;
 };

@@ -42,6 +42,8 @@ type Book struct {
 	Status      string    `gorm:"default:'available'" json:"status"`
 	CoverURL    string    `json:"cover_url"`
 	Embedding   *string   `gorm:"type:vector(384)" json:"-"`
+	AverageRating float64 `gorm:"-" json:"average_rating"`
+	RatingCount   int64   `gorm:"-" json:"rating_count"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
@@ -61,6 +63,20 @@ type Transaction struct {
 	TotalPrice         int       `gorm:"not null" json:"total_price"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
+}
+
+type BookRating struct {
+	ID            uint        `gorm:"primaryKey" json:"id"`
+	BookID        uint        `gorm:"not null;index" json:"book_id"`
+	Book          Book        `gorm:"foreignKey:BookID" json:"book,omitempty"`
+	UserID        uint        `gorm:"not null;index" json:"user_id"`
+	User          User        `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	TransactionID uint        `gorm:"not null;uniqueIndex" json:"transaction_id"`
+	Transaction   Transaction `gorm:"foreignKey:TransactionID" json:"transaction,omitempty"`
+	Rating        int         `gorm:"not null" json:"rating"`
+	Comment       string      `gorm:"type:text" json:"comment"`
+	CreatedAt     time.Time   `json:"created_at"`
+	UpdatedAt     time.Time   `json:"updated_at"`
 }
 
 type Notification struct {

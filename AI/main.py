@@ -156,25 +156,27 @@ def book_line(book):
 def build_chat_fallback_answer(message, books, has_location):
     if not books:
         return (
-            "Aku belum menemukan buku yang cocok di katalog tersedia. "
+            "Aku belum menemukan buku yang cocok.\n"
             "Coba sebutkan judul, penulis, genre, atau area yang lebih spesifik."
         )
 
-    nearby_text = " yang paling dekat dari lokasimu" if has_location else ""
     recommendations = []
-    for book in books[:3]:
+    for index, book in enumerate(books[:3], 1):
         distance = ""
         if book.get("distance_km") is not None:
-            distance = f" sekitar {book['distance_km']} km dari kamu,"
+            distance = f" - sekitar {book['distance_km']} km"
         recommendations.append(
-            f"{book['title']} oleh {book['author']} tersedia di {book.get('location') or 'lokasi belum diisi'},{distance} "
-            f"dengan biaya pinjam Rp {int(book.get('rental_price') or 0):,}/minggu.".replace(",", ".")
+            f"{index}. {book['title']} - {book['author']}\n"
+            f"   {book.get('location') or 'Lokasi belum diisi'}{distance}\n"
+            f"   Rp {int(book.get('rental_price') or 0):,}/minggu".replace(",", ".")
         )
 
     return (
-        f"Aku menemukan {len(books)} buku tersedia{nearby_text}. "
-        + " ".join(recommendations)
-        + " Kamu bisa membuka salah satu rekomendasi itu untuk lanjut ke proses peminjaman."
+        f"Aku menemukan {len(books)} buku yang cocok"
+        + (" dan dekat dari lokasimu." if has_location else ".")
+        + "\n\n"
+        + "\n\n".join(recommendations)
+        + "\n\nPilih salah satu kartu buku di bawah untuk lanjut meminjam."
     )
 
 def require_internal_token(token):
@@ -327,7 +329,12 @@ def chatbot_unilibra(req: ChatRequest):
         
         Pertanyaan Pengguna: {req.pesan}
         
-        Jawablah dengan bahasa Indonesia yang natural, informatif, dan tawarkan apakah mereka ingin meminjam buku tersebut.
+        Gaya jawaban:
+        - Bahasa Indonesia singkat, rapi, dan langsung membantu.
+        - Jangan pakai markdown tebal, emoji, heading panjang, atau sapaan berlebihan.
+        - Maksimal 4 poin rekomendasi.
+        - Format tiap rekomendasi: Judul - Penulis, lokasi/jarak jika ada, harga per minggu.
+        - Akhiri dengan satu kalimat ajakan memilih kartu buku di bawah.
         """
 
         # Langkah 3: Generation

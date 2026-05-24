@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"unilibra-backend/internal/pkg/config"
@@ -52,9 +53,14 @@ func ReadNotification(c *gin.Context) {
 
 func ReadAllNotifications(c *gin.Context) {
 	now := time.Now()
-	if err := config.DB.Model(&models.Notification{}).
-		Where("user_id = ? AND read_at IS NULL", currentUserID(c)).
-		Update("read_at", &now).Error; err != nil {
+	query := config.DB.Model(&models.Notification{}).
+		Where("user_id = ? AND read_at IS NULL", currentUserID(c))
+
+	if notificationType := strings.TrimSpace(c.Query("type")); notificationType != "" {
+		query = query.Where("type = ?", notificationType)
+	}
+
+	if err := query.Update("read_at", &now).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menandai semua notifikasi."})
 		return
 	}

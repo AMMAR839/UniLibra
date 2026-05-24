@@ -36,6 +36,7 @@ func ConnectDatabase() {
 		&models.User{},
 		&models.Book{},
 		&models.Transaction{},
+		&models.BookRating{},
 		&models.Notification{},
 		&models.ChatThread{},
 		&models.ChatMessage{},

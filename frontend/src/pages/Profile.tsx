@@ -204,6 +204,20 @@ function BorrowingPanel({
   onBorrowBook: () => void;
   onReturn: (id: number) => void;
 }) {
+  const [ratingMessage, setRatingMessage] = useState("");
+
+  async function submitRating(transactionID: number, rating: number) {
+    try {
+      await apiFetch(`/api/transactions/${transactionID}/rating`, {
+        method: "POST",
+        body: JSON.stringify({ rating }),
+      });
+      setRatingMessage(`Rating ${rating} bintang berhasil disimpan.`);
+    } catch (error) {
+      setRatingMessage(error instanceof Error ? error.message : "Rating belum bisa disimpan.");
+    }
+  }
+
   return (
     <>
       <div className="profile-panel-head">
@@ -213,6 +227,7 @@ function BorrowingPanel({
         </div>
         <strong>{borrowings.length} riwayat</strong>
       </div>
+      {ratingMessage ? <div className="profile-rating-note">{ratingMessage}</div> : null}
       {borrowings.length === 0 ? (
         <button className="btn-primary" type="button" onClick={onBorrowBook}>
           Cari Buku untuk Dipinjam
@@ -233,6 +248,8 @@ function BorrowingPanel({
                 <button type="button" onClick={() => onReturn(transaction.id)}>
                   Ajukan Kembali
                 </button>
+              ) : transaction.status === "COMPLETED" ? (
+                <RatingButtons onRate={(rating) => void submitRating(transaction.id, rating)} />
               ) : (
                 <strong>{formatDate(transaction.expected_return_date)}</strong>
               )}
@@ -241,6 +258,23 @@ function BorrowingPanel({
         </div>
       )}
     </>
+  );
+}
+
+function RatingButtons({ onRate }: { onRate: (rating: number) => void }) {
+  return (
+    <div className="profile-rating-buttons" aria-label="Beri rating buku">
+      {[1, 2, 3, 4, 5].map((rating) => (
+        <button
+          aria-label={`${rating} bintang`}
+          key={rating}
+          onClick={() => onRate(rating)}
+          type="button"
+        >
+          ★
+        </button>
+      ))}
+    </div>
   );
 }
 

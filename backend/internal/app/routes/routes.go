@@ -63,6 +63,7 @@ func SetupRouter() *gin.Engine {
 			protected.PUT("/transactions/:id/respond", controllers.RespondToBorrowRequest)
 			protected.PUT("/transactions/:id/return", controllers.InitiateReturn)
 			protected.PUT("/transactions/:id/complete", controllers.ConfirmReturn)
+			protected.POST("/transactions/:id/rating", controllers.RateCompletedTransaction)
 
 			admin := protected.Group("/admin")
 			admin.Use(middlewares.AdminRequired())

@@ -27,13 +27,6 @@ type Coordinates = {
   longitude: number;
 };
 
-const suggestions = [
-  "Buku Tere Liye masih ada?",
-  "Buku yang cocok dan dekat dengan saya",
-  "Rekomendasi novel Indonesia yang ringan",
-  "Ada buku pemrograman yang tersedia?",
-];
-
 function AIPage({ onBorrowBook }: AIPageProps) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -117,26 +110,17 @@ function AIPage({ onBorrowBook }: AIPageProps) {
   return (
     <main className={`ai-page ${hasConversation ? "has-conversation" : ""}`}>
       <section className="ai-stage" aria-label="AI UniLibra">
-        <div className="ai-brand">
-          <span className="ai-brand-mark">
-            <img alt="" src="/robot-assistant.png" />
-          </span>
-          <span>AI UniLibra</span>
-        </div>
-
-        <div className="ai-center">
-          <h1>Tanyakan buku apa saja.</h1>
-          <p>
-            Cari buku tersedia, tanya penulis, minta rekomendasi, atau aktifkan lokasi
-            untuk menemukan buku yang paling dekat.
-          </p>
-        </div>
+        {!hasConversation ? (
+          <div className="ai-empty-intro">
+            <h1>Butuh rekomendasi buku hari ini?</h1>
+          </div>
+        ) : null}
 
         {hasConversation ? (
           <div className="ai-conversation" aria-live="polite">
             {messages.map((item) => (
               <article className={`ai-message is-${item.role}`} key={item.id}>
-                <p>{item.text}</p>
+                <p>{cleanAIText(item.text)}</p>
                 {item.books?.length ? (
                   <div className="ai-result-list">
                     {item.books.map((book) => (
@@ -165,16 +149,14 @@ function AIPage({ onBorrowBook }: AIPageProps) {
                 ) : null}
               </article>
             ))}
+            {isSending ? (
+              <article className="ai-message is-assistant is-loading" aria-label="AI sedang memproses jawaban">
+                <span className="ai-spinner" aria-hidden="true"></span>
+                <p>AI UniLibra sedang mencari jawaban terbaik...</p>
+              </article>
+            ) : null}
           </div>
         ) : null}
-
-        <div className="ai-suggestions" aria-label="Contoh pertanyaan AI">
-          {suggestions.map((suggestion) => (
-            <button key={suggestion} onClick={() => void askAI(suggestion)} type="button">
-              {suggestion}
-            </button>
-          ))}
-        </div>
 
         {notice ? <p className="ai-notice">{notice}</p> : null}
 
@@ -207,12 +189,21 @@ function AIPage({ onBorrowBook }: AIPageProps) {
             onClick={() => void askAI()}
             type="button"
           >
-            <SendIcon />
+            {isSending ? <span className="ai-send-spinner" aria-hidden="true"></span> : <SendIcon />}
           </button>
         </div>
       </section>
     </main>
   );
+}
+
+function cleanAIText(value: string) {
+  return value
+    .replace(/\*\*/g, "")
+    .replace(/[📚✨💻✅🔍🤖]/g, "")
+    .replace(/\s+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function LocationIcon() {
