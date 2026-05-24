@@ -48,11 +48,6 @@ function NotificationPage() {
     await loadNotifications();
   }
 
-  async function markAllRead() {
-    await apiFetch("/api/notifications/read-all", { method: "PUT" });
-    await loadNotifications();
-  }
-
   return (
     <main className="notification-page">
       <section className="notification-shell">
@@ -77,8 +72,7 @@ function NotificationPage() {
           </div>
         </header>
 
-        <section className="notification-layout" aria-label="Daftar notifikasi">
-          <section className="notification-stream">
+        <section className="notification-stream" aria-label="Daftar notifikasi">
             <div className="notification-toolbar">
               <div className="notification-toolbar-copy">
                 <span>Timeline</span>
@@ -137,19 +131,6 @@ function NotificationPage() {
                 </div>
               ) : null}
             </div>
-          </section>
-
-          <aside className="notification-side" aria-label="Ringkasan notifikasi">
-            <span>Aksi cepat</span>
-            <strong>Rapikan inbox notifikasimu.</strong>
-            <p>
-              Badge pada navbar akan ikut turun setelah notifikasi ditandai
-              selesai dibaca.
-            </p>
-            <button type="button" onClick={() => void markAllRead()}>
-              Tandai Semua Dibaca
-            </button>
-          </aside>
         </section>
       </section>
     </main>

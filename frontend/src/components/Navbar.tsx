@@ -427,8 +427,18 @@ function ChatIcon() {
 
 function BellIcon() {
   return (
-    <svg aria-hidden="true" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 17H9m8-2V10a5 5 0 0 0-10 0v5l-2 2h14l-2-2Zm-3 4a2 2 0 0 1-4 0" />
+    <svg aria-hidden="true" width="19" height="19" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M18.7491 9.70957V9.00497C18.7491 5.13623 15.7274 2 12 2C8.27256 2 5.25087 5.13623 5.25087 9.00497V9.70957C5.25087 10.5552 5.00972 11.3818 4.5578 12.0854L3.45036 13.8095C2.43882 15.3843 3.21105 17.5249 4.97036 18.0229C9.57274 19.3257 14.4273 19.3257 19.0296 18.0229C20.789 17.5249 21.5612 15.3843 20.5496 13.8095L19.4422 12.0854C18.9903 11.3818 18.7491 10.5552 18.7491 9.70957Z"
+        stroke="currentColor"
+        strokeWidth="1.65"
+      />
+      <path
+        d="M7.5 19C8.15503 20.7478 9.92246 22 12 22C14.0775 22 15.845 20.7478 16.5 19"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.65"
+      />
     </svg>
   );
 }

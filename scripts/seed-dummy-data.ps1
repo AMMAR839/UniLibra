@@ -291,6 +291,20 @@ CREATE TEMP TABLE seed_dummy_threads AS
 DELETE FROM chat_messages WHERE thread_id IN (SELECT id FROM seed_dummy_threads);
 DELETE FROM chat_threads WHERE id IN (SELECT id FROM seed_dummy_threads);
 DELETE FROM notifications WHERE user_id IN (SELECT id FROM seed_dummy_users);
+DO `$`$
+BEGIN
+  IF to_regclass('public.book_ratings') IS NOT NULL THEN
+    DELETE FROM book_ratings
+      WHERE user_id IN (SELECT id FROM seed_dummy_users)
+         OR book_id IN (SELECT id FROM seed_dummy_books)
+         OR transaction_id IN (
+           SELECT id FROM transactions
+           WHERE borrower_id IN (SELECT id FROM seed_dummy_users)
+              OR book_id IN (SELECT id FROM seed_dummy_books)
+         );
+  END IF;
+END
+`$`$;
 DELETE FROM transactions
   WHERE borrower_id IN (SELECT id FROM seed_dummy_users)
      OR book_id IN (SELECT id FROM seed_dummy_books);
@@ -354,6 +368,20 @@ function Complete-Borrow {
   Invoke-Json -Method "Put" -Url "$ApiUrl/api/transactions/$TransactionId/complete" -Token $Owner.token -Body $null | Out-Null
 }
 
+function Rate-Borrow {
+  param(
+    [hashtable]$Borrower,
+    [int]$TransactionId,
+    [int]$Rating,
+    [string]$Comment = ""
+  )
+
+  Invoke-Json -Method "Post" -Url "$ApiUrl/api/transactions/$TransactionId/rating" -Token $Borrower.token -Body @{
+    rating = $Rating
+    comment = $Comment
+  } | Out-Null
+}
+
 function New-Chat {
   param(
     [hashtable]$Sender,
@@ -390,6 +418,12 @@ $dewi = Register-User -Name "Dewi Laras" -Email "dewi@unilibra.local" -City "Pog
 $farhan = Register-User -Name "Farhan Aziz" -Email "farhan@unilibra.local" -City "Kota Yogyakarta"
 $nadia = Register-User -Name "Nadia Kirana" -Email "nadia@unilibra.local" -City "Bantul"
 $yusuf = Register-User -Name "Yusuf Hidayat" -Email "yusuf@unilibra.local" -City "UGM"
+$lara = Register-User -Name "Lara Maheswari" -Email "lara.demo@unilibra.local" -City "Kotabaru"
+$kevin = Register-User -Name "Kevin Arya" -Email "kevin.demo@unilibra.local" -City "Babarsari"
+$mira = Register-User -Name "Mira Anindya" -Email "mira.demo@unilibra.local" -City "Maguwoharjo"
+$adit = Register-User -Name "Adit Wicaksono" -Email "adit.demo@unilibra.local" -City "Jakal"
+$intan = Register-User -Name "Intan Permata" -Email "intan.demo@unilibra.local" -City "Demangan"
+$galih = Register-User -Name "Galih Pradana" -Email "galih.demo@unilibra.local" -City "Godean"
 
 $covers = @(
   Get-OpenLibraryCover -Title "Filosofi Teras" -Author "Henry Manampiring" -FallbackPath (New-CoverImage -Filename "filosofi-teras.png" -Title "Filosofi Teras" -Author "Henry Manampiring" -ColorA "#F2C14E" -ColorB "#B8651B")
@@ -490,6 +524,55 @@ $bookSeeds += @(
   @{ owner = $farhan; cover = $covers[23]; title = "Harry Potter"; author = "J.K. Rowling"; category = "Novel"; theme = "Adventure"; condition = "Cukup baik"; location = "Kota Yogyakarta"; max_duration = "2 minggu"; handover = "Kurir lokal"; rental_price = 7500; latitude = -7.797; longitude = 110.370; description = "Ada tanda pakai di cover, isi tetap nyaman dibaca." }
 )
 
+$bookSeeds += @(
+  @{ owner = $lara; cover = $covers[11]; title = "Sprint"; author = "Jake Knapp"; category = "Bisnis"; theme = "Produk"; condition = "Baik"; location = "Kotabaru, Yogyakarta"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 10500; latitude = -7.783; longitude = 110.373; description = "Panduan design sprint untuk memvalidasi ide produk dalam waktu singkat." }
+  @{ owner = $kevin; cover = $covers[8]; title = "Python Crash Course"; author = "Eric Matthes"; category = "Teknologi"; theme = "Pemrograman"; condition = "Seperti baru"; location = "Babarsari"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 14000; latitude = -7.773; longitude = 110.414; description = "Buku pemrograman Python untuk pemula dengan proyek praktis dan latihan dasar." }
+  @{ owner = $mira; cover = $covers[12]; title = "Sebuah Seni untuk Bersikap Bodo Amat"; author = "Mark Manson"; category = "Pengembangan diri"; theme = "Mindset"; condition = "Baik"; location = "Maguwoharjo"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 8000; latitude = -7.754; longitude = 110.433; description = "Buku populer tentang prioritas hidup, pilihan, dan cara memandang masalah." }
+  @{ owner = $adit; cover = $covers[6]; title = "The Psychology of Money"; author = "Morgan Housel"; category = "Bisnis"; theme = "Keuangan"; condition = "Seperti baru"; location = "Jalan Kaliurang"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 9500; latitude = -7.743; longitude = 110.380; description = "Versi bahasa Inggris dari buku perilaku finansial yang populer." }
+  @{ owner = $intan; cover = $covers[13]; title = "Pulang"; author = "Tere Liye"; category = "Novel"; theme = "Drama"; condition = "Baik"; location = "Demangan"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 7500; latitude = -7.783; longitude = 110.392; description = "Novel Tere Liye tentang keluarga, pilihan hidup, dan perjalanan pulang." }
+  @{ owner = $galih; cover = $covers[17]; title = "Homo Deus"; author = "Yuval Noah Harari"; category = "Nonfiksi"; theme = "Sains populer"; condition = "Cukup baik"; location = "Godean"; max_duration = "1 bulan"; handover = "Kurir lokal"; rental_price = 9500; latitude = -7.767; longitude = 110.293; description = "Lanjutan diskusi sejarah manusia, teknologi, data, dan masa depan masyarakat." }
+  @{ owner = $lara; cover = $covers[20]; title = "JavaScript: The Good Parts"; author = "Douglas Crockford"; category = "Teknologi"; theme = "Pemrograman"; condition = "Baik"; location = "Kotabaru"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 11000; latitude = -7.783; longitude = 110.373; description = "Buku ringkas tentang bagian penting JavaScript dan gaya penulisan yang lebih bersih." }
+  @{ owner = $kevin; cover = $covers[15]; title = "SQL Antipatterns"; author = "Bill Karwin"; category = "Teknologi"; theme = "Database"; condition = "Baik"; location = "Babarsari"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 12500; latitude = -7.773; longitude = 110.414; description = "Referensi praktis untuk menghindari pola desain database yang sering bermasalah." }
+  @{ owner = $mira; cover = $covers[2]; title = "Ronggeng Dukuh Paruk"; author = "Ahmad Tohari"; category = "Sastra"; theme = "Klasik"; condition = "Baik"; location = "Maguwoharjo"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 7000; latitude = -7.754; longitude = 110.433; description = "Novel sastra Indonesia tentang tradisi, politik, dan perubahan sosial." }
+  @{ owner = $adit; cover = $covers[7]; title = "Amba"; author = "Laksmi Pamuntjak"; category = "Sastra"; theme = "Sejarah"; condition = "Seperti baru"; location = "Jalan Kaliurang"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 8500; latitude = -7.743; longitude = 110.380; description = "Novel sejarah Indonesia dengan narasi keluarga dan ingatan masa lalu." }
+  @{ owner = $intan; cover = $covers[0]; title = "Man's Search for Meaning"; author = "Viktor E. Frankl"; category = "Pengembangan diri"; theme = "Psikologi"; condition = "Baik"; location = "Demangan"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 8500; latitude = -7.783; longitude = 110.392; description = "Buku psikologi klasik tentang makna hidup, ketahanan, dan pengalaman manusia." }
+  @{ owner = $galih; cover = $covers[10]; title = "Zero to One"; author = "Peter Thiel"; category = "Bisnis"; theme = "Startup"; condition = "Baik"; location = "Godean"; max_duration = "2 minggu"; handover = "Kurir lokal"; rental_price = 9000; latitude = -7.767; longitude = 110.293; description = "Buku startup tentang membangun sesuatu yang benar-benar baru dan bernilai." }
+  @{ owner = $lara; cover = $covers[22]; title = "Matahari"; author = "Tere Liye"; category = "Novel"; theme = "Fantasi"; condition = "Baik"; location = "Kotabaru"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 8000; latitude = -7.783; longitude = 110.373; description = "Lanjutan seri fantasi Tere Liye dengan petualangan dunia paralel." }
+  @{ owner = $kevin; cover = $covers[22]; title = "Matahari"; author = "Tere Liye"; category = "Novel"; theme = "Adventure"; condition = "Cukup baik"; location = "Babarsari"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 6500; latitude = -7.773; longitude = 110.414; description = "Edisi terpakai dengan isi lengkap, cocok untuk melanjutkan seri Bulan." }
+  @{ owner = $mira; cover = $covers[1]; title = "Atomic Habits"; author = "James Clear"; category = "Pengembangan diri"; theme = "Produktivitas"; condition = "Seperti baru"; location = "Maguwoharjo"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 10000; latitude = -7.754; longitude = 110.433; description = "Kondisi sangat rapi untuk pembaca yang ingin membangun kebiasaan baru." }
+  @{ owner = $adit; cover = $covers[5]; title = "Clean Code"; author = "Robert C. Martin"; category = "Teknologi"; theme = "Pemrograman"; condition = "Baik"; location = "Jalan Kaliurang"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 14500; latitude = -7.743; longitude = 110.380; description = "Edisi rapi untuk belajar prinsip clean code dan refactoring dasar." }
+)
+
+$variantPalettes = @(
+  @("#F2C14E", "#B8651B"),
+  @("#2F6F73", "#172A3A"),
+  @("#7B2CBF", "#240046"),
+  @("#E76F51", "#6D2E46"),
+  @("#4361EE", "#03045E"),
+  @("#A98467", "#4E342E"),
+  @("#2A9D8F", "#1B4332"),
+  @("#9D0208", "#370617")
+)
+
+$titleOccurrences = @{}
+foreach ($seed in $bookSeeds) {
+  $titleKey = ConvertTo-Slug -Value $seed.title
+  if (-not $titleOccurrences.ContainsKey($titleKey)) {
+    $titleOccurrences[$titleKey] = 0
+  }
+  $titleOccurrences[$titleKey]++
+
+  if ($titleOccurrences[$titleKey] -gt 1) {
+    $palette = $variantPalettes[($titleOccurrences[$titleKey] - 2) % $variantPalettes.Count]
+    $seed.cover = New-CoverImage `
+      -Filename "$titleKey-owner-$($titleOccurrences[$titleKey]).png" `
+      -Title $seed.title `
+      -Author $seed.author `
+      -ColorA $palette[0] `
+      -ColorB $palette[1]
+  }
+}
+
 $createdBooks = @()
 foreach ($seed in $bookSeeds) {
   $createdBooks += New-Book -Owner $seed.owner -Book $seed
@@ -503,6 +586,63 @@ $completed = Request-Borrow -Borrower $ammar -BookId ([int]$createdBooks[4].id) 
 Respond-Borrow -Owner $rania -TransactionId ([int]$completed.data.id) -Status "ACCEPTED"
 Return-Borrow -Borrower $ammar -TransactionId ([int]$completed.data.id)
 Complete-Borrow -Owner $rania -TransactionId ([int]$completed.data.id)
+Rate-Borrow -Borrower $ammar -TransactionId ([int]$completed.data.id) -Rating 5 -Comment "Bukunya rapi dan pemilik responsif."
+
+$transactionPlans = @(
+  @{ borrower = $salsa; owner = $rania; bookIndex = 5; start = "2026-04-08"; days = 14; rating = 5; comment = "Clean Code masih enak dibaca dan cover aman." }
+  @{ borrower = $bima; owner = $nicholas; bookIndex = 6; start = "2026-04-10"; days = 14; rating = 4; comment = "Isi lengkap, cocok untuk bacaan finansial." }
+  @{ borrower = $dewi; owner = $rania; bookIndex = 7; start = "2026-04-12"; days = 14; rating = 5; comment = "Novel sangat rapi, transaksi lancar." }
+  @{ borrower = $farhan; owner = $nicholas; bookIndex = 8; start = "2026-04-13"; days = 21; rating = 4; comment = "Buku data science lengkap, beberapa halaman ada tanda pakai." }
+  @{ borrower = $nadia; owner = $nicholas; bookIndex = 9; start = "2026-04-15"; days = 14; rating = 5; comment = "Kondisi seperti baru." }
+  @{ borrower = $yusuf; owner = $rania; bookIndex = 10; start = "2026-04-16"; days = 14; rating = 4; comment = "Buku startup membantu untuk tugas produk." }
+  @{ borrower = $lara; owner = $rania; bookIndex = 11; start = "2026-04-17"; days = 21; rating = 5; comment = "Design Thinking sangat bersih." }
+  @{ borrower = $kevin; owner = $nicholas; bookIndex = 12; start = "2026-04-18"; days = 14; rating = 4; comment = "Buku inspiratif, peminjaman mudah." }
+  @{ borrower = $mira; owner = $rania; bookIndex = 13; start = "2026-04-19"; days = 14; rating = 5; comment = "Cantik Itu Luka sampai dalam kondisi bagus." }
+  @{ borrower = $adit; owner = $nicholas; bookIndex = 14; start = "2026-04-20"; days = 21; rating = 4; comment = "Kalkulusnya membantu untuk latihan." }
+  @{ borrower = $intan; owner = $nicholas; bookIndex = 15; start = "2026-04-21"; days = 14; rating = 5; comment = "Database System Concepts lengkap dan bersih." }
+  @{ borrower = $galih; owner = $rania; bookIndex = 16; start = "2026-04-22"; days = 14; rating = 5; comment = "The Pragmatic Programmer sangat rapi." }
+  @{ borrower = $ammar; owner = $rania; bookIndex = 17; start = "2026-04-23"; days = 21; rating = 4; comment = "Sapiens nyaman dibaca." }
+  @{ borrower = $salsa; owner = $nicholas; bookIndex = 18; start = "2026-04-24"; days = 14; rating = 4; comment = "Rich Dad Poor Dad cukup bagus." }
+  @{ borrower = $bima; owner = $nicholas; bookIndex = 19; start = "2026-04-25"; days = 14; rating = 3; comment = "Ada catatan, tapi masih berguna." }
+  @{ borrower = $dewi; owner = $rania; bookIndex = 20; start = "2026-04-26"; days = 21; rating = 5; comment = "Eloquent JavaScript bagus untuk referensi." }
+  @{ borrower = $farhan; owner = $nicholas; bookIndex = 21; start = "2026-04-27"; days = 14; rating = 4; comment = "Dilan masih layak baca." }
+  @{ borrower = $nadia; owner = $salsa; bookIndex = 24; start = "2026-04-28"; days = 14; rating = 5; comment = "Bulan edisi ini bersih." }
+  @{ borrower = $yusuf; owner = $bima; bookIndex = 25; start = "2026-04-29"; days = 14; rating = 4; comment = "Harga murah dan kondisi cukup." }
+  @{ borrower = $lara; owner = $dewi; bookIndex = 26; start = "2026-05-01"; days = 14; rating = 5; comment = "Pemilik ramah, buku seperti baru." }
+  @{ borrower = $kevin; owner = $farhan; bookIndex = 27; start = "2026-05-02"; days = 14; rating = 4; comment = "Laskar Pelangi cocok untuk tugas literasi." }
+  @{ borrower = $mira; owner = $nadia; bookIndex = 28; start = "2026-05-03"; days = 21; rating = 5; comment = "Buku rapi dan mudah diambil." }
+  @{ borrower = $adit; owner = $yusuf; bookIndex = 29; start = "2026-05-04"; days = 14; rating = 4; comment = "Atomic Habits membantu untuk habit tracking." }
+  @{ borrower = $intan; owner = $dewi; bookIndex = 30; start = "2026-05-05"; days = 14; rating = 3; comment = "Ada stabilo, tapi masih nyaman." }
+  @{ borrower = $galih; owner = $salsa; bookIndex = 31; start = "2026-05-06"; days = 14; rating = 5; comment = "Clean Code seperti baru." }
+  @{ borrower = $ammar; owner = $bima; bookIndex = 32; start = "2026-05-07"; days = 14; rating = 4; comment = "Cukup baik untuk belajar refactoring." }
+  @{ borrower = $salsa; owner = $farhan; bookIndex = 33; start = "2026-05-08"; days = 21; rating = 5; comment = "Database lengkap dan kondisi bagus." }
+  @{ borrower = $bima; owner = $yusuf; bookIndex = 34; start = "2026-05-09"; days = 14; rating = 4; comment = "Ada catatan kuliah yang membantu." }
+)
+
+foreach ($plan in $transactionPlans) {
+  $transaction = Request-Borrow `
+    -Borrower $plan.borrower `
+    -BookId ([int]$createdBooks[$plan.bookIndex].id) `
+    -StartDate $plan.start `
+    -Days ([int]$plan.days) `
+    -Handover "Titik temu publik" `
+    -Location "Area kampus Yogyakarta" `
+    -Note "Seed riwayat peminjaman untuk demo katalog dan rating."
+  Respond-Borrow -Owner $plan.owner -TransactionId ([int]$transaction.data.id) -Status "ACCEPTED"
+  Return-Borrow -Borrower $plan.borrower -TransactionId ([int]$transaction.data.id)
+  Complete-Borrow -Owner $plan.owner -TransactionId ([int]$transaction.data.id)
+  Rate-Borrow -Borrower $plan.borrower -TransactionId ([int]$transaction.data.id) -Rating ([int]$plan.rating) -Comment $plan.comment
+}
+
+$returnPending = Request-Borrow -Borrower $kevin -BookId ([int]$createdBooks[35].id) -StartDate "2026-05-15" -Days 14 -Handover "Area kampus" -Location "Perpustakaan Fakultas Teknik" -Note "Sudah selesai dibaca, siap dikembalikan."
+Respond-Borrow -Owner $nadia -TransactionId ([int]$returnPending.data.id) -Status "ACCEPTED"
+Return-Borrow -Borrower $kevin -TransactionId ([int]$returnPending.data.id)
+
+$accepted2 = Request-Borrow -Borrower $mira -BookId ([int]$createdBooks[36].id) -StartDate "2026-05-18" -Days 14 -Handover "Titik temu publik" -Location "Kafe dekat kampus" -Note "Masih saya pakai untuk kelas minggu ini."
+Respond-Borrow -Owner $farhan -TransactionId ([int]$accepted2.data.id) -Status "ACCEPTED"
+
+$pending2 = Request-Borrow -Borrower $intan -BookId ([int]$createdBooks[37].id) -StartDate "2026-05-25" -Days 14 -Handover "Area kampus" -Location "Demangan" -Note "Boleh pinjam untuk dua minggu?"
+$pending3 = Request-Borrow -Borrower $galih -BookId ([int]$createdBooks[38].id) -StartDate "2026-05-26" -Days 21 -Handover "Kurir lokal" -Location "Godean" -Note "Untuk referensi tugas akhir."
 
 New-Chat -Sender $ammar -ParticipantId ([int]$nicholas.id) -BookId ([int]$createdBooks[1].id) -Messages @(
   "Halo kak, Atomic Habits masih bisa dipinjam minggu ini?",
@@ -521,9 +661,11 @@ Write-Host "  Admin    : admin@unilibra.local / $internalPassword"
 Write-Host "  Owner 1  : nicholas@unilibra.local / $internalPassword"
 Write-Host "  Owner 2  : rania@unilibra.local / $internalPassword"
 Write-Host "  Peminjam : ammar@unilibra.local / $internalPassword"
+Write-Host "  Demo     : lara.demo@unilibra.local / $internalPassword"
 Write-Host ""
 Write-Host "Data dibuat:"
-Write-Host "  Users    : 10"
+Write-Host "  Users    : 16"
 Write-Host "  Books    : $($createdBooks.Count)"
-Write-Host "  Transaksi: 3"
+Write-Host "  Transaksi: 34+"
+Write-Host "  Rating   : 29"
 Write-Host "  Chat     : 2 thread"

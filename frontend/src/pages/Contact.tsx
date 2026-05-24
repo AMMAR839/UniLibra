@@ -8,6 +8,7 @@ const contactChannels = [
     label: "Telepon",
     mark: "T",
     value: supportPhone,
+    note: "Respons cepat",
     href: "tel:+6281234567890",
     tone: "contact-tone-dark",
   },
@@ -15,6 +16,7 @@ const contactChannels = [
     label: "WhatsApp",
     mark: "WA",
     value: "wa.me/6281234567890",
+    note: "Paling disarankan",
     href: `https://wa.me/${whatsappNumber}`,
     tone: "contact-tone-green",
   },
@@ -22,6 +24,7 @@ const contactChannels = [
     label: "Instagram",
     mark: "IG",
     value: "@unilibra.id",
+    note: "Info umum",
     href: "https://instagram.com/unilibra.id",
     tone: "contact-tone-amber",
   },
@@ -29,6 +32,7 @@ const contactChannels = [
     label: "Facebook",
     mark: "FB",
     value: "UniLibra Indonesia",
+    note: "Komunitas",
     href: "https://facebook.com/unilibra.id",
     tone: "contact-tone-blue",
   },
@@ -36,6 +40,7 @@ const contactChannels = [
     label: "LinkedIn",
     mark: "IN",
     value: "UniLibra",
+    note: "Kerja sama",
     href: "https://linkedin.com/company/unilibra",
     tone: "contact-tone-sage",
   },
@@ -70,33 +75,37 @@ function ContactPage() {
   return (
     <main className="contact-page">
       <section className="contact-shell">
-        <div className="contact-hero">
-          <div className="contact-head">
-            <span>Kontak UniLibra</span>
-            <h1>Pusat bantuan dan kontak resmi.</h1>
-            <p>
-              Pilih pertanyaan dasar di bawah, atau hubungi UniLibra langsung
-              melalui nomor, WhatsApp, dan media sosial resmi.
-            </p>
-            <div className="contact-hero-actions">
-              <a className="btn-primary" href={`https://wa.me/${whatsappNumber}`}>
-                Hubungi WhatsApp
-              </a>
-              <a className="btn-ghost" href="tel:+6281234567890">
-                Telepon
-              </a>
-            </div>
-          </div>
+        <header className="contact-simple-head">
+          <span>Kontak</span>
+          <h1>Hubungi UniLibra</h1>
+          <strong>09.00 - 21.00 WIB</strong>
+        </header>
 
-          <aside className="contact-hero-card" aria-label="Jam layanan kontak">
-            <span>Respon bantuan</span>
-            <strong>09.00 - 21.00 WIB</strong>
-            <p>WhatsApp menjadi jalur tercepat untuk bantuan akun dan transaksi.</p>
-          </aside>
-        </div>
+        <section className="contact-channel-grid" aria-label="Kanal kontak UniLibra">
+          {contactChannels.map((channel) => (
+            <a
+              className={`contact-channel ${channel.tone}`}
+              href={channel.href}
+              key={channel.label}
+              rel="noreferrer"
+              target={channel.href.startsWith("http") ? "_blank" : undefined}
+            >
+              <i aria-hidden="true">{channel.mark}</i>
+              <span>
+                {channel.label}
+                <strong>{channel.value}</strong>
+                <small>{channel.note}</small>
+              </span>
+            </a>
+          ))}
+        </section>
 
         <section className="contact-layout" aria-label="Kontak dan bantuan">
-          <div className="contact-faq">
+          <div className="contact-faq" aria-label="Pertanyaan umum">
+            <div className="contact-section-head">
+              <span>Pertanyaan umum</span>
+              <h2>Sebelum menghubungi kami</h2>
+            </div>
             {contactQuestions.map((item, index) => (
               <article className="contact-question" key={item.question}>
                 <button
@@ -115,34 +124,6 @@ function ContactPage() {
               </article>
             ))}
           </div>
-
-          <aside className="contact-panel" aria-label="Kontak yang bisa dihubungi">
-            <div className="contact-panel-head">
-              <span>Nomor utama</span>
-              <a className="contact-phone" href="tel:+6281234567890">
-                {supportPhone}
-              </a>
-              <p>Gunakan nomor ini untuk bantuan yang butuh respons langsung.</p>
-            </div>
-
-            <div className="contact-channel-list">
-              {contactChannels.map((channel) => (
-                <a
-                  className={`contact-channel ${channel.tone}`}
-                  href={channel.href}
-                  key={channel.label}
-                  rel="noreferrer"
-                  target={channel.href.startsWith("http") ? "_blank" : undefined}
-                >
-                  <i aria-hidden="true">{channel.mark}</i>
-                  <span>
-                    {channel.label}
-                    <strong>{channel.value}</strong>
-                  </span>
-                </a>
-              ))}
-            </div>
-          </aside>
         </section>
       </section>
     </main>
