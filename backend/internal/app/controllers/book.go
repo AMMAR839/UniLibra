@@ -306,7 +306,7 @@ func catalogBooks(filters BookFilters, limit int) ([]CatalogBook, error) {
 		catalog = append(catalog, *item)
 	}
 
-	sortCatalogBooks(catalog, filters.Sort)
+	sortCatalogBooks(catalog, filters.Sort, filters.Query)
 	if limit > 0 && len(catalog) > limit {
 		catalog = catalog[:limit]
 	}
@@ -320,12 +320,28 @@ func baseAvailableBooksQuery(filters BookFilters) *gorm.DB {
 	if normalizedQuery := strings.ToLower(strings.TrimSpace(filters.Query)); normalizedQuery != "" {
 		like := "%" + normalizedQuery + "%"
 		db = db.Where(
-			"LOWER(books.title) LIKE ? OR LOWER(books.author) LIKE ? OR LOWER(books.description) LIKE ? OR LOWER(books.category) LIKE ? OR LOWER(books.theme) LIKE ?",
+			`LOWER(books.title) LIKE ?
+			 OR LOWER(books.author) LIKE ?
+			 OR LOWER(books.description) LIKE ?
+			 OR LOWER(books.category) LIKE ?
+			 OR LOWER(books.theme) LIKE ?
+			 OR LOWER(books.location) LIKE ?
+			 OR similarity(LOWER(books.title), ?) > 0.18
+			 OR similarity(LOWER(books.author), ?) > 0.2
+			 OR word_similarity(?, LOWER(books.title)) > 0.28
+			 OR word_similarity(?, LOWER(books.author)) > 0.28
+			 OR word_similarity(?, LOWER(COALESCE(books.category, '') || ' ' || COALESCE(books.theme, '') || ' ' || COALESCE(books.description, ''))) > 0.24`,
 			like,
 			like,
 			like,
 			like,
 			like,
+			like,
+			normalizedQuery,
+			normalizedQuery,
+			normalizedQuery,
+			normalizedQuery,
+			normalizedQuery,
 		)
 	}
 
@@ -348,7 +364,8 @@ func baseAvailableBooksQuery(filters BookFilters) *gorm.DB {
 	return db
 }
 
-func sortCatalogBooks(books []CatalogBook, sortMode string) {
+func sortCatalogBooks(books []CatalogBook, sortMode string, query string) {
+	normalizedQuery := normalizeBookTitleKey(query)
 	sort.SliceStable(books, func(i, j int) bool {
 		switch sortMode {
 		case "nearest":
@@ -366,9 +383,96 @@ func sortCatalogBooks(books []CatalogBook, sortMode string) {
 		case "price_desc":
 			return books[i].MaxPrice > books[j].MaxPrice
 		default:
+			if normalizedQuery != "" {
+				leftScore := catalogSearchScore(books[i], normalizedQuery)
+				rightScore := catalogSearchScore(books[j], normalizedQuery)
+				if leftScore != rightScore {
+					return leftScore > rightScore
+				}
+			}
 			return books[i].UpdatedAt.After(books[j].UpdatedAt)
 		}
 	})
+}
+
+func catalogSearchScore(book CatalogBook, normalizedQuery string) float64 {
+	title := normalizeBookTitleKey(book.Title)
+	author := normalizeBookTitleKey(book.Author)
+	category := normalizeBookTitleKey(book.Category)
+	theme := normalizeBookTitleKey(book.Theme)
+
+	score := 0.0
+	score = math.Max(score, textMatchScore(title, normalizedQuery)*1.25)
+	score = math.Max(score, textMatchScore(author, normalizedQuery)*1.05)
+	score = math.Max(score, textMatchScore(category, normalizedQuery)*0.82)
+	score = math.Max(score, textMatchScore(theme, normalizedQuery)*0.82)
+	return score
+}
+
+func textMatchScore(value string, query string) float64 {
+	if value == "" || query == "" {
+		return 0
+	}
+	if value == query {
+		return 1
+	}
+	if strings.Contains(value, query) || strings.Contains(query, value) {
+		return 0.92
+	}
+
+	best := normalizedEditSimilarity(value, query)
+	for _, word := range strings.Fields(value) {
+		best = math.Max(best, normalizedEditSimilarity(word, query))
+	}
+	return best
+}
+
+func normalizedEditSimilarity(left string, right string) float64 {
+	leftRunes := []rune(left)
+	rightRunes := []rune(right)
+	if len(leftRunes) == 0 || len(rightRunes) == 0 {
+		return 0
+	}
+
+	distance := levenshteinDistance(leftRunes, rightRunes)
+	maxLen := math.Max(float64(len(leftRunes)), float64(len(rightRunes)))
+	return 1 - float64(distance)/maxLen
+}
+
+func levenshteinDistance(left []rune, right []rune) int {
+	previous := make([]int, len(right)+1)
+	current := make([]int, len(right)+1)
+	for j := range previous {
+		previous[j] = j
+	}
+
+	for i := 1; i <= len(left); i++ {
+		current[0] = i
+		for j := 1; j <= len(right); j++ {
+			cost := 0
+			if left[i-1] != right[j-1] {
+				cost = 1
+			}
+			current[j] = minInt(
+				current[j-1]+1,
+				previous[j]+1,
+				previous[j-1]+cost,
+			)
+		}
+		previous, current = current, previous
+	}
+
+	return previous[len(right)]
+}
+
+func minInt(values ...int) int {
+	minimum := values[0]
+	for _, value := range values[1:] {
+		if value < minimum {
+			minimum = value
+		}
+	}
+	return minimum
 }
 
 func distanceFromFilter(filters BookFilters, book models.Book) *float64 {

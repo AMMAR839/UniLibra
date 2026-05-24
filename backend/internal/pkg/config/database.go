@@ -31,6 +31,7 @@ func ConnectDatabase() {
 	fmt.Println("Koneksi database berhasil!")
 
 	database.Exec("CREATE EXTENSION IF NOT EXISTS vector")
+	database.Exec("CREATE EXTENSION IF NOT EXISTS pg_trgm")
 
 	err = database.AutoMigrate(
 		&models.User{},

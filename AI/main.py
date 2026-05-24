@@ -38,6 +38,67 @@ def get_db_connection():
         print(f"Database connection error: {e}")
         raise HTTPException(status_code=500, detail="Database connection failed")
 
+def is_catalog_count_question(message):
+    normalized = message.lower()
+    has_count_intent = any(
+        keyword in normalized
+        for keyword in [
+            "berapa banyak",
+            "jumlah",
+            "total",
+            "ada berapa",
+            "berapa buku",
+        ]
+    )
+    has_book_context = any(
+        keyword in normalized
+        for keyword in ["buku", "katalog", "unilibra", "tersedia"]
+    )
+    return has_count_intent and has_book_context
+
+def get_catalog_stats():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT
+              COUNT(*) AS available_books,
+              COUNT(DISTINCT LOWER(TRIM(title))) AS available_titles
+            FROM books
+            WHERE status = 'available'
+        """)
+        stats = dict(cur.fetchone())
+
+        cur.execute("""
+            SELECT category, COUNT(*) AS total
+            FROM books
+            WHERE status = 'available'
+              AND COALESCE(NULLIF(TRIM(category), ''), '') <> ''
+            GROUP BY category
+            ORDER BY total DESC, category ASC
+            LIMIT 5
+        """)
+        stats["top_categories"] = [dict(row) for row in cur.fetchall()]
+        return stats
+    finally:
+        cur.close()
+        conn.close()
+
+def build_catalog_count_answer(stats):
+    categories = stats.get("top_categories") or []
+    category_line = ""
+    if categories:
+        category_line = "\nKategori terbanyak: " + ", ".join(
+            f"{item['category']} ({item['total']})" for item in categories[:3]
+        ) + "."
+
+    return (
+        f"Saat ini ada {stats['available_books']} buku tersedia di UniLibra, "
+        f"dari sekitar {stats['available_titles']} judul berbeda."
+        f"{category_line}\n"
+        "Untuk melihat semuanya, buka halaman Katalog Buku atau cari judul/genre tertentu di sini."
+    )
+
 # Pengganti cari_buku_relevan: Digunakan oleh /search dan /api/chat
 def calculate_distance_km(origin_lat, origin_lng, book):
     if origin_lat is None or origin_lng is None:
@@ -80,6 +141,7 @@ def execute_semantic_search(query_text, limit=5, latitude=None, longitude=None):
         """)
         catalog_books = [dict(book) for book in cur.fetchall()]
         exact_books = []
+        fuzzy_books = []
         for book in catalog_books:
             compact_haystack = "".join(" ".join([
                 str(book.get("title") or ""),
@@ -91,9 +153,51 @@ def execute_semantic_search(query_text, limit=5, latitude=None, longitude=None):
             if normalized_query and normalized_query in compact_haystack:
                 exact_books.append(book)
 
+        if normalized_query:
+            cur.execute("""
+                SELECT id, title, author, description, category, theme, rental_price,
+                       status, cover_url, owner_id, location, latitude, longitude,
+                       GREATEST(
+                         similarity(LOWER(title), LOWER(%s)),
+                         similarity(LOWER(author), LOWER(%s)),
+                         word_similarity(LOWER(%s), LOWER(title)),
+                         word_similarity(LOWER(%s), LOWER(author)),
+                         word_similarity(
+                           LOWER(%s),
+                           LOWER(COALESCE(category, '') || ' ' || COALESCE(theme, '') || ' ' || COALESCE(description, ''))
+                         )
+                       ) AS fuzzy_score
+                FROM books
+                WHERE status = 'available'
+                  AND (
+                    similarity(LOWER(title), LOWER(%s)) > 0.18
+                    OR similarity(LOWER(author), LOWER(%s)) > 0.2
+                    OR word_similarity(LOWER(%s), LOWER(title)) > 0.28
+                    OR word_similarity(LOWER(%s), LOWER(author)) > 0.28
+                    OR word_similarity(
+                      LOWER(%s),
+                      LOWER(COALESCE(category, '') || ' ' || COALESCE(theme, '') || ' ' || COALESCE(description, ''))
+                    ) > 0.24
+                  )
+                ORDER BY fuzzy_score DESC, updated_at DESC
+                LIMIT 40
+            """, (
+                query_text,
+                query_text,
+                query_text,
+                query_text,
+                query_text,
+                query_text,
+                query_text,
+                query_text,
+                query_text,
+                query_text,
+            ))
+            fuzzy_books = [dict(book) for book in cur.fetchall()]
+
         merged_results = []
         seen_ids = set()
-        for book in exact_books + results:
+        for book in exact_books + fuzzy_books + results:
             if book["id"] in seen_ids:
                 continue
             seen_ids.add(book["id"])
@@ -284,6 +388,20 @@ def refresh_book_embedding(
 @app.post("/api/chat")
 def chatbot_unilibra(req: ChatRequest):
     try:
+        if is_catalog_count_question(req.pesan):
+            stats = get_catalog_stats()
+            popular_books = get_popular_books(limit=4)["popular_books"]
+            return {
+                "status": "success",
+                "jawaban": build_catalog_count_answer(stats),
+                "buku_referensi": popular_books,
+                "actions": [
+                    {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
+                    for b in popular_books[:3]
+                ],
+                "engine": "database-count",
+            }
+
         # Langkah 1: Retrieval (Menggunakan fungsi utilitas yang sama dengan /search)
         buku_relevan = execute_semantic_search(
             req.pesan,
@@ -326,6 +444,10 @@ def chatbot_unilibra(req: ChatRequest):
         
         Konteks Buku yang Tersedia di Database Saat Ini:
         {konteks_buku}
+
+        Catatan penting:
+        - Konteks di atas hanya potongan hasil pencarian, bukan seluruh jumlah buku di database.
+        - Jika pengguna bertanya total/jumlah semua buku, jangan simpulkan dari jumlah item konteks.
         
         Pertanyaan Pengguna: {req.pesan}
         
