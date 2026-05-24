@@ -315,6 +315,53 @@
   z-index: 6;
 }
 
+.catalog-location-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(200, 131, 26, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 250, 240, 0.76)),
+    #fff;
+  box-shadow: 0 12px 28px rgba(26, 18, 8, 0.08);
+  padding: 14px 16px;
+}
+
+.catalog-location-alert div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.catalog-location-alert strong {
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+
+.catalog-location-alert span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.catalog-location-alert button {
+  min-height: 40px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(26, 18, 8, 0.12);
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--amber-light);
+  cursor: pointer;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 0 14px;
+}
+
 .catalog-inline-search {
   min-height: 58px;
   display: grid;
@@ -510,6 +557,14 @@
   transform: translateY(-1px);
 }
 
+.catalog-filter-panel input:disabled,
+.catalog-filter-panel select:disabled,
+.catalog-filter-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
+}
+
 .catalog-filter-actions {
   display: flex;
   gap: 10px;
@@ -691,6 +746,189 @@
   gap: 8px;
 }
 
+.book-versions-section {
+  min-height: 78vh;
+}
+
+.book-versions-header p {
+  color: var(--text-muted);
+  font-weight: 800;
+  margin-top: 8px;
+}
+
+.book-versions-header .section-link {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.84rem;
+  font-weight: 900;
+  padding: 0;
+}
+
+.book-version-list {
+  display: grid;
+  gap: 16px;
+}
+
+.book-version-card {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) minmax(170px, auto);
+  gap: 18px;
+  align-items: stretch;
+  border: 1px solid rgba(26, 18, 8, 0.1);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 250, 240, 0.82)),
+    #fff;
+  box-shadow: 0 12px 34px rgba(26, 18, 8, 0.08);
+  cursor: pointer;
+  outline: none;
+  padding: 14px;
+  transition:
+    border-color 0.22s,
+    box-shadow 0.22s,
+    transform 0.22s;
+}
+
+.book-version-card:hover,
+.book-version-card:focus-visible {
+  border-color: rgba(200, 131, 26, 0.38);
+  box-shadow: 0 22px 50px rgba(26, 18, 8, 0.16);
+  transform: translateY(-3px);
+}
+
+.book-version-cover {
+  min-height: 188px;
+  display: flex;
+  align-items: end;
+  border-radius: 8px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(245, 240, 232, 0.18), rgba(26, 18, 8, 0.18)),
+    linear-gradient(150deg, #e5bd57, #87631b);
+  color: var(--paper);
+  padding: 14px;
+}
+
+.book-version-cover img {
+  width: calc(100% + 28px);
+  height: calc(100% + 28px);
+  object-fit: cover;
+  margin: -14px;
+}
+
+.book-version-cover strong {
+  font-family: "Playfair Display", serif;
+  line-height: 1.05;
+}
+
+.book-version-copy {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.book-version-title-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.book-version-title-row span {
+  border: 1px solid rgba(26, 18, 8, 0.1);
+  border-radius: 999px;
+  background: rgba(245, 240, 232, 0.7);
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 5px 9px;
+  text-transform: uppercase;
+}
+
+.book-version-copy h3 {
+  font-family: "Playfair Display", serif;
+  font-size: 1.7rem;
+  line-height: 1.05;
+}
+
+.book-version-copy p {
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+.book-version-owner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.book-version-owner strong,
+.book-version-owner small {
+  display: block;
+}
+
+.book-version-owner small {
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.book-version-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.book-version-meta span {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(26, 18, 8, 0.1);
+  border-radius: 8px;
+  background: rgba(245, 240, 232, 0.58);
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 10px;
+}
+
+.book-version-meta small {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.book-version-action {
+  display: grid;
+  align-content: center;
+  justify-items: end;
+  gap: 4px;
+  border-left: 1px solid rgba(26, 18, 8, 0.1);
+  padding-left: 18px;
+  text-align: right;
+}
+
+.book-version-action span,
+.book-version-action small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.book-version-action strong {
+  color: var(--ink);
+  font-size: 1.35rem;
+}
+
+.book-version-action .btn-search {
+  margin-top: 12px;
+  min-height: 42px;
+  padding-inline: 16px;
+}
+
 @media (max-width: 1180px) {
   .catalog-page .catalog-book-grid {
     grid-template-columns: repeat(3, minmax(180px, 1fr));
@@ -789,6 +1027,15 @@
     grid-template-columns: 1fr;
   }
 
+  .catalog-location-alert {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .catalog-location-alert button {
+    width: 100%;
+  }
+
   .catalog-filter-menu,
   .catalog-filter-toggle {
     width: 100%;
@@ -806,5 +1053,29 @@
 
   .catalog-page .catalog-banner {
     margin-top: 0;
+  }
+
+  .book-version-card {
+    grid-template-columns: 104px minmax(0, 1fr);
+  }
+
+  .book-version-action {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr auto;
+    justify-items: start;
+    align-items: center;
+    border-left: 0;
+    border-top: 1px solid rgba(26, 18, 8, 0.1);
+    padding: 14px 0 0;
+    text-align: left;
+  }
+
+  .book-version-action .btn-search {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+
+  .book-version-meta {
+    grid-template-columns: 1fr;
   }
 }

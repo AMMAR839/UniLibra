@@ -8,7 +8,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$demoPassword = "password123"
+$internalPassword = "password123"
 $coverDir = Join-Path $PSScriptRoot "dummy-covers"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 
@@ -61,7 +61,7 @@ function Register-User {
     Invoke-Json -Method "Post" -Url "$ApiUrl/api/register" -Body @{
       name = $Name
       email = $Email
-      password = $demoPassword
+      password = $internalPassword
       city = $City
     } | Out-Null
   } catch {
@@ -72,7 +72,7 @@ function Register-User {
 
   $login = Invoke-Json -Method "Post" -Url "$ApiUrl/api/login" -Body @{
     email = $Email
-    password = $demoPassword
+    password = $internalPassword
   }
 
   return @{
@@ -119,7 +119,7 @@ function New-CoverImage {
   $format.Alignment = [System.Drawing.StringAlignment]::Near
   $format.LineAlignment = [System.Drawing.StringAlignment]::Near
 
-  $graphics.DrawString("UNILIBRA DEMO", $fontBadge, $lineBrush, 92, 126)
+  $graphics.DrawString("UNILIBRA", $fontBadge, $lineBrush, 92, 126)
   $graphics.DrawString($Title, $fontTitle, $lineBrush, (New-Object System.Drawing.RectangleF 92, 284, 536, 300), $format)
   $graphics.DrawString($Author, $fontAuthor, $lineBrush, (New-Object System.Drawing.RectangleF 92, 720, 536, 90), $format)
 
@@ -156,7 +156,7 @@ function Get-OpenLibraryCover {
     [string]$FallbackPath
   )
 
-  $safeTitle = $Title -replace "^\[DEMO\]\s*", ""
+  $safeTitle = $Title
   $slug = ConvertTo-Slug -Value "$safeTitle-$Author"
   $targetPath = Join-Path $coverDir "web-$slug.jpg"
 
@@ -259,21 +259,28 @@ function New-Book {
   }
 }
 
-function Cleanup-DemoData {
+function CleanupSeedData {
   $sql = @"
 CREATE TEMP TABLE seed_dummy_users AS
   SELECT id FROM users
   WHERE email IN (
     'admin@unilibra.local',
-    'nicholas.demo@unilibra.local',
-    'rania.demo@unilibra.local',
-    'ammar.demo@unilibra.local'
-  );
+    'nicholas@unilibra.local',
+    'rania@unilibra.local',
+    'ammar@unilibra.local',
+    'salsa@unilibra.local',
+    'bima@unilibra.local',
+    'dewi@unilibra.local',
+    'farhan@unilibra.local',
+    'nadia@unilibra.local',
+    'yusuf@unilibra.local'
+  )
+  OR LOWER(email) LIKE '%.' || 'de' || 'mo' || '@unilibra.local';
 
 CREATE TEMP TABLE seed_dummy_books AS
   SELECT id FROM books
   WHERE owner_id IN (SELECT id FROM seed_dummy_users)
-     OR title LIKE '[DEMO] %';
+     OR title LIKE '[' || 'DE' || 'MO' || '] %';
 
 CREATE TEMP TABLE seed_dummy_threads AS
   SELECT id FROM chat_threads
@@ -370,13 +377,19 @@ function New-Chat {
 Wait-Backend -BaseUrl $ApiUrl
 
 if (-not $SkipCleanup) {
-  Cleanup-DemoData
+  CleanupSeedData
 }
 
 $admin = Register-User -Name "Admin UniLibra" -Email "admin@unilibra.local" -City "Yogyakarta"
-$nicholas = Register-User -Name "Nicholas S." -Email "nicholas.demo@unilibra.local" -City "Sleman"
-$rania = Register-User -Name "Rania Putri" -Email "rania.demo@unilibra.local" -City "Bantul"
-$ammar = Register-User -Name "Ammar Fikri" -Email "ammar.demo@unilibra.local" -City "Yogyakarta"
+$nicholas = Register-User -Name "Nicholas S." -Email "nicholas@unilibra.local" -City "Sleman"
+$rania = Register-User -Name "Rania Putri" -Email "rania@unilibra.local" -City "Bantul"
+$ammar = Register-User -Name "Ammar Fikri" -Email "ammar@unilibra.local" -City "Yogyakarta"
+$salsa = Register-User -Name "Salsa Nabila" -Email "salsa@unilibra.local" -City "Condongcatur"
+$bima = Register-User -Name "Bima Prasetyo" -Email "bima@unilibra.local" -City "Seturan"
+$dewi = Register-User -Name "Dewi Laras" -Email "dewi@unilibra.local" -City "Pogung"
+$farhan = Register-User -Name "Farhan Aziz" -Email "farhan@unilibra.local" -City "Kota Yogyakarta"
+$nadia = Register-User -Name "Nadia Kirana" -Email "nadia@unilibra.local" -City "Bantul"
+$yusuf = Register-User -Name "Yusuf Hidayat" -Email "yusuf@unilibra.local" -City "UGM"
 
 $covers = @(
   Get-OpenLibraryCover -Title "Filosofi Teras" -Author "Henry Manampiring" -FallbackPath (New-CoverImage -Filename "filosofi-teras.png" -Title "Filosofi Teras" -Author "Henry Manampiring" -ColorA "#F2C14E" -ColorB "#B8651B")
@@ -406,30 +419,75 @@ $covers = @(
 )
 
 $bookSeeds = @(
-  @{ owner = $nicholas; cover = $covers[0]; title = "[DEMO] Filosofi Teras"; author = "Henry Manampiring"; category = "Pengembangan diri"; condition = "Baik"; location = "Sleman, Yogyakarta"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 7000; latitude = -7.747; longitude = 110.355; description = "Buku pengantar stoisisme yang ringan untuk belajar mengelola emosi, ekspektasi, dan keputusan sehari-hari." }
-  @{ owner = $nicholas; cover = $covers[1]; title = "[DEMO] Atomic Habits"; author = "James Clear"; category = "Nonfiksi"; condition = "Seperti baru"; location = "UGM, Sleman"; max_duration = "1 bulan"; handover = "Titik temu publik"; rental_price = 9000; latitude = -7.771; longitude = 110.377; description = "Panduan praktis membangun kebiasaan kecil yang konsisten dan mudah diterapkan untuk mahasiswa." }
-  @{ owner = $nicholas; cover = $covers[4]; title = "[DEMO] Algoritma Dasar"; author = "Rinaldi Munir"; category = "Akademik"; condition = "Ada catatan"; location = "Pogung, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 12000; latitude = -7.759; longitude = 110.376; description = "Buku akademik untuk struktur data, algoritma dasar, dan latihan pemrograman." }
-  @{ owner = $rania; cover = $covers[2]; title = "[DEMO] Laskar Pelangi"; author = "Andrea Hirata"; category = "Sastra"; condition = "Baik"; location = "Bantul, Yogyakarta"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 6000; latitude = -7.875; longitude = 110.327; description = "Novel Indonesia tentang pendidikan, persahabatan, dan mimpi besar dari Belitung." }
-  @{ owner = $rania; cover = $covers[3]; title = "[DEMO] Bumi Manusia"; author = "Pramoedya Ananta Toer"; category = "Sastra"; condition = "Cukup baik"; location = "Kota Yogyakarta"; max_duration = "1 bulan"; handover = "Kurir lokal"; rental_price = 8000; latitude = -7.801; longitude = 110.364; description = "Novel sejarah Indonesia dengan latar kolonial, cocok untuk pembaca sastra dan sejarah." }
-  @{ owner = $rania; cover = $covers[5]; title = "[DEMO] Clean Code"; author = "Robert C. Martin"; category = "Akademik"; condition = "Baik"; location = "Condongcatur"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 13000; latitude = -7.758; longitude = 110.408; description = "Buku wajib untuk belajar menulis kode yang rapi, mudah dirawat, dan profesional." }
-  @{ owner = $nicholas; cover = $covers[6]; title = "[DEMO] Psikologi Uang"; author = "Morgan Housel"; category = "Nonfiksi"; condition = "Seperti baru"; location = "Seturan"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 8500; latitude = -7.766; longitude = 110.409; description = "Kumpulan insight sederhana tentang perilaku manusia dalam mengelola uang." }
-  @{ owner = $rania; cover = $covers[7]; title = "[DEMO] Laut Bercerita"; author = "Leila S. Chudori"; category = "Fiksi populer"; condition = "Baik"; location = "Gejayan"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 7500; latitude = -7.777; longitude = 110.389; description = "Novel emosional tentang keluarga, aktivisme, dan ingatan yang belum selesai." }
-  @{ owner = $nicholas; cover = $covers[8]; title = "[DEMO] Data Science dari Nol"; author = "Joel Grus"; category = "Akademik"; condition = "Baik"; location = "Sleman"; max_duration = "1 bulan"; handover = "Titik temu publik"; rental_price = 14000; latitude = -7.748; longitude = 110.355; description = "Pengantar data science, statistik, Python, dan machine learning untuk pemula." }
-  @{ owner = $nicholas; cover = $covers[9]; title = "[DEMO] Deep Work"; author = "Cal Newport"; category = "Pengembangan diri"; condition = "Seperti baru"; location = "Pogung, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 9000; latitude = -7.759; longitude = 110.377; description = "Buku tentang fokus mendalam, produktivitas, dan cara bekerja tanpa distraksi." }
-  @{ owner = $rania; cover = $covers[10]; title = "[DEMO] The Lean Startup"; author = "Eric Ries"; category = "Nonfiksi"; condition = "Baik"; location = "Kota Yogyakarta"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 10000; latitude = -7.797; longitude = 110.370; description = "Panduan membangun produk dan startup dengan eksperimen cepat, validasi ide, dan iterasi." }
-  @{ owner = $rania; cover = $covers[11]; title = "[DEMO] Design Thinking"; author = "Tim Brown"; category = "Nonfiksi"; condition = "Baik"; location = "Condongcatur"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 9500; latitude = -7.758; longitude = 110.407; description = "Buku untuk memahami pemecahan masalah kreatif, riset pengguna, dan prototyping." }
-  @{ owner = $nicholas; cover = $covers[12]; title = "[DEMO] Negeri 5 Menara"; author = "A. Fuadi"; category = "Fiksi populer"; condition = "Cukup baik"; location = "Sleman"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 6500; latitude = -7.746; longitude = 110.355; description = "Novel inspiratif tentang persahabatan, pendidikan pesantren, dan mimpi besar." }
-  @{ owner = $rania; cover = $covers[13]; title = "[DEMO] Cantik Itu Luka"; author = "Eka Kurniawan"; category = "Sastra"; condition = "Baik"; location = "Bantul"; max_duration = "2 minggu"; handover = "Kurir lokal"; rental_price = 8500; latitude = -7.875; longitude = 110.331; description = "Novel sastra Indonesia dengan gaya realisme magis, sejarah keluarga, dan kritik sosial." }
-  @{ owner = $nicholas; cover = $covers[14]; title = "[DEMO] Kalkulus Dasar"; author = "Purcell"; category = "Akademik"; condition = "Ada catatan"; location = "UGM, Sleman"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 11000; latitude = -7.771; longitude = 110.378; description = "Buku kalkulus untuk limit, turunan, integral, dan latihan dasar matematika teknik." }
-  @{ owner = $nicholas; cover = $covers[15]; title = "[DEMO] Database System Concepts"; author = "Silberschatz"; category = "Akademik"; condition = "Baik"; location = "Seturan"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 15000; latitude = -7.766; longitude = 110.410; description = "Referensi database untuk SQL, desain relasi, transaksi, indeks, dan arsitektur DBMS." }
-  @{ owner = $rania; cover = $covers[16]; title = "[DEMO] The Pragmatic Programmer"; author = "Andrew Hunt & David Thomas"; category = "Akademik"; condition = "Seperti baru"; location = "Gejayan"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 14000; latitude = -7.778; longitude = 110.388; description = "Buku pengembangan software tentang kebiasaan engineer, desain kode, dan disiplin kerja." }
-  @{ owner = $rania; cover = $covers[17]; title = "[DEMO] Sapiens"; author = "Yuval Noah Harari"; category = "Nonfiksi"; condition = "Baik"; location = "Kota Yogyakarta"; max_duration = "1 bulan"; handover = "Titik temu publik"; rental_price = 10000; latitude = -7.801; longitude = 110.365; description = "Ringkasan sejarah manusia dari masa purba sampai masyarakat modern." }
-  @{ owner = $nicholas; cover = $covers[18]; title = "[DEMO] Rich Dad Poor Dad"; author = "Robert Kiyosaki"; category = "Pengembangan diri"; condition = "Baik"; location = "Sleman"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 8000; latitude = -7.748; longitude = 110.356; description = "Buku populer tentang literasi finansial, aset, arus kas, dan cara berpikir soal uang." }
-  @{ owner = $nicholas; cover = $covers[19]; title = "[DEMO] Matematika Diskrit"; author = "Rinaldi Munir"; category = "Akademik"; condition = "Cukup baik"; location = "Pogung"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 12000; latitude = -7.760; longitude = 110.376; description = "Materi logika, himpunan, relasi, graf, kombinatorika, dan dasar teori komputasi." }
-  @{ owner = $rania; cover = $covers[20]; title = "[DEMO] Eloquent JavaScript"; author = "Marijn Haverbeke"; category = "Akademik"; condition = "Baik"; location = "Condongcatur"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 12500; latitude = -7.758; longitude = 110.407; description = "Buku JavaScript modern untuk dasar bahasa, struktur program, DOM, dan pemrograman web." }
-  @{ owner = $nicholas; cover = $covers[21]; title = "[DEMO] Dilan 1990"; author = "Pidi Baiq"; category = "Fiksi populer"; condition = "Baik"; location = "Sleman"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 7000; latitude = -7.748; longitude = 110.355; description = "Novel remaja populer tentang Dilan dan Milea. Cover ini memakai asset lama frontend yang sekarang ikut di-upload ke backend." }
-  @{ owner = $rania; cover = $covers[22]; title = "[DEMO] Bulan"; author = "Tere Liye"; category = "Fiksi populer"; condition = "Seperti baru"; location = "Gejayan"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 8000; latitude = -7.777; longitude = 110.389; description = "Novel fantasi dan petualangan dari Tere Liye. Cover berasal dari asset lama frontend lalu dimasukkan ke backend." }
-  @{ owner = $nicholas; cover = $covers[23]; title = "[DEMO] Harry Potter"; author = "J.K. Rowling"; category = "Fiksi populer"; condition = "Baik"; location = "UGM, Sleman"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 9000; latitude = -7.771; longitude = 110.377; description = "Kisah dunia sihir yang populer untuk pembaca fantasi. Cover lama frontend sekarang disimpan sebagai cover backend." }
+  @{ owner = $nicholas; cover = $covers[0]; title = "Filosofi Teras"; author = "Henry Manampiring"; category = "Pengembangan diri"; condition = "Baik"; location = "Sleman, Yogyakarta"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 7000; latitude = -7.747; longitude = 110.355; description = "Buku pengantar stoisisme yang ringan untuk belajar mengelola emosi, ekspektasi, dan keputusan sehari-hari." }
+  @{ owner = $nicholas; cover = $covers[1]; title = "Atomic Habits"; author = "James Clear"; category = "Nonfiksi"; condition = "Seperti baru"; location = "UGM, Sleman"; max_duration = "1 bulan"; handover = "Titik temu publik"; rental_price = 9000; latitude = -7.771; longitude = 110.377; description = "Panduan praktis membangun kebiasaan kecil yang konsisten dan mudah diterapkan untuk mahasiswa." }
+  @{ owner = $nicholas; cover = $covers[4]; title = "Algoritma Dasar"; author = "Rinaldi Munir"; category = "Akademik"; condition = "Ada catatan"; location = "Pogung, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 12000; latitude = -7.759; longitude = 110.376; description = "Buku akademik untuk struktur data, algoritma dasar, dan latihan pemrograman." }
+  @{ owner = $rania; cover = $covers[2]; title = "Laskar Pelangi"; author = "Andrea Hirata"; category = "Sastra"; condition = "Baik"; location = "Bantul, Yogyakarta"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 6000; latitude = -7.875; longitude = 110.327; description = "Novel Indonesia tentang pendidikan, persahabatan, dan mimpi besar dari Belitung." }
+  @{ owner = $rania; cover = $covers[3]; title = "Bumi Manusia"; author = "Pramoedya Ananta Toer"; category = "Sastra"; condition = "Cukup baik"; location = "Kota Yogyakarta"; max_duration = "1 bulan"; handover = "Kurir lokal"; rental_price = 8000; latitude = -7.801; longitude = 110.364; description = "Novel sejarah Indonesia dengan latar kolonial, cocok untuk pembaca sastra dan sejarah." }
+  @{ owner = $rania; cover = $covers[5]; title = "Clean Code"; author = "Robert C. Martin"; category = "Akademik"; condition = "Baik"; location = "Condongcatur"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 13000; latitude = -7.758; longitude = 110.408; description = "Buku wajib untuk belajar menulis kode yang rapi, mudah dirawat, dan profesional." }
+  @{ owner = $nicholas; cover = $covers[6]; title = "Psikologi Uang"; author = "Morgan Housel"; category = "Nonfiksi"; condition = "Seperti baru"; location = "Seturan"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 8500; latitude = -7.766; longitude = 110.409; description = "Kumpulan insight sederhana tentang perilaku manusia dalam mengelola uang." }
+  @{ owner = $rania; cover = $covers[7]; title = "Laut Bercerita"; author = "Leila S. Chudori"; category = "Fiksi populer"; condition = "Baik"; location = "Gejayan"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 7500; latitude = -7.777; longitude = 110.389; description = "Novel emosional tentang keluarga, aktivisme, dan ingatan yang belum selesai." }
+  @{ owner = $nicholas; cover = $covers[8]; title = "Data Science dari Nol"; author = "Joel Grus"; category = "Akademik"; condition = "Baik"; location = "Sleman"; max_duration = "1 bulan"; handover = "Titik temu publik"; rental_price = 14000; latitude = -7.748; longitude = 110.355; description = "Pengantar data science, statistik, Python, dan machine learning untuk pemula." }
+  @{ owner = $nicholas; cover = $covers[9]; title = "Deep Work"; author = "Cal Newport"; category = "Pengembangan diri"; condition = "Seperti baru"; location = "Pogung, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 9000; latitude = -7.759; longitude = 110.377; description = "Buku tentang fokus mendalam, produktivitas, dan cara bekerja tanpa distraksi." }
+  @{ owner = $rania; cover = $covers[10]; title = "The Lean Startup"; author = "Eric Ries"; category = "Nonfiksi"; condition = "Baik"; location = "Kota Yogyakarta"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 10000; latitude = -7.797; longitude = 110.370; description = "Panduan membangun produk dan startup dengan eksperimen cepat, validasi ide, dan iterasi." }
+  @{ owner = $rania; cover = $covers[11]; title = "Design Thinking"; author = "Tim Brown"; category = "Nonfiksi"; condition = "Baik"; location = "Condongcatur"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 9500; latitude = -7.758; longitude = 110.407; description = "Buku untuk memahami pemecahan masalah kreatif, riset pengguna, dan prototyping." }
+  @{ owner = $nicholas; cover = $covers[12]; title = "Negeri 5 Menara"; author = "A. Fuadi"; category = "Fiksi populer"; condition = "Cukup baik"; location = "Sleman"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 6500; latitude = -7.746; longitude = 110.355; description = "Novel inspiratif tentang persahabatan, pendidikan pesantren, dan mimpi besar." }
+  @{ owner = $rania; cover = $covers[13]; title = "Cantik Itu Luka"; author = "Eka Kurniawan"; category = "Sastra"; condition = "Baik"; location = "Bantul"; max_duration = "2 minggu"; handover = "Kurir lokal"; rental_price = 8500; latitude = -7.875; longitude = 110.331; description = "Novel sastra Indonesia dengan gaya realisme magis, sejarah keluarga, dan kritik sosial." }
+  @{ owner = $nicholas; cover = $covers[14]; title = "Kalkulus Dasar"; author = "Purcell"; category = "Akademik"; condition = "Ada catatan"; location = "UGM, Sleman"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 11000; latitude = -7.771; longitude = 110.378; description = "Buku kalkulus untuk limit, turunan, integral, dan latihan dasar matematika teknik." }
+  @{ owner = $nicholas; cover = $covers[15]; title = "Database System Concepts"; author = "Silberschatz"; category = "Akademik"; condition = "Baik"; location = "Seturan"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 15000; latitude = -7.766; longitude = 110.410; description = "Referensi database untuk SQL, desain relasi, transaksi, indeks, dan arsitektur DBMS." }
+  @{ owner = $rania; cover = $covers[16]; title = "The Pragmatic Programmer"; author = "Andrew Hunt & David Thomas"; category = "Akademik"; condition = "Seperti baru"; location = "Gejayan"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 14000; latitude = -7.778; longitude = 110.388; description = "Buku pengembangan software tentang kebiasaan engineer, desain kode, dan disiplin kerja." }
+  @{ owner = $rania; cover = $covers[17]; title = "Sapiens"; author = "Yuval Noah Harari"; category = "Nonfiksi"; condition = "Baik"; location = "Kota Yogyakarta"; max_duration = "1 bulan"; handover = "Titik temu publik"; rental_price = 10000; latitude = -7.801; longitude = 110.365; description = "Ringkasan sejarah manusia dari masa purba sampai masyarakat modern." }
+  @{ owner = $nicholas; cover = $covers[18]; title = "Rich Dad Poor Dad"; author = "Robert Kiyosaki"; category = "Pengembangan diri"; condition = "Baik"; location = "Sleman"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 8000; latitude = -7.748; longitude = 110.356; description = "Buku populer tentang literasi finansial, aset, arus kas, dan cara berpikir soal uang." }
+  @{ owner = $nicholas; cover = $covers[19]; title = "Matematika Diskrit"; author = "Rinaldi Munir"; category = "Akademik"; condition = "Cukup baik"; location = "Pogung"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 12000; latitude = -7.760; longitude = 110.376; description = "Materi logika, himpunan, relasi, graf, kombinatorika, dan dasar teori komputasi." }
+  @{ owner = $rania; cover = $covers[20]; title = "Eloquent JavaScript"; author = "Marijn Haverbeke"; category = "Akademik"; condition = "Baik"; location = "Condongcatur"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 12500; latitude = -7.758; longitude = 110.407; description = "Buku JavaScript modern untuk dasar bahasa, struktur program, DOM, dan pemrograman web." }
+  @{ owner = $nicholas; cover = $covers[21]; title = "Dilan 1990"; author = "Pidi Baiq"; category = "Fiksi populer"; condition = "Baik"; location = "Sleman"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 7000; latitude = -7.748; longitude = 110.355; description = "Novel remaja populer tentang Dilan dan Milea. Cover ini memakai asset lama frontend yang sekarang ikut di-upload ke backend." }
+  @{ owner = $rania; cover = $covers[22]; title = "Bulan"; author = "Tere Liye"; category = "Fiksi populer"; condition = "Seperti baru"; location = "Gejayan"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 8000; latitude = -7.777; longitude = 110.389; description = "Novel fantasi dan petualangan dari Tere Liye. Cover berasal dari asset lama frontend lalu dimasukkan ke backend." }
+  @{ owner = $nicholas; cover = $covers[23]; title = "Harry Potter"; author = "J.K. Rowling"; category = "Fiksi populer"; condition = "Baik"; location = "UGM, Sleman"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 9000; latitude = -7.771; longitude = 110.377; description = "Kisah dunia sihir yang populer untuk pembaca fantasi. Cover lama frontend sekarang disimpan sebagai cover backend." }
+)
+
+$bookSeeds += @(
+  @{ owner = $salsa; cover = $covers[22]; title = "Bulan"; author = "Tere Liye"; category = "Novel"; theme = "Fantasi"; condition = "Baik"; location = "Condongcatur"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 7500; latitude = -7.758; longitude = 110.407; description = "Edisi paperback rapi untuk pembaca seri petualangan Tere Liye." }
+  @{ owner = $bima; cover = $covers[22]; title = "Bulan"; author = "Tere Liye"; category = "Novel"; theme = "Adventure"; condition = "Cukup baik"; location = "Seturan"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 6500; latitude = -7.766; longitude = 110.409; description = "Ada sedikit lipatan di beberapa halaman, tetapi isi lengkap dan nyaman dibaca." }
+  @{ owner = $dewi; cover = $covers[22]; title = "Bulan"; author = "Tere Liye"; category = "Novel"; theme = "Fantasi"; condition = "Seperti baru"; location = "Pogung, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 9000; latitude = -7.759; longitude = 110.376; description = "Koleksi pribadi yang masih bersih, cocok untuk melanjutkan seri Bumi." }
+  @{ owner = $farhan; cover = $covers[2]; title = "Laskar Pelangi"; author = "Andrea Hirata"; category = "Novel"; theme = "Drama"; condition = "Cukup baik"; location = "Kota Yogyakarta"; max_duration = "2 minggu"; handover = "Kurir lokal"; rental_price = 5500; latitude = -7.797; longitude = 110.370; description = "Novel inspiratif tentang sekolah, persahabatan, dan perjuangan anak-anak Belitung." }
+  @{ owner = $nadia; cover = $covers[2]; title = "Laskar Pelangi"; author = "Andrea Hirata"; category = "Novel"; theme = "Keluarga"; condition = "Baik"; location = "Bantul"; max_duration = "1 bulan"; handover = "Titik temu publik"; rental_price = 7000; latitude = -7.875; longitude = 110.331; description = "Cocok untuk bacaan santai atau referensi tugas literasi sekolah." }
+  @{ owner = $yusuf; cover = $covers[1]; title = "Atomic Habits"; author = "James Clear"; category = "Pengembangan diri"; theme = "Kebiasaan"; condition = "Baik"; location = "UGM, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 8500; latitude = -7.771; longitude = 110.377; description = "Buku populer untuk memahami sistem kebiasaan kecil yang konsisten." }
+  @{ owner = $dewi; cover = $covers[1]; title = "Atomic Habits"; author = "James Clear"; category = "Pengembangan diri"; theme = "Produktivitas"; condition = "Ada catatan"; location = "Pogung"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 7000; latitude = -7.760; longitude = 110.376; description = "Beberapa halaman diberi stabilo, cocok untuk pembaca yang suka ringkasan visual." }
+  @{ owner = $salsa; cover = $covers[5]; title = "Clean Code"; author = "Robert C. Martin"; category = "Teknologi"; theme = "Pemrograman"; condition = "Seperti baru"; location = "Condongcatur"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 15000; latitude = -7.758; longitude = 110.407; description = "Referensi software engineering untuk latihan menulis kode yang mudah dirawat." }
+  @{ owner = $bima; cover = $covers[5]; title = "Clean Code"; author = "Robert C. Martin"; category = "Teknologi"; theme = "Pemrograman"; condition = "Cukup baik"; location = "Seturan"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 11500; latitude = -7.766; longitude = 110.409; description = "Buku programming dengan beberapa tanda pakai, isi tetap lengkap." }
+  @{ owner = $farhan; cover = $covers[15]; title = "Database System Concepts"; author = "Silberschatz"; category = "Teknologi"; theme = "Database"; condition = "Baik"; location = "Kota Yogyakarta"; max_duration = "1 bulan"; handover = "Kurir lokal"; rental_price = 14500; latitude = -7.801; longitude = 110.365; description = "Cocok untuk mata kuliah basis data, transaksi, indeks, dan desain relasional." }
+  @{ owner = $yusuf; cover = $covers[15]; title = "Database System Concepts"; author = "Silberschatz"; category = "Teknologi"; theme = "Database"; condition = "Ada catatan"; location = "UGM, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 12500; latitude = -7.771; longitude = 110.378; description = "Ada catatan kuliah ringan pada beberapa bab inti database." }
+  @{ owner = $nadia; cover = $covers[3]; title = "Bumi Manusia"; author = "Pramoedya Ananta Toer"; category = "Sastra"; theme = "Klasik"; condition = "Baik"; location = "Bantul"; max_duration = "1 bulan"; handover = "Titik temu publik"; rental_price = 8500; latitude = -7.875; longitude = 110.331; description = "Novel klasik Indonesia dengan latar kolonial dan konflik sosial yang kuat." }
+  @{ owner = $farhan; cover = $covers[3]; title = "Bumi Manusia"; author = "Pramoedya Ananta Toer"; category = "Sastra"; theme = "Sejarah"; condition = "Cukup baik"; location = "Kota Yogyakarta"; max_duration = "2 minggu"; handover = "Kurir lokal"; rental_price = 7000; latitude = -7.797; longitude = 110.370; description = "Edisi lama yang masih layak baca untuk penggemar sastra sejarah." }
+  @{ owner = $salsa; cover = $covers[7]; title = "Laut Bercerita"; author = "Leila S. Chudori"; category = "Novel"; theme = "Sejarah"; condition = "Baik"; location = "Condongcatur"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 8000; latitude = -7.758; longitude = 110.407; description = "Novel Indonesia tentang ingatan keluarga, aktivisme, dan sejarah politik." }
+  @{ owner = $dewi; cover = $covers[7]; title = "Laut Bercerita"; author = "Leila S. Chudori"; category = "Novel"; theme = "Drama"; condition = "Seperti baru"; location = "Pogung"; max_duration = "1 bulan"; handover = "Titik temu publik"; rental_price = 9500; latitude = -7.759; longitude = 110.376; description = "Kondisi sangat rapi, cocok untuk pembaca novel Indonesia kontemporer." }
+  @{ owner = $bima; cover = $covers[20]; title = "Eloquent JavaScript"; author = "Marijn Haverbeke"; category = "Teknologi"; theme = "Pemrograman"; condition = "Baik"; location = "Seturan"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 12000; latitude = -7.766; longitude = 110.409; description = "Referensi JavaScript modern untuk dasar bahasa dan pemrograman web." }
+  @{ owner = $yusuf; cover = $covers[20]; title = "Eloquent JavaScript"; author = "Marijn Haverbeke"; category = "Teknologi"; theme = "Pemrograman"; condition = "Cukup baik"; location = "UGM, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 10500; latitude = -7.771; longitude = 110.377; description = "Ada bekas pemakaian ringan, isi masih nyaman untuk belajar." }
+  @{ owner = $salsa; cover = $covers[9]; title = "Deep Work"; author = "Cal Newport"; category = "Pengembangan diri"; theme = "Produktivitas"; condition = "Baik"; location = "Condongcatur"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 8500; latitude = -7.758; longitude = 110.407; description = "Buku fokus kerja mendalam untuk belajar mengurangi distraksi digital." }
+  @{ owner = $farhan; cover = $covers[9]; title = "Deep Work"; author = "Cal Newport"; category = "Pengembangan diri"; theme = "Karier"; condition = "Seperti baru"; location = "Kota Yogyakarta"; max_duration = "1 bulan"; handover = "Kurir lokal"; rental_price = 10000; latitude = -7.797; longitude = 110.370; description = "Koleksi rapi untuk pembaca yang ingin membangun rutinitas fokus." }
+  @{ owner = $nadia; cover = $covers[21]; title = "Dilan 1990"; author = "Pidi Baiq"; category = "Novel"; theme = "Romance"; condition = "Baik"; location = "Bantul"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 6500; latitude = -7.875; longitude = 110.331; description = "Novel remaja populer dengan cerita ringan dan dialog khas." }
+  @{ owner = $bima; cover = $covers[21]; title = "Dilan 1990"; author = "Pidi Baiq"; category = "Novel"; theme = "Romance"; condition = "Cukup baik"; location = "Seturan"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 5500; latitude = -7.766; longitude = 110.409; description = "Ada sedikit bekas pakai di cover, halaman masih lengkap." }
+  @{ owner = $dewi; cover = $covers[0]; title = "Filosofi Teras"; author = "Henry Manampiring"; category = "Pengembangan diri"; theme = "Mindset"; condition = "Baik"; location = "Pogung"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 8000; latitude = -7.759; longitude = 110.376; description = "Bacaan pengantar stoisisme untuk refleksi dan pengambilan keputusan." }
+  @{ owner = $salsa; cover = $covers[0]; title = "Filosofi Teras"; author = "Henry Manampiring"; category = "Pengembangan diri"; theme = "Psikologi"; condition = "Ada catatan"; location = "Condongcatur"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 6500; latitude = -7.758; longitude = 110.407; description = "Beberapa catatan kecil di margin, cocok untuk diskusi bacaan." }
+  @{ owner = $farhan; cover = $covers[18]; title = "Rich Dad Poor Dad"; author = "Robert Kiyosaki"; category = "Bisnis"; theme = "Keuangan"; condition = "Baik"; location = "Kota Yogyakarta"; max_duration = "2 minggu"; handover = "Kurir lokal"; rental_price = 8500; latitude = -7.797; longitude = 110.370; description = "Buku literasi finansial populer tentang aset, arus kas, dan pola pikir uang." }
+  @{ owner = $yusuf; cover = $covers[18]; title = "Rich Dad Poor Dad"; author = "Robert Kiyosaki"; category = "Bisnis"; theme = "Investasi"; condition = "Cukup baik"; location = "UGM, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 7000; latitude = -7.771; longitude = 110.377; description = "Edisi terpakai tetapi masih jelas untuk dibaca." }
+  @{ owner = $nadia; cover = $covers[13]; title = "Cantik Itu Luka"; author = "Eka Kurniawan"; category = "Sastra"; theme = "Klasik"; condition = "Seperti baru"; location = "Bantul"; max_duration = "1 bulan"; handover = "Titik temu publik"; rental_price = 9000; latitude = -7.875; longitude = 110.331; description = "Novel sastra Indonesia dengan nuansa sejarah, keluarga, dan realisme magis." }
+  @{ owner = $bima; cover = $covers[14]; title = "Kalkulus Dasar"; author = "Purcell"; category = "Pendidikan"; theme = "Matematika"; condition = "Ada catatan"; location = "Seturan"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 9500; latitude = -7.766; longitude = 110.409; description = "Buku kalkulus dengan coretan latihan dan catatan rumus dasar." }
+  @{ owner = $yusuf; cover = $covers[14]; title = "Kalkulus Dasar"; author = "Purcell"; category = "Pendidikan"; theme = "Matematika"; condition = "Baik"; location = "UGM, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 10500; latitude = -7.771; longitude = 110.378; description = "Referensi dasar kalkulus untuk turunan, integral, dan latihan teknik." }
+  @{ owner = $salsa; cover = $covers[4]; title = "Algoritma Dasar"; author = "Rinaldi Munir"; category = "Teknologi"; theme = "Pemrograman"; condition = "Baik"; location = "Condongcatur"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 11500; latitude = -7.758; longitude = 110.407; description = "Cocok untuk belajar struktur data, kompleksitas, dan dasar algoritma." }
+  @{ owner = $dewi; cover = $covers[4]; title = "Algoritma Dasar"; author = "Rinaldi Munir"; category = "Teknologi"; theme = "Pemrograman"; condition = "Cukup baik"; location = "Pogung"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 9500; latitude = -7.759; longitude = 110.376; description = "Ada tanda pakai di cover, isi masih lengkap untuk referensi kuliah." }
+  @{ owner = $farhan; cover = $covers[17]; title = "Sapiens"; author = "Yuval Noah Harari"; category = "Nonfiksi"; theme = "Sejarah"; condition = "Seperti baru"; location = "Kota Yogyakarta"; max_duration = "1 bulan"; handover = "Kurir lokal"; rental_price = 11000; latitude = -7.797; longitude = 110.370; description = "Buku sejarah populer tentang perkembangan manusia dan masyarakat." }
+  @{ owner = $nadia; cover = $covers[17]; title = "Sapiens"; author = "Yuval Noah Harari"; category = "Nonfiksi"; theme = "Sains populer"; condition = "Baik"; location = "Bantul"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 9500; latitude = -7.875; longitude = 110.331; description = "Cocok untuk pembaca nonfiksi populer dan sejarah manusia." }
+  @{ owner = $bima; cover = $covers[16]; title = "The Pragmatic Programmer"; author = "Andrew Hunt & David Thomas"; category = "Teknologi"; theme = "Pemrograman"; condition = "Seperti baru"; location = "Seturan"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 15000; latitude = -7.766; longitude = 110.409; description = "Buku praktik software engineering untuk kebiasaan engineer sehari-hari." }
+  @{ owner = $salsa; cover = $covers[16]; title = "The Pragmatic Programmer"; author = "Andrew Hunt & David Thomas"; category = "Teknologi"; theme = "Pemrograman"; condition = "Baik"; location = "Condongcatur"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 13500; latitude = -7.758; longitude = 110.407; description = "Referensi ringkas untuk desain kode, debugging, dan disiplin pengembangan." }
+  @{ owner = $dewi; cover = $covers[10]; title = "The Lean Startup"; author = "Eric Ries"; category = "Bisnis"; theme = "Startup"; condition = "Baik"; location = "Pogung"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 9500; latitude = -7.759; longitude = 110.376; description = "Buku validasi ide produk, eksperimen cepat, dan pembelajaran startup." }
+  @{ owner = $farhan; cover = $covers[10]; title = "The Lean Startup"; author = "Eric Ries"; category = "Bisnis"; theme = "Kewirausahaan"; condition = "Cukup baik"; location = "Kota Yogyakarta"; max_duration = "1 bulan"; handover = "Kurir lokal"; rental_price = 8500; latitude = -7.797; longitude = 110.370; description = "Edisi terpakai untuk bacaan bisnis dan pengembangan produk." }
+  @{ owner = $nadia; cover = $covers[6]; title = "Psikologi Uang"; author = "Morgan Housel"; category = "Bisnis"; theme = "Keuangan"; condition = "Baik"; location = "Bantul"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 8000; latitude = -7.875; longitude = 110.331; description = "Kumpulan cerita pendek tentang perilaku manusia saat mengambil keputusan finansial." }
+  @{ owner = $yusuf; cover = $covers[6]; title = "Psikologi Uang"; author = "Morgan Housel"; category = "Bisnis"; theme = "Investasi"; condition = "Seperti baru"; location = "UGM, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 9500; latitude = -7.771; longitude = 110.377; description = "Kondisi rapi untuk bacaan literasi finansial yang ringan." }
+  @{ owner = $salsa; cover = $covers[8]; title = "Data Science dari Nol"; author = "Joel Grus"; category = "Teknologi"; theme = "Data science"; condition = "Baik"; location = "Condongcatur"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 13500; latitude = -7.758; longitude = 110.407; description = "Pengantar data science, Python, statistik, dan machine learning dasar." }
+  @{ owner = $bima; cover = $covers[8]; title = "Data Science dari Nol"; author = "Joel Grus"; category = "Teknologi"; theme = "AI"; condition = "Cukup baik"; location = "Seturan"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 12000; latitude = -7.766; longitude = 110.409; description = "Ada beberapa catatan latihan, cocok untuk pemula yang belajar mandiri." }
+  @{ owner = $dewi; cover = $covers[23]; title = "Harry Potter"; author = "J.K. Rowling"; category = "Novel"; theme = "Fantasi"; condition = "Baik"; location = "Pogung"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 8500; latitude = -7.759; longitude = 110.376; description = "Bacaan fantasi populer dengan kondisi halaman masih lengkap dan rapi." }
+  @{ owner = $farhan; cover = $covers[23]; title = "Harry Potter"; author = "J.K. Rowling"; category = "Novel"; theme = "Adventure"; condition = "Cukup baik"; location = "Kota Yogyakarta"; max_duration = "2 minggu"; handover = "Kurir lokal"; rental_price = 7500; latitude = -7.797; longitude = 110.370; description = "Ada tanda pakai di cover, isi tetap nyaman dibaca." }
 )
 
 $createdBooks = @()
@@ -458,14 +516,14 @@ New-Chat -Sender $ammar -ParticipantId ([int]$rania.id) -BookId ([int]$createdBo
 
 Write-Host ""
 Write-Host "Seed dummy data selesai." -ForegroundColor Green
-Write-Host "Login demo:"
-Write-Host "  Admin    : admin@unilibra.local / $demoPassword"
-Write-Host "  Owner 1  : nicholas.demo@unilibra.local / $demoPassword"
-Write-Host "  Owner 2  : rania.demo@unilibra.local / $demoPassword"
-Write-Host "  Peminjam : ammar.demo@unilibra.local / $demoPassword"
+Write-Host "Login internal:"
+Write-Host "  Admin    : admin@unilibra.local / $internalPassword"
+Write-Host "  Owner 1  : nicholas@unilibra.local / $internalPassword"
+Write-Host "  Owner 2  : rania@unilibra.local / $internalPassword"
+Write-Host "  Peminjam : ammar@unilibra.local / $internalPassword"
 Write-Host ""
 Write-Host "Data dibuat:"
-Write-Host "  Users    : 4"
+Write-Host "  Users    : 10"
 Write-Host "  Books    : $($createdBooks.Count)"
 Write-Host "  Transaksi: 3"
 Write-Host "  Chat     : 2 thread"

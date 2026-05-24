@@ -32,6 +32,21 @@ export type Book = {
   updated_at: string;
 };
 
+export type CatalogBook = {
+  id: number;
+  title: string;
+  author: string;
+  category?: string;
+  theme?: string;
+  cover_url?: string;
+  available_count: number;
+  min_price: number;
+  max_price: number;
+  min_distance_km?: number;
+  max_distance_km?: number;
+  updated_at: string;
+};
+
 export type Transaction = {
   id: number;
   book_id: number;

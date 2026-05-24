@@ -29,6 +29,7 @@ func SetupRouter() *gin.Engine {
 		api.GET("/maps/resolve", controllers.ResolveMapsLink)
 
 		api.GET("/books", controllers.GetBooks)
+		api.GET("/books/versions", controllers.GetBookVersions)
 		api.GET("/books/:id", controllers.GetBookByID)
 
 		api.GET("/ai/search", controllers.SearchBooksAI)

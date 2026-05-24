@@ -150,7 +150,7 @@ function AIPage({ onBorrowBook }: AIPageProps) {
                           {book.cover_url ? <img alt="" src={mediaURL(book.cover_url)} /> : null}
                         </span>
                         <span className="ai-result-copy">
-                          <strong>{cleanTitle(book.title)}</strong>
+                          <strong>{book.title}</strong>
                           <small>
                             {book.author} | {book.location || "Lokasi belum diisi"}
                             {typeof book.distance_km === "number"
@@ -213,10 +213,6 @@ function AIPage({ onBorrowBook }: AIPageProps) {
       </section>
     </main>
   );
-}
-
-function cleanTitle(title: string) {
-  return title.replace(/^\[DEMO\]\s*/i, "");
 }
 
 function LocationIcon() {

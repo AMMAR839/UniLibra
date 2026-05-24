@@ -5,6 +5,7 @@ import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import AIPage from "./pages/AIPage";
 import AdminPage from "./pages/Admin";
+import BookVersionsPage from "./pages/BookVersions";
 import BorrowBookPage from "./pages/BorrowBook";
 import CatalogPage from "./pages/Catalog";
 import ContactPage from "./pages/Contact";
@@ -19,6 +20,7 @@ import { getToken, setToken } from "./lib/api";
 type AppPage =
   | "home"
   | "catalog"
+  | "book-versions"
   | "lend"
   | "borrow"
   | "contact"
@@ -53,6 +55,10 @@ function pageFromPath(pathname: string): AppPage {
 
   if (pathname === "/katalog" || pathname === "/catalog") {
     return "catalog";
+  }
+
+  if (pathname === "/katalog/versi" || pathname === "/catalog/versions") {
+    return "book-versions";
   }
 
   if (pathname === "/pinjamkan") {
@@ -204,7 +210,7 @@ function App() {
     <>
       <Navbar
         activePage={
-          page === "catalog" || page === "borrow"
+          page === "catalog" || page === "borrow" || page === "book-versions"
             ? "catalog"
             : page === "lend"
               ? "lend"
@@ -224,7 +230,17 @@ function App() {
       {page === "catalog" ? (
         <CatalogPage
           onBorrowBook={(bookID) => navigateTo(`/meminjam?book=${bookID}`)}
+          onSelectBookVersions={(book) =>
+            navigateTo(
+              `/katalog/versi?title=${encodeURIComponent(book.title)}`,
+            )
+          }
           onLendBook={() => navigateTo("/pinjamkan")}
+        />
+      ) : page === "book-versions" ? (
+        <BookVersionsPage
+          onBackToCatalog={() => navigateTo("/katalog")}
+          onBorrowBook={(bookID) => navigateTo(`/meminjam?book=${bookID}`)}
         />
       ) : page === "lend" ? (
         <LendBookPage />

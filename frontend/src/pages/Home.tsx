@@ -46,7 +46,7 @@ function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
   const heroBooks = (aiBooks.length > 0 ? aiBooks : backendBooks).slice(0, 4);
   const featuredBook = heroBooks[activeSlide] ?? heroBooks[0];
   const nextSlide = heroBooks.length > 0 ? (activeSlide + 1) % heroBooks.length : 0;
-  const backendRailBooks = backendBooks.slice(0, 10);
+  const viralBooks = (aiBooks.length > 0 ? aiBooks : backendBooks).slice(0, 10);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -138,7 +138,7 @@ function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
               >
                 <div className="home-featured-book">
                   {book.cover_url ? <img src={mediaURL(book.cover_url)} alt="" /> : null}
-                  <span>{cleanBookTitle(book.title)}</span>
+                  <span>{book.title}</span>
                 </div>
               </div>
             ))}
@@ -159,7 +159,7 @@ function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
           <span className="home-panel-kicker">
             {aiBooks.length > 0 ? "Rekomendasi AI" : "Katalog backend"}
           </span>
-          <strong>{featuredBook ? cleanBookTitle(featuredBook.title) : "Buku UniLibra"}</strong>
+          <strong>{featuredBook ? featuredBook.title : "Buku UniLibra"}</strong>
           <span className="home-panel-author">
             {featuredBook?.author || "Data dari backend"}
           </span>
@@ -205,8 +205,8 @@ function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
       <section className="home-rail-section" id="sedang-ramai">
         <div className="home-section-heading">
           <div>
-            <span>Dari Backend</span>
-            <h2>Buku terbaru langsung dari database.</h2>
+            <span>Buku Viral</span>
+            <h2>Buku yang sedang ramai dicari pembaca.</h2>
           </div>
           <button className="btn-ghost" type="button" onClick={onExploreCatalog}>
             Buka katalog
@@ -216,7 +216,7 @@ function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
         {homeNotice ? <p className="home-data-note">{homeNotice}</p> : null}
 
         <div className="home-book-rail">
-          {backendRailBooks.map((book) => (
+          {viralBooks.map((book) => (
             <button
               className="home-poster"
               key={book.id}
@@ -225,13 +225,13 @@ function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
             >
               <div className="home-poster-cover">
                 {book.cover_url ? <img src={mediaURL(book.cover_url)} alt="" /> : null}
-                <span>{cleanBookTitle(book.title)}</span>
+                <span>{book.title}</span>
               </div>
               <div className="home-poster-body">
                 <span>{book.category || "Katalog"}</span>
-                <h3>{cleanBookTitle(book.title)}</h3>
+                <h3>{book.title}</h3>
                 <p>
-                  {book.author} &bull; {formatCurrency(book.rental_price)}
+                  {book.author} &bull; {formatBookPrice(book)}
                 </p>
               </div>
             </button>
@@ -302,6 +302,24 @@ function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
   );
 }
 
+function formatBookPrice(book: Book) {
+  const rentalPrice = Number(book.rental_price);
+  const minPrice = Number((book as Book & { min_price?: number }).min_price);
+  const maxPrice = Number((book as Book & { max_price?: number }).max_price);
+
+  if (Number.isFinite(rentalPrice)) {
+    return formatCurrency(rentalPrice);
+  }
+  if (Number.isFinite(minPrice) && Number.isFinite(maxPrice) && Math.round(minPrice) !== Math.round(maxPrice)) {
+    return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`;
+  }
+  if (Number.isFinite(minPrice)) {
+    return formatCurrency(minPrice);
+  }
+
+  return "Harga tersedia di katalog";
+}
+
 function ArrowIcon() {
   return (
     <svg
@@ -319,10 +337,6 @@ function ArrowIcon() {
       />
     </svg>
   );
-}
-
-function cleanBookTitle(title: string) {
-  return title.replace(/^\[DEMO\]\s*/i, "");
 }
 
 export default HomePage;
