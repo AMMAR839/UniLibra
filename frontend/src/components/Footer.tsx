@@ -7,7 +7,10 @@ function Footer(_props: FooterProps) {
     <footer>
       <div className="footer-top">
         <div className="footer-brand">
-          <span className="logo-text">UniLibra</span>
+          <div className="footer-brand-logo">
+            <img className="logo-mark" src="/Lambang.png" alt="UniLibra" />
+            <span className="logo-text">UniLibra</span>
+          </div>
           <p>
             Platform pinjam buku fisik berbasis komunitas. Membaca lebih
             terjangkau, koleksi lebih termanfaatkan.

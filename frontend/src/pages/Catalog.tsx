@@ -34,6 +34,7 @@ function CatalogPage({ onBorrowBook, onSelectBookVersions, onLendBook }: Catalog
   const [popularBooks, setPopularBooks] = useState<CatalogBook[]>([]);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
+  const [personalized, setPersonalized] = useState(false);
   const [locationNotice, setLocationNotice] = useState("");
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
 
@@ -84,17 +85,18 @@ function CatalogPage({ onBorrowBook, onSelectBookVersions, onLendBook }: Catalog
         }
 
         const queryString = params.toString();
-        const response = await apiFetch<{ data: RawCatalogBook[] }>(
+        const response = await apiFetch<{ data: RawCatalogBook[]; personalized?: boolean }>(
           `/api/books${queryString ? `?${queryString}` : ""}`,
           {
-            auth: false,
             signal: controller.signal,
           },
         );
         setBooks(dedupeCatalogBooks(response.data.map((book) => toCatalogBook(book, userLocation))));
+        setPersonalized(Boolean(response.personalized));
       } catch (error) {
         if (!controller.signal.aborted) {
           setBooks([]);
+          setPersonalized(false);
           setNotice(error instanceof Error ? error.message : "Katalog belum bisa dimuat.");
         }
       } finally {
@@ -246,6 +248,9 @@ function CatalogPage({ onBorrowBook, onSelectBookVersions, onLendBook }: Catalog
             <h2 className="section-title">Pilih Buku yang Mau Dipinjam</h2>
           </div>
           <div className="catalog-section-meta">
+            {personalized && !hasActiveFilters ? (
+              <span className="catalog-personal-badge">Untuk kamu</span>
+            ) : null}
             <span>{books.length} buku cocok</span>
             <a href="#catalog-books" className="section-link">
               Lihat semua
@@ -619,6 +624,7 @@ function toCatalogBook(
     max_price: finiteNumber(book.max_price) ?? maxPrice,
     min_distance_km: finiteNumber(book.min_distance_km) ?? fallbackDistance,
     max_distance_km: finiteNumber(book.max_distance_km) ?? fallbackDistance,
+    personal_score: finiteNumber(book.personal_score),
     updated_at: book.updated_at ?? new Date(0).toISOString(),
   };
 }
@@ -637,6 +643,10 @@ function dedupeCatalogBooks(items: CatalogBook[]) {
     current.available_count += Math.max(1, item.available_count);
     current.min_price = Math.min(current.min_price, item.min_price);
     current.max_price = Math.max(current.max_price, item.max_price);
+    current.personal_score = Math.max(
+      finiteNumber(current.personal_score) ?? 0,
+      finiteNumber(item.personal_score) ?? 0,
+    );
 
     const itemMinDistance = finiteNumber(item.min_distance_km);
     const currentMinDistance = finiteNumber(current.min_distance_km);

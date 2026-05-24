@@ -71,7 +71,7 @@
 
 .ai-empty-intro h1 {
   color: var(--ink);
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: clamp(2rem, 4vw, 3.4rem);
   font-weight: 600;
   letter-spacing: 0;
@@ -253,7 +253,7 @@
   background: rgba(255, 255, 255, 0.72);
   color: var(--ink);
   cursor: pointer;
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.78rem;
   font-weight: 800;
   padding: 9px 12px;

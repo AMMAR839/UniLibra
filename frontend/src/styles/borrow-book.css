@@ -347,7 +347,7 @@
   border-radius: 10px;
   background: rgba(237, 231, 213, 0.7);
   color: var(--ink);
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.93rem;
   outline: none;
   padding: 14px 15px;

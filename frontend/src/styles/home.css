@@ -381,8 +381,7 @@
   transform: translateY(-1px);
 }
 
-.home-rail-section,
-.home-path-section {
+.home-rail-section {
   padding: 76px 5vw;
   background: #1a1208;
 }
@@ -570,35 +569,6 @@
   color: var(--text-muted);
   line-height: 1.65;
   font-size: 0.9rem;
-}
-
-.home-path-section {
-  background: #130d08;
-}
-
-.home-path-row {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.home-path-pill {
-  border: 1px solid rgba(245, 240, 232, 0.14);
-  background: rgba(245, 240, 232, 0.06);
-  color: rgba(245, 240, 232, 0.82);
-  border-radius: 999px;
-  padding: 13px 18px;
-  cursor: pointer;
-  transition:
-    border-color 0.2s,
-    color 0.2s,
-    transform 0.2s;
-}
-
-.home-path-pill:hover {
-  border-color: var(--amber-light);
-  color: var(--amber-light);
-  transform: translateY(-2px);
 }
 
 .home-owner-section,

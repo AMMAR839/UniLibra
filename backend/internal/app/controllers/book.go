@@ -14,6 +14,7 @@ import (
 	"unilibra-backend/internal/pkg/config"
 	"unilibra-backend/internal/pkg/models"
 	"unilibra-backend/internal/pkg/storage"
+	"unilibra-backend/internal/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -48,6 +49,7 @@ type BookFilters struct {
 	Sort        string
 	Latitude    *float64
 	Longitude   *float64
+	PersonalUserID *uint
 }
 
 type CatalogBook struct {
@@ -62,7 +64,16 @@ type CatalogBook struct {
 	MaxPrice       float64   `json:"max_price"`
 	MinDistanceKM  *float64  `json:"min_distance_km,omitempty"`
 	MaxDistanceKM  *float64  `json:"max_distance_km,omitempty"`
+	PersonalScore  float64   `json:"personal_score,omitempty"`
 	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+type catalogPersonalProfile struct {
+	Categories map[string]float64
+	Themes     map[string]float64
+	Authors    map[string]float64
+	Titles     map[string]float64
+	Ready      bool
 }
 
 func CreateBook(c *gin.Context) {
@@ -120,15 +131,16 @@ func CreateBook(c *gin.Context) {
 }
 
 func GetBooks(c *gin.Context) {
-	books, err := catalogBooks(bookFiltersFromQuery(c), 72)
+	books, personalized, err := catalogBooks(bookFiltersFromQuery(c), 72)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data katalog buku."})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Berhasil mengambil katalog buku",
-		"data":    books,
+		"message":      "Berhasil mengambil katalog buku",
+		"data":         books,
+		"personalized": personalized,
 	})
 }
 
@@ -223,12 +235,13 @@ func availableBooks(filters BookFilters, limit int) ([]models.Book, error) {
 	return books, db.Order("books.updated_at DESC").Find(&books).Error
 }
 
-func catalogBooks(filters BookFilters, limit int) ([]CatalogBook, error) {
+func catalogBooks(filters BookFilters, limit int) ([]CatalogBook, bool, error) {
 	var books []models.Book
 	if err := baseAvailableBooksQuery(filters).Order("books.updated_at DESC").Find(&books).Error; err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
+	personalProfile := loadCatalogPersonalProfile(filters.PersonalUserID)
 	groups := make(map[string]*CatalogBook)
 	for _, book := range books {
 		distance := distanceFromFilter(filters, book)
@@ -296,6 +309,13 @@ func catalogBooks(filters BookFilters, limit int) ([]CatalogBook, error) {
 				current.MaxDistanceKM = &value
 			}
 		}
+
+		if personalProfile.Ready {
+			score := catalogPersonalScore(book, personalProfile)
+			if score > current.PersonalScore {
+				current.PersonalScore = score
+			}
+		}
 	}
 
 	catalog := make([]CatalogBook, 0, len(groups))
@@ -306,12 +326,12 @@ func catalogBooks(filters BookFilters, limit int) ([]CatalogBook, error) {
 		catalog = append(catalog, *item)
 	}
 
-	sortCatalogBooks(catalog, filters.Sort, filters.Query)
+	sortCatalogBooks(catalog, filters.Sort, filters.Query, personalProfile.Ready)
 	if limit > 0 && len(catalog) > limit {
 		catalog = catalog[:limit]
 	}
 
-	return catalog, nil
+	return catalog, personalProfile.Ready, nil
 }
 
 func baseAvailableBooksQuery(filters BookFilters) *gorm.DB {
@@ -364,7 +384,7 @@ func baseAvailableBooksQuery(filters BookFilters) *gorm.DB {
 	return db
 }
 
-func sortCatalogBooks(books []CatalogBook, sortMode string, query string) {
+func sortCatalogBooks(books []CatalogBook, sortMode string, query string, personalized bool) {
 	normalizedQuery := normalizeBookTitleKey(query)
 	sort.SliceStable(books, func(i, j int) bool {
 		switch sortMode {
@@ -390,9 +410,72 @@ func sortCatalogBooks(books []CatalogBook, sortMode string, query string) {
 					return leftScore > rightScore
 				}
 			}
+			if personalized && books[i].PersonalScore != books[j].PersonalScore {
+				return books[i].PersonalScore > books[j].PersonalScore
+			}
 			return books[i].UpdatedAt.After(books[j].UpdatedAt)
 		}
 	})
+}
+
+func loadCatalogPersonalProfile(userID *uint) catalogPersonalProfile {
+	profile := catalogPersonalProfile{
+		Categories: make(map[string]float64),
+		Themes:     make(map[string]float64),
+		Authors:    make(map[string]float64),
+		Titles:     make(map[string]float64),
+	}
+	if userID == nil {
+		return profile
+	}
+
+	var transactions []models.Transaction
+	if err := config.DB.Preload("Book").
+		Where("borrower_id = ? AND status <> ?", *userID, "REJECTED").
+		Order("created_at DESC").
+		Limit(80).
+		Find(&transactions).Error; err != nil {
+		return profile
+	}
+
+	for index, transaction := range transactions {
+		book := transaction.Book
+		if book.ID == 0 {
+			continue
+		}
+		weight := 1.0
+		if transaction.Status == "COMPLETED" {
+			weight += 0.45
+		}
+		if index < 10 {
+			weight += 0.35
+		}
+
+		addPreferenceWeight(profile.Categories, book.Category, weight*1.15)
+		addPreferenceWeight(profile.Themes, book.Theme, weight)
+		addPreferenceWeight(profile.Authors, book.Author, weight*0.55)
+		addPreferenceWeight(profile.Titles, book.Title, weight*0.35)
+	}
+
+	profile.Ready = len(profile.Categories)+len(profile.Themes)+len(profile.Authors)+len(profile.Titles) > 0
+	return profile
+}
+
+func addPreferenceWeight(target map[string]float64, value string, weight float64) {
+	key := normalizeBookTitleKey(value)
+	if key == "" {
+		return
+	}
+	target[key] += weight
+}
+
+func catalogPersonalScore(book models.Book, profile catalogPersonalProfile) float64 {
+	score := 0.0
+	score += profile.Categories[normalizeBookTitleKey(book.Category)] * 1.25
+	score += profile.Themes[normalizeBookTitleKey(book.Theme)] * 1.05
+	score += profile.Authors[normalizeBookTitleKey(book.Author)] * 0.75
+	score += profile.Titles[normalizeBookTitleKey(book.Title)] * 0.45
+	return score
 }
 
 func catalogSearchScore(book CatalogBook, normalizedQuery string) float64 {
@@ -710,10 +793,11 @@ func bindBookInput(c *gin.Context) (CreateBookInput, *multipart.FileHeader, erro
 
 func bookFiltersFromQuery(c *gin.Context) BookFilters {
 	filters := BookFilters{
-		Query:    c.Query("q"),
-		Category: c.Query("category"),
-		Theme:    c.Query("theme"),
-		Sort:     c.Query("sort"),
+		Query:          c.Query("q"),
+		Category:       c.Query("category"),
+		Theme:          c.Query("theme"),
+		Sort:           c.Query("sort"),
+		PersonalUserID: optionalUserIDFromRequest(c),
 	}
 
 	if minPrice, ok := parseOptionalFloat(c.Query("min_price")); ok {
@@ -742,6 +826,25 @@ func bookFiltersFromQuery(c *gin.Context) BookFilters {
 	}
 
 	return filters
+}
+
+func optionalUserIDFromRequest(c *gin.Context) *uint {
+	authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
+	if authHeader == "" {
+		return nil
+	}
+
+	tokenString := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
+	if tokenString == "" || tokenString == authHeader {
+		return nil
+	}
+
+	userID, err := utils.ParseToken(tokenString)
+	if err != nil || userID == 0 {
+		return nil
+	}
+
+	return &userID
 }
 
 func parseOptionalFloat(value string) (float64, bool) {

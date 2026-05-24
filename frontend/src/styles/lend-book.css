@@ -93,7 +93,7 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.76);
   color: var(--ink);
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.92rem;
   outline: none;
   padding: 14px 15px;
@@ -131,7 +131,7 @@
   background: var(--ink);
   color: var(--amber-light);
   cursor: pointer;
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.78rem;
   font-weight: 800;
   padding: 9px 12px;
@@ -164,7 +164,7 @@
   background: rgba(74, 103, 65, 0.08);
   color: var(--sage);
   cursor: pointer;
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.82rem;
   font-weight: 900;
   padding: 0 12px;
@@ -207,7 +207,7 @@
   background: rgba(255, 255, 255, 0.76);
   color: var(--sage);
   cursor: pointer;
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.78rem;
   font-weight: 900;
   padding: 0 13px;

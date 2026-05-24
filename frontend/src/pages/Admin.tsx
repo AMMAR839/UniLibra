@@ -106,7 +106,7 @@ function AdminPage() {
     <main className="admin-page">
       <aside className="admin-sidebar">
         <a className="admin-brand" href="/">
-          <div className="logo-mark"></div>
+          <img className="logo-mark" src="/Lambang.png" alt="UniLibra" />
           <strong>UniLibra</strong>
         </a>
         <span className="admin-nav-label">Navigasi</span>

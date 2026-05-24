@@ -235,7 +235,7 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.5);
   color: var(--text-muted);
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.82rem;
   font-weight: 700;
   white-space: nowrap;
@@ -301,6 +301,16 @@
   white-space: nowrap;
 }
 
+.catalog-personal-badge {
+  border: 1px solid rgba(19, 13, 8, 0.12);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
 .catalog-section-meta .section-link {
   gap: 7px;
 }
@@ -356,7 +366,7 @@
   background: var(--ink);
   color: var(--amber-light);
   cursor: pointer;
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.78rem;
   font-weight: 900;
   padding: 0 14px;
@@ -383,7 +393,7 @@
   border: 0;
   background: transparent;
   color: var(--ink);
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.94rem;
   outline: none;
   padding: 17px 0;
@@ -406,7 +416,7 @@
   background: rgba(245, 240, 232, 0.82);
   color: var(--ink);
   cursor: pointer;
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.76rem;
   font-weight: 800;
   padding: 8px 12px;
@@ -437,7 +447,7 @@
   box-shadow: 0 14px 34px rgba(26, 18, 8, 0.08);
   color: var(--ink);
   cursor: pointer;
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.86rem;
   font-weight: 900;
   transition:
@@ -492,7 +502,7 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.76);
   color: var(--ink);
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.84rem;
   font-weight: 800;
 }
@@ -761,7 +771,7 @@
   background: transparent;
   color: var(--ink);
   cursor: pointer;
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.84rem;
   font-weight: 900;
   padding: 0;

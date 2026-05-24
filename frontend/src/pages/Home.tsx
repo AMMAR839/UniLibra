@@ -12,14 +12,6 @@ type AIRecommendationResponse = {
   warning?: string;
 };
 
-const readingPaths = [
-  "Bacaan ringan setelah kuliah",
-  "Buku pengembangan diri",
-  "Novel Indonesia populer",
-  "Referensi tugas dan riset",
-  "Koleksi dekat kos",
-];
-
 const benefits = [
   {
     number: "01",
@@ -257,22 +249,6 @@ function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
               <h3>{benefit.title}</h3>
               <p>{benefit.text}</p>
             </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="home-path-section" id="blog">
-        <div className="home-section-heading">
-          <div>
-            <span>Mulai dari mood baca</span>
-            <h2>Pilih jalur bacaan yang terasa paling dekat.</h2>
-          </div>
-        </div>
-        <div className="home-path-row">
-          {readingPaths.map((path) => (
-            <button className="home-path-pill" type="button" key={path}>
-              {path}
-            </button>
           ))}
         </div>
       </section>
