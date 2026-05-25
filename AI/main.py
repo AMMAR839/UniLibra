@@ -208,24 +208,42 @@ def execute_semantic_search(query_text, limit=5, latitude=None, longitude=None):
 
         for book in merged_results:
             book["distance_km"] = calculate_distance_km(latitude, longitude, book)
+            title_text = str(book.get("title") or "").lower()
+            author_text = str(book.get("author") or "").lower()
             haystack = " ".join([
-                str(book.get("title") or ""),
-                str(book.get("author") or ""),
+                title_text,
+                author_text,
                 str(book.get("category") or ""),
                 str(book.get("theme") or ""),
                 str(book.get("location") or ""),
             ]).lower()
             compact_haystack = "".join(haystack.split())
+            compact_title = "".join(title_text.split())
+            compact_author = "".join(author_text.split())
             book["exact_match"] = bool(normalized_query and normalized_query in compact_haystack)
+            if normalized_query and compact_title == normalized_query:
+                book["match_rank"] = 0
+            elif normalized_query and compact_title.startswith(normalized_query):
+                book["match_rank"] = 1
+            elif normalized_query and normalized_query in compact_title:
+                book["match_rank"] = 2
+            elif normalized_query and compact_author == normalized_query:
+                book["match_rank"] = 3
+            elif normalized_query and normalized_query in compact_author:
+                book["match_rank"] = 4
+            elif book["exact_match"]:
+                book["match_rank"] = 5
+            else:
+                book["match_rank"] = 6
 
         if latitude is not None and longitude is not None:
             merged_results.sort(key=lambda book: (
-                not book["exact_match"],
+                book["match_rank"],
                 book["distance_km"] is None,
                 book["distance_km"] if book["distance_km"] is not None else 999999,
             ))
         else:
-            merged_results.sort(key=lambda book: (not book["exact_match"],))
+            merged_results.sort(key=lambda book: (book["match_rank"],))
 
         return merged_results[:limit]
     finally:
@@ -302,9 +320,9 @@ def health():
     }
 
 @app.get("/search")
-def search_books(query: str, limit: int = 5):
+def search_books(query: str, limit: int = 5, latitude: float | None = None, longitude: float | None = None):
     # Menggunakan fungsi utilitas agar kode lebih ringkas
-    results = execute_semantic_search(query, limit)
+    results = execute_semantic_search(query, limit, latitude, longitude)
     return {"query": query, "results": results}
 
 @app.get("/recommend/similar/{book_id}")

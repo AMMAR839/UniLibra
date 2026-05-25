@@ -41,7 +41,7 @@ export default function Login({ onRegisterClick }: LoginProps) {
         setToken(data.token);
       }
 
-      window.location.href = "/";
+      window.location.href = data.user?.role === "admin" ? "/admin" : "/";
     } catch (error) {
       console.error(error);
       alert("Email atau password salah");

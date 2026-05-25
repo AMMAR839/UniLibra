@@ -27,9 +27,19 @@ func SearchBooksAI(c *gin.Context) {
 		return
 	}
 
-	encodedQuery := url.QueryEscape(query)
+	targetValues := url.Values{}
+	targetValues.Set("query", query)
+	if limit := c.Query("limit"); limit != "" {
+		targetValues.Set("limit", limit)
+	}
+	if latitude := c.Query("latitude"); latitude != "" {
+		targetValues.Set("latitude", latitude)
+	}
+	if longitude := c.Query("longitude"); longitude != "" {
+		targetValues.Set("longitude", longitude)
+	}
 
-	targetURL := fmt.Sprintf("%s/search?query=%s", getAIURL(), encodedQuery)
+	targetURL := fmt.Sprintf("%s/search?%s", getAIURL(), targetValues.Encode())
 
 	forwardRequestToAI(c, targetURL, func() {
 		writeBookFallback(c, query, "AI belum tersedia. Katalog biasa ditampilkan.")
