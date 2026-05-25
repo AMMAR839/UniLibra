@@ -24,43 +24,43 @@ type User struct {
 }
 
 type Book struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	Title       string    `gorm:"not null" json:"title"`
-	Author      string    `gorm:"not null" json:"author"`
-	Description string    `gorm:"type:text" json:"description"`
-	Category    string    `gorm:"type:varchar(100)" json:"category"`
-	Theme       string    `gorm:"type:varchar(100)" json:"theme"`
-	Condition   string    `gorm:"type:varchar(100)" json:"condition"`
-	Location    string    `gorm:"type:varchar(160)" json:"location"`
-	MaxDuration string    `gorm:"type:varchar(40)" json:"max_duration"`
-	Handover    string    `gorm:"type:varchar(100)" json:"handover"`
-	OwnerID     uint      `gorm:"not null" json:"owner_id"`
-	Owner       User      `gorm:"foreignKey:OwnerID" json:"owner,omitempty"`
-	RentalPrice float64   `gorm:"not null" json:"rental_price"`
-	Latitude    float64   `json:"latitude"`
-	Longitude   float64   `json:"longitude"`
-	Status      string    `gorm:"default:'available'" json:"status"`
-	CoverURL    string    `json:"cover_url"`
-	Embedding   *string   `gorm:"type:vector(384)" json:"-"`
-	AverageRating float64 `gorm:"-" json:"average_rating"`
-	RatingCount   int64   `gorm:"-" json:"rating_count"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID            uint      `gorm:"primaryKey" json:"id"`
+	Title         string    `gorm:"not null" json:"title"`
+	Author        string    `gorm:"not null" json:"author"`
+	Description   string    `gorm:"type:text" json:"description"`
+	Category      string    `gorm:"type:varchar(100)" json:"category"`
+	Theme         string    `gorm:"type:varchar(100)" json:"theme"`
+	Condition     string    `gorm:"type:varchar(100)" json:"condition"`
+	Location      string    `gorm:"type:varchar(160)" json:"location"`
+	MaxDuration   string    `gorm:"type:varchar(40)" json:"max_duration"`
+	Handover      string    `gorm:"type:varchar(100)" json:"handover"`
+	OwnerID       uint      `gorm:"not null" json:"owner_id"`
+	Owner         User      `gorm:"foreignKey:OwnerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"owner,omitempty"`
+	RentalPrice   float64   `gorm:"not null" json:"rental_price"`
+	Latitude      float64   `json:"latitude"`
+	Longitude     float64   `json:"longitude"`
+	Status        string    `gorm:"default:'available'" json:"status"`
+	CoverURL      string    `json:"cover_url"`
+	Embedding     *string   `gorm:"type:vector(384)" json:"-"`
+	AverageRating float64   `gorm:"-" json:"average_rating"`
+	RatingCount   int64     `gorm:"-" json:"rating_count"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type Transaction struct {
 	ID                 uint      `gorm:"primaryKey" json:"id"`
 	BookID             uint      `gorm:"not null" json:"book_id"`
-	Book               Book      `gorm:"foreignKey:BookID" json:"book,omitempty"`
+	Book               Book      `gorm:"foreignKey:BookID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"book,omitempty"`
 	BorrowerID         uint      `gorm:"not null" json:"borrower_id"`
-	Borrower           User      `gorm:"foreignKey:BorrowerID" json:"borrower,omitempty"`
+	Borrower           User      `gorm:"foreignKey:BorrowerID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"borrower,omitempty"`
 	BorrowDate         time.Time `gorm:"not null" json:"borrow_date"`
 	ExpectedReturnDate time.Time `gorm:"not null" json:"expected_return_date"`
 	Handover           string    `gorm:"type:varchar(100)" json:"handover"`
 	Location           string    `gorm:"type:varchar(160)" json:"location"`
 	Note               string    `gorm:"type:text" json:"note"`
 	Status             string    `gorm:"type:varchar(30);default:'PENDING_APPROVAL'" json:"status"`
-	TotalPrice         int       `gorm:"not null" json:"total_price"`
+	TotalPrice         float64   `gorm:"not null" json:"total_price"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
 }
@@ -68,11 +68,11 @@ type Transaction struct {
 type BookRating struct {
 	ID            uint        `gorm:"primaryKey" json:"id"`
 	BookID        uint        `gorm:"not null;index" json:"book_id"`
-	Book          Book        `gorm:"foreignKey:BookID" json:"book,omitempty"`
+	Book          Book        `gorm:"foreignKey:BookID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"book,omitempty"`
 	UserID        uint        `gorm:"not null;index" json:"user_id"`
-	User          User        `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	User          User        `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"user,omitempty"`
 	TransactionID uint        `gorm:"not null;uniqueIndex" json:"transaction_id"`
-	Transaction   Transaction `gorm:"foreignKey:TransactionID" json:"transaction,omitempty"`
+	Transaction   Transaction `gorm:"foreignKey:TransactionID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"transaction,omitempty"`
 	Rating        int         `gorm:"not null" json:"rating"`
 	Comment       string      `gorm:"type:text" json:"comment"`
 	CreatedAt     time.Time   `json:"created_at"`
@@ -94,12 +94,12 @@ type Notification struct {
 type ChatThread struct {
 	ID            uint          `gorm:"primaryKey" json:"id"`
 	BookID        *uint         `gorm:"index" json:"book_id"`
-	Book          *Book         `gorm:"foreignKey:BookID" json:"book,omitempty"`
+	Book          *Book         `gorm:"foreignKey:BookID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"book,omitempty"`
 	CreatedByID   uint          `gorm:"not null;index" json:"created_by_id"`
-	CreatedBy     User          `gorm:"foreignKey:CreatedByID" json:"created_by,omitempty"`
+	CreatedBy     User          `gorm:"foreignKey:CreatedByID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"created_by,omitempty"`
 	RecipientID   uint          `gorm:"not null;index" json:"recipient_id"`
-	Recipient     User          `gorm:"foreignKey:RecipientID" json:"recipient,omitempty"`
-	Messages      []ChatMessage `gorm:"foreignKey:ThreadID" json:"-"`
+	Recipient     User          `gorm:"foreignKey:RecipientID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"recipient,omitempty"`
+	Messages      []ChatMessage `gorm:"foreignKey:ThreadID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
 	LastMessageAt *time.Time    `json:"last_message_at"`
 	CreatedAt     time.Time     `json:"created_at"`
 	UpdatedAt     time.Time     `json:"updated_at"`
@@ -109,7 +109,7 @@ type ChatMessage struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	ThreadID  uint      `gorm:"not null;index" json:"thread_id"`
 	SenderID  uint      `gorm:"not null;index" json:"sender_id"`
-	Sender    User      `gorm:"foreignKey:SenderID" json:"sender,omitempty"`
+	Sender    User      `gorm:"foreignKey:SenderID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"sender,omitempty"`
 	Body      string    `gorm:"type:text;not null" json:"body"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
