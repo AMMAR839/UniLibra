@@ -427,7 +427,7 @@ function BooksPanel({
                   <p>{book.author}</p>
                 </div>
                 <div className="profile-book-actions">
-                  <button type="button" onClick={() => beginEdit(book)}>
+                  <button className="profile-book-edit" type="button" onClick={() => beginEdit(book)}>
                     Edit
                   </button>
                   <button
@@ -563,10 +563,18 @@ function BooksPanel({
                     </label>
                   </div>
                   <div className="profile-book-form-actions">
-                    <button disabled={busyBookID === book.id} type="submit">
+                    <button
+                      className="profile-book-save"
+                      disabled={busyBookID === book.id}
+                      type="submit"
+                    >
                       {busyBookID === book.id ? "Menyimpan..." : "Simpan"}
                     </button>
-                    <button type="button" onClick={() => setEditForm(null)}>
+                    <button
+                      className="profile-book-cancel"
+                      type="button"
+                      onClick={() => setEditForm(null)}
+                    >
                       Batal
                     </button>
                   </div>

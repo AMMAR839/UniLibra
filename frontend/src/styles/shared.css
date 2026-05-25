@@ -162,7 +162,7 @@
   padding: 14px 16px 14px 48px;
   border: 1.5px solid var(--border);
   border-radius: 10px;
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.92rem;
   color: var(--ink);
   background: var(--paper);
@@ -188,7 +188,7 @@
   color: white;
   border: none;
   border-radius: 10px;
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -430,7 +430,7 @@
   color: var(--amber-light);
   border: none;
   border-radius: 7px;
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0;
@@ -489,7 +489,7 @@
   color: white;
   border: none;
   border-radius: 10px;
-  font-family: "DM Sans", sans-serif;
+  font-family: Inter, sans-serif;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -513,10 +513,20 @@ footer {
   margin-bottom: 22px;
 }
 
+.footer-brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
 .footer-brand .logo-text {
   color: var(--paper);
-  margin-bottom: 8px;
-  display: block;
+}
+
+.footer-brand .logo-mark {
+  width: 38px;
+  height: 38px;
 }
 
 .footer-brand p {
@@ -813,7 +823,6 @@ footer {
   }
 
   .home-rail-section,
-  .home-path-section,
   .home-story-band,
   .books-section {
     padding-inline: 20px;

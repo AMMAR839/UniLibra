@@ -1,9 +1,6 @@
 .notification-page {
   min-height: 100vh;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(245, 240, 232, 0) 34%),
-    linear-gradient(135deg, rgba(74, 103, 65, 0.08), transparent 36%),
-    linear-gradient(180deg, #f5f0e8 0%, #eee8da 54%, #f6f1e8 100%);
+  background: #f5f0e8;
   color: var(--ink);
   padding: 64px 0 78px;
 }
@@ -16,17 +13,14 @@
 .notification-stream {
   border: 1px solid rgba(26, 18, 8, 0.1);
   border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 250, 240, 0.84)),
-    #fffaf1;
-  box-shadow: 0 18px 44px rgba(26, 18, 8, 0.08);
+  background: rgba(255, 252, 246, 0.9);
 }
 
 .notification-toolbar-copy span {
   display: block;
-  color: var(--amber);
+  color: var(--text-muted);
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 800;
   margin-bottom: 8px;
   text-transform: uppercase;
 }
@@ -40,8 +34,8 @@
 .notification-row p,
 .notification-mini-log p {
   color: var(--text-muted);
-  font-size: 0.88rem;
-  line-height: 1.72;
+  font-size: 0.86rem;
+  line-height: 1.58;
 }
 
 .notification-stream {
@@ -74,16 +68,21 @@
   gap: 8px;
 }
 
+.notification-filter-tabs {
+  display: flex;
+  gap: 6px;
+}
+
 .notification-toolbar-actions button,
 .notification-mark-all {
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: white;
+  background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  font-family: "DM Sans", sans-serif;
-  font-size: 0.74rem;
-  font-weight: 900;
+  font-family: Inter, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
   min-height: 34px;
   padding: 0 12px;
   transition:
@@ -102,6 +101,18 @@
   transform: translateY(-1px);
 }
 
+.notification-mark-all:disabled {
+  cursor: default;
+  opacity: 0.48;
+  transform: none;
+}
+
+.notification-mark-all:disabled:hover {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
 .notification-list {
   display: grid;
   gap: 12px;
@@ -109,27 +120,18 @@
 
 .notification-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
   align-items: center;
-  border: 1px solid rgba(26, 18, 8, 0.1);
+  border: 1px solid rgba(26, 18, 8, 0.08);
   border-radius: 8px;
-  padding: 16px;
+  padding: 15px 16px;
+  background: #fffdf8;
 }
 
 .notification-row.is-unread {
-  box-shadow: inset 3px 0 0 var(--amber);
-}
-
-.notification-mark {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(26, 18, 8, 0.88);
-  color: var(--amber-light);
+  border-color: rgba(232, 169, 58, 0.45);
+  background: #fff8ea;
 }
 
 .notification-row-copy {
@@ -140,9 +142,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--amber);
+  color: var(--text-muted);
   font-size: 0.7rem;
-  font-weight: 900;
+  font-weight: 800;
   margin-bottom: 5px;
   text-transform: uppercase;
 }
@@ -155,43 +157,30 @@
 }
 
 .notification-row h3 {
-  font-size: 1.18rem;
+  font-size: 1.08rem;
   line-height: 1.16;
   margin-bottom: 5px;
 }
 
 .notification-row button {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--ink);
-  color: var(--amber-light);
+  border: 0;
+  background: transparent;
+  color: var(--amber);
   cursor: pointer;
-  font-family: "DM Sans", sans-serif;
-  font-size: 0.78rem;
-  font-weight: 900;
-  min-height: 40px;
-  padding: 0 14px;
+  font-family: Inter, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 800;
+  min-height: 28px;
+  padding: 0;
   white-space: nowrap;
   transition:
-    background 0.2s,
-    border-color 0.2s,
+    color 0.2s,
     transform 0.2s;
 }
 
 .notification-row button:hover {
-  background: #2d2010;
-  border-color: #2d2010;
+  color: var(--ink);
   transform: translateY(-1px);
-}
-
-.notification-row b {
-  border-radius: 999px;
-  background: rgba(74, 103, 65, 0.12);
-  color: var(--sage);
-  font-size: 0.68rem;
-  font-weight: 900;
-  padding: 7px 10px;
-  text-transform: uppercase;
 }
 
 .notification-mini-log {
@@ -210,7 +199,11 @@
 }
 
 .notification-tone-amber {
-  background: rgba(232, 169, 58, 0.13);
+  background: #fffdf8;
+}
+
+.notification-tone-amber.is-unread {
+  background: #fff8ea;
 }
 
 .notification-tone-green {
@@ -259,8 +252,13 @@
     justify-content: flex-start;
   }
 
-  .notification-row button,
-  .notification-mark-all {
+.notification-row button,
+.notification-mark-all {
     width: 100%;
+  }
+
+  .notification-row button {
+    width: auto;
+    justify-self: start;
   }
 }

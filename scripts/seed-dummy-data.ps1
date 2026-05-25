@@ -345,7 +345,13 @@ CREATE TEMP TABLE seed_dummy_users AS
     'dewi@unilibra.local',
     'farhan@unilibra.local',
     'nadia@unilibra.local',
-    'yusuf@unilibra.local'
+    'yusuf@unilibra.local',
+    'lara@unilibra.local',
+    'kevin@unilibra.local',
+    'mira@unilibra.local',
+    'adit@unilibra.local',
+    'intan@unilibra.local',
+    'galih@unilibra.local'
   )
   OR LOWER(email) LIKE '%.' || 'de' || 'mo' || '@unilibra.local';
 
@@ -490,12 +496,12 @@ $dewi = Register-User -Name "Dewi Laras" -Email "dewi@unilibra.local" -City "Pog
 $farhan = Register-User -Name "Farhan Aziz" -Email "farhan@unilibra.local" -City "Kota Yogyakarta"
 $nadia = Register-User -Name "Nadia Kirana" -Email "nadia@unilibra.local" -City "Bantul"
 $yusuf = Register-User -Name "Yusuf Hidayat" -Email "yusuf@unilibra.local" -City "UGM"
-$lara = Register-User -Name "Lara Maheswari" -Email "lara.demo@unilibra.local" -City "Kotabaru"
-$kevin = Register-User -Name "Kevin Arya" -Email "kevin.demo@unilibra.local" -City "Babarsari"
-$mira = Register-User -Name "Mira Anindya" -Email "mira.demo@unilibra.local" -City "Maguwoharjo"
-$adit = Register-User -Name "Adit Wicaksono" -Email "adit.demo@unilibra.local" -City "Jakal"
-$intan = Register-User -Name "Intan Permata" -Email "intan.demo@unilibra.local" -City "Demangan"
-$galih = Register-User -Name "Galih Pradana" -Email "galih.demo@unilibra.local" -City "Godean"
+$lara = Register-User -Name "Lara Maheswari" -Email "lara@unilibra.local" -City "Kotabaru"
+$kevin = Register-User -Name "Kevin Arya" -Email "kevin@unilibra.local" -City "Babarsari"
+$mira = Register-User -Name "Mira Anindya" -Email "mira@unilibra.local" -City "Maguwoharjo"
+$adit = Register-User -Name "Adit Wicaksono" -Email "adit@unilibra.local" -City "Jakal"
+$intan = Register-User -Name "Intan Permata" -Email "intan@unilibra.local" -City "Demangan"
+$galih = Register-User -Name "Galih Pradana" -Email "galih@unilibra.local" -City "Godean"
 
 $covers = @(
   Get-BookCover -Title "Filosofi Teras" -Author "Henry Manampiring" -FallbackPath (New-CoverImage -Filename "filosofi-teras.png" -Title "Filosofi Teras" -Author "Henry Manampiring" -ColorA "#F2C14E" -ColorB "#B8651B")
@@ -615,6 +621,19 @@ $bookSeeds += @(
   @{ owner = $adit; cover = $covers[5]; title = "Clean Code"; author = "Robert C. Martin"; category = "Teknologi"; theme = "Pemrograman"; condition = "Baik"; location = "Jalan Kaliurang"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 14500; latitude = -7.743; longitude = 110.380; description = "Edisi rapi untuk belajar prinsip clean code dan refactoring dasar." }
 )
 
+$bookSeeds += @(
+  @{ owner = $ammar; cover = $covers[5]; title = "Clean Code"; author = "Robert C. Martin"; category = "Teknologi"; theme = "Pemrograman"; condition = "Seperti baru"; location = "Kampus UII, Sleman"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 15000; latitude = -7.687; longitude = 110.414; description = "Koleksi Ammar untuk pembaca yang ingin belajar menulis kode lebih rapi dan mudah dirawat." }
+  @{ owner = $ammar; cover = $covers[4]; title = "Algoritma Dasar"; author = "Rinaldi Munir"; category = "Teknologi"; theme = "Pemrograman"; condition = "Baik"; location = "Kampus UII, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 12000; latitude = -7.687; longitude = 110.414; description = "Buku kuliah algoritma dengan catatan kecil di beberapa halaman latihan." }
+  @{ owner = $ammar; cover = $covers[15]; title = "Database System Concepts"; author = "Silberschatz"; category = "Teknologi"; theme = "Database"; condition = "Baik"; location = "Kaliurang, Sleman"; max_duration = "1 bulan"; handover = "Titik temu publik"; rental_price = 14500; latitude = -7.704; longitude = 110.405; description = "Referensi basis data untuk SQL, transaksi, indeks, dan desain relasi." }
+  @{ owner = $ammar; cover = $covers[8]; title = "Data Science dari Nol"; author = "Joel Grus"; category = "Teknologi"; theme = "Data science"; condition = "Cukup baik"; location = "Kampus UII, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 13000; latitude = -7.687; longitude = 110.414; description = "Buku pengantar data science, statistik, Python, dan machine learning dasar." }
+  @{ owner = $ammar; cover = $covers[1]; title = "Atomic Habits"; author = "James Clear"; category = "Pengembangan diri"; theme = "Produktivitas"; condition = "Seperti baru"; location = "Kaliurang, Sleman"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 9000; latitude = -7.704; longitude = 110.405; description = "Buku kebiasaan kecil yang cocok untuk mahasiswa yang ingin membangun rutinitas belajar." }
+  @{ owner = $ammar; cover = $covers[9]; title = "Deep Work"; author = "Cal Newport"; category = "Pengembangan diri"; theme = "Produktivitas"; condition = "Baik"; location = "Kampus UII, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 8500; latitude = -7.687; longitude = 110.414; description = "Bacaan fokus mendalam untuk mengurangi distraksi dan meningkatkan kualitas kerja." }
+  @{ owner = $ammar; cover = $covers[22]; title = "Bulan"; author = "Tere Liye"; category = "Novel"; theme = "Fantasi"; condition = "Baik"; location = "Kaliurang, Sleman"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 7500; latitude = -7.704; longitude = 110.405; description = "Novel fantasi Tere Liye dari koleksi pribadi Ammar, cocok untuk bacaan santai." }
+  @{ owner = $ammar; cover = $covers[3]; title = "Bumi Manusia"; author = "Pramoedya Ananta Toer"; category = "Sastra"; theme = "Sejarah"; condition = "Baik"; location = "Kampus UII, Sleman"; max_duration = "1 bulan"; handover = "Area kampus"; rental_price = 8500; latitude = -7.687; longitude = 110.414; description = "Novel sejarah Indonesia dengan latar kolonial dan konflik sosial yang kuat." }
+  @{ owner = $ammar; cover = $covers[10]; title = "The Lean Startup"; author = "Eric Ries"; category = "Bisnis"; theme = "Startup"; condition = "Baik"; location = "Kaliurang, Sleman"; max_duration = "2 minggu"; handover = "Titik temu publik"; rental_price = 9500; latitude = -7.704; longitude = 110.405; description = "Buku validasi produk, eksperimen cepat, dan iterasi startup." }
+  @{ owner = $ammar; cover = $covers[6]; title = "Psikologi Uang"; author = "Morgan Housel"; category = "Bisnis"; theme = "Keuangan"; condition = "Seperti baru"; location = "Kampus UII, Sleman"; max_duration = "2 minggu"; handover = "Area kampus"; rental_price = 8500; latitude = -7.687; longitude = 110.414; description = "Bacaan ringan tentang perilaku manusia saat mengambil keputusan finansial." }
+)
+
 $titleOccurrences = @{}
 foreach ($seed in $bookSeeds) {
   $titleKey = ConvertTo-Slug -Value $seed.title
@@ -684,10 +703,86 @@ foreach ($plan in $transactionPlans) {
     -Days ([int]$plan.days) `
     -Handover "Titik temu publik" `
     -Location "Area kampus Yogyakarta" `
-    -Note "Seed riwayat peminjaman untuk demo katalog dan rating."
+    -Note "Seed riwayat peminjaman untuk pengujian katalog dan rating."
   Respond-Borrow -Owner $plan.owner -TransactionId ([int]$transaction.data.id) -Status "ACCEPTED"
   Return-Borrow -Borrower $plan.borrower -TransactionId ([int]$transaction.data.id)
   Complete-Borrow -Owner $plan.owner -TransactionId ([int]$transaction.data.id)
+  Rate-Borrow -Borrower $plan.borrower -TransactionId ([int]$transaction.data.id) -Rating ([int]$plan.rating) -Comment $plan.comment
+}
+
+$personalHistoryPlans = @(
+  @{ borrower = $ammar; bookIndex = 29; start = "2026-03-01"; days = 14; rating = 5; comment = "Atomic Habits cocok dengan bacaan pengembangan diri saya." }
+  @{ borrower = $ammar; bookIndex = 30; start = "2026-03-16"; days = 14; rating = 4; comment = "Masih satu tema produktivitas dan kebiasaan." }
+  @{ borrower = $ammar; bookIndex = 39; start = "2026-03-31"; days = 14; rating = 5; comment = "Deep Work pas untuk fokus belajar." }
+  @{ borrower = $ammar; bookIndex = 44; start = "2026-04-14"; days = 14; rating = 4; comment = "Filosofi Teras membantu untuk refleksi." }
+  @{ borrower = $salsa; bookIndex = 31; start = "2026-03-02"; days = 21; rating = 5; comment = "Clean Code bagus untuk programming." }
+  @{ borrower = $salsa; bookIndex = 32; start = "2026-03-24"; days = 14; rating = 4; comment = "Masih relevan untuk refactoring." }
+  @{ borrower = $salsa; bookIndex = 49; start = "2026-04-08"; days = 14; rating = 5; comment = "Algoritma Dasar cocok untuk kuliah." }
+  @{ borrower = $salsa; bookIndex = 54; start = "2026-04-22"; days = 21; rating = 5; comment = "Pragmatic Programmer jadi favorit software engineering." }
+  @{ borrower = $bima; bookIndex = 24; start = "2026-03-03"; days = 14; rating = 5; comment = "Bulan enak untuk bacaan fantasi." }
+  @{ borrower = $bima; bookIndex = 25; start = "2026-03-18"; days = 14; rating = 4; comment = "Masih suka petualangan Tere Liye." }
+  @{ borrower = $bima; bookIndex = 64; start = "2026-04-02"; days = 21; rating = 5; comment = "Harry Potter cocok untuk fantasi ringan." }
+  @{ borrower = $bima; bookIndex = 60; start = "2026-04-24"; days = 14; rating = 4; comment = "Dilan jadi selingan novel santai." }
+  @{ borrower = $dewi; bookIndex = 27; start = "2026-03-04"; days = 14; rating = 5; comment = "Laskar Pelangi menarik untuk novel Indonesia." }
+  @{ borrower = $dewi; bookIndex = 28; start = "2026-03-19"; days = 14; rating = 5; comment = "Tema keluarga dan pendidikan kuat." }
+  @{ borrower = $dewi; bookIndex = 40; start = "2026-04-03"; days = 21; rating = 5; comment = "Bumi Manusia cocok untuk sastra sejarah." }
+  @{ borrower = $dewi; bookIndex = 59; start = "2026-04-25"; days = 14; rating = 4; comment = "Cantik Itu Luka masih masuk selera sastra." }
+  @{ borrower = $farhan; bookIndex = 33; start = "2026-03-05"; days = 14; rating = 5; comment = "Database System Concepts berguna untuk tugas." }
+  @{ borrower = $farhan; bookIndex = 34; start = "2026-03-20"; days = 14; rating = 4; comment = "Buku database dengan catatan kuliah membantu." }
+  @{ borrower = $farhan; bookIndex = 61; start = "2026-04-04"; days = 21; rating = 4; comment = "Kalkulus Dasar cocok untuk referensi akademik." }
+  @{ borrower = $farhan; bookIndex = 50; start = "2026-04-26"; days = 14; rating = 5; comment = "Algoritma Dasar melengkapi bacaan teknologi." }
+  @{ borrower = $nadia; bookIndex = 40; start = "2026-03-06"; days = 14; rating = 5; comment = "Bumi Manusia jadi bacaan sastra favorit." }
+  @{ borrower = $nadia; bookIndex = 41; start = "2026-03-21"; days = 14; rating = 4; comment = "Sastra sejarahnya kuat." }
+  @{ borrower = $nadia; bookIndex = 42; start = "2026-04-05"; days = 21; rating = 5; comment = "Laut Bercerita sangat cocok." }
+  @{ borrower = $nadia; bookIndex = 59; start = "2026-04-27"; days = 14; rating = 5; comment = "Novel sastra Indonesia masih jadi pilihan." }
+  @{ borrower = $yusuf; bookIndex = 49; start = "2026-03-07"; days = 14; rating = 5; comment = "Algoritma Dasar membantu kuliah." }
+  @{ borrower = $yusuf; bookIndex = 50; start = "2026-03-22"; days = 14; rating = 4; comment = "Bacaan pemrograman tetap relevan." }
+  @{ borrower = $yusuf; bookIndex = 52; start = "2026-04-06"; days = 21; rating = 5; comment = "Data Science dari Nol menarik untuk AI." }
+  @{ borrower = $yusuf; bookIndex = 53; start = "2026-04-28"; days = 14; rating = 4; comment = "Tema data science cocok dengan minat saya." }
+  @{ borrower = $lara; bookIndex = 55; start = "2026-03-08"; days = 14; rating = 5; comment = "The Lean Startup cocok untuk produk." }
+  @{ borrower = $lara; bookIndex = 56; start = "2026-03-23"; days = 14; rating = 4; comment = "Bacaan kewirausahaan tetap menarik." }
+  @{ borrower = $lara; bookIndex = 57; start = "2026-04-07"; days = 21; rating = 5; comment = "Psikologi Uang cocok untuk bisnis dan finansial." }
+  @{ borrower = $lara; bookIndex = 58; start = "2026-04-29"; days = 14; rating = 4; comment = "Tema investasi masih relevan." }
+  @{ borrower = $kevin; bookIndex = 31; start = "2026-03-09"; days = 14; rating = 5; comment = "Programming jadi minat utama." }
+  @{ borrower = $kevin; bookIndex = 49; start = "2026-03-24"; days = 14; rating = 5; comment = "Algoritma membantu latihan coding." }
+  @{ borrower = $kevin; bookIndex = 52; start = "2026-04-08"; days = 21; rating = 4; comment = "Data science menambah referensi." }
+  @{ borrower = $kevin; bookIndex = 65; start = "2026-04-30"; days = 14; rating = 4; comment = "Fantasi jadi bacaan jeda." }
+  @{ borrower = $mira; bookIndex = 24; start = "2026-03-10"; days = 14; rating = 5; comment = "Bulan cocok untuk novel fantasi." }
+  @{ borrower = $mira; bookIndex = 26; start = "2026-03-25"; days = 14; rating = 5; comment = "Masih suka seri Tere Liye." }
+  @{ borrower = $mira; bookIndex = 64; start = "2026-04-09"; days = 21; rating = 4; comment = "Harry Potter enak dibaca santai." }
+  @{ borrower = $mira; bookIndex = 42; start = "2026-05-01"; days = 14; rating = 5; comment = "Novel drama sejarah juga cocok." }
+  @{ borrower = $adit; bookIndex = 61; start = "2026-03-11"; days = 14; rating = 5; comment = "Kalkulus membantu latihan." }
+  @{ borrower = $adit; bookIndex = 62; start = "2026-03-26"; days = 14; rating = 4; comment = "Matematika tetap jadi kebutuhan." }
+  @{ borrower = $adit; bookIndex = 33; start = "2026-04-10"; days = 21; rating = 5; comment = "Database cocok untuk tugas akhir." }
+  @{ borrower = $adit; bookIndex = 34; start = "2026-05-02"; days = 14; rating = 4; comment = "Referensi database dengan catatan berguna." }
+  @{ borrower = $intan; bookIndex = 44; start = "2026-03-12"; days = 14; rating = 5; comment = "Filosofi Teras cocok untuk refleksi." }
+  @{ borrower = $intan; bookIndex = 45; start = "2026-03-27"; days = 14; rating = 4; comment = "Masih suka tema psikologi." }
+  @{ borrower = $intan; bookIndex = 39; start = "2026-04-11"; days = 21; rating = 5; comment = "Deep Work membantu produktivitas." }
+  @{ borrower = $intan; bookIndex = 29; start = "2026-05-03"; days = 14; rating = 5; comment = "Atomic Habits cocok untuk kebiasaan." }
+  @{ borrower = $galih; bookIndex = 55; start = "2026-03-13"; days = 14; rating = 5; comment = "Startup dan bisnis cocok untuk saya." }
+  @{ borrower = $galih; bookIndex = 46; start = "2026-03-28"; days = 14; rating = 4; comment = "Keuangan pribadi menarik." }
+  @{ borrower = $galih; bookIndex = 57; start = "2026-04-12"; days = 21; rating = 5; comment = "Psikologi Uang mudah dipahami." }
+  @{ borrower = $galih; bookIndex = 58; start = "2026-05-04"; days = 14; rating = 4; comment = "Investasi tetap jadi minat." }
+)
+
+foreach ($plan in $personalHistoryPlans) {
+  $bookIndex = [int]$plan.bookIndex
+  $owner = $bookSeeds[$bookIndex].owner
+  if ($owner.email -eq $plan.borrower.email) {
+    continue
+  }
+
+  $transaction = Request-Borrow `
+    -Borrower $plan.borrower `
+    -BookId ([int]$createdBooks[$bookIndex].id) `
+    -StartDate $plan.start `
+    -Days ([int]$plan.days) `
+    -Handover "Titik temu publik" `
+    -Location "Area kampus Yogyakarta" `
+    -Note "Seed riwayat personalisasi katalog."
+  Respond-Borrow -Owner $owner -TransactionId ([int]$transaction.data.id) -Status "ACCEPTED"
+  Return-Borrow -Borrower $plan.borrower -TransactionId ([int]$transaction.data.id)
+  Complete-Borrow -Owner $owner -TransactionId ([int]$transaction.data.id)
   Rate-Borrow -Borrower $plan.borrower -TransactionId ([int]$transaction.data.id) -Rating ([int]$plan.rating) -Comment $plan.comment
 }
 
@@ -700,6 +795,37 @@ Respond-Borrow -Owner $farhan -TransactionId ([int]$accepted2.data.id) -Status "
 
 $pending2 = Request-Borrow -Borrower $intan -BookId ([int]$createdBooks[37].id) -StartDate "2026-05-25" -Days 14 -Handover "Area kampus" -Location "Demangan" -Note "Boleh pinjam untuk dua minggu?"
 $pending3 = Request-Borrow -Borrower $galih -BookId ([int]$createdBooks[38].id) -StartDate "2026-05-26" -Days 21 -Handover "Kurir lokal" -Location "Godean" -Note "Untuk referensi tugas akhir."
+
+$ammarBookStartIndex = $createdBooks.Count - 10
+$ammarIncomingPlans = @(
+  @{ borrower = $salsa; offset = 0; start = "2026-05-20"; days = 14; status = "pending"; note = "Mau pinjam Clean Code dari Ammar untuk latihan refactoring." }
+  @{ borrower = $bima; offset = 1; start = "2026-05-18"; days = 14; status = "accepted"; note = "Butuh Algoritma Dasar untuk persiapan ujian." }
+  @{ borrower = $dewi; offset = 2; start = "2026-05-12"; days = 21; status = "return_pending"; note = "Database System Concepts sudah selesai dibaca." }
+  @{ borrower = $farhan; offset = 4; start = "2026-05-01"; days = 14; status = "completed"; rating = 5; comment = "Atomic Habits punya Ammar masih sangat rapi." }
+  @{ borrower = $nadia; offset = 7; start = "2026-05-03"; days = 21; status = "completed"; rating = 4; comment = "Bumi Manusia cocok untuk referensi sastra." }
+)
+
+foreach ($plan in $ammarIncomingPlans) {
+  $transaction = Request-Borrow `
+    -Borrower $plan.borrower `
+    -BookId ([int]$createdBooks[$ammarBookStartIndex + [int]$plan.offset].id) `
+    -StartDate $plan.start `
+    -Days ([int]$plan.days) `
+    -Handover "Area kampus" `
+    -Location "Kampus UII atau titik temu Kaliurang" `
+    -Note $plan.note
+
+  if ($plan.status -ne "pending") {
+    Respond-Borrow -Owner $ammar -TransactionId ([int]$transaction.data.id) -Status "ACCEPTED"
+  }
+  if ($plan.status -eq "return_pending" -or $plan.status -eq "completed") {
+    Return-Borrow -Borrower $plan.borrower -TransactionId ([int]$transaction.data.id)
+  }
+  if ($plan.status -eq "completed") {
+    Complete-Borrow -Owner $ammar -TransactionId ([int]$transaction.data.id)
+    Rate-Borrow -Borrower $plan.borrower -TransactionId ([int]$transaction.data.id) -Rating ([int]$plan.rating) -Comment $plan.comment
+  }
+}
 
 New-Chat -Sender $ammar -ParticipantId ([int]$nicholas.id) -BookId ([int]$createdBooks[1].id) -Messages @(
   "Halo kak, Atomic Habits masih bisa dipinjam minggu ini?",
@@ -718,11 +844,11 @@ Write-Host "  Admin    : admin@unilibra.local / $internalPassword"
 Write-Host "  Owner 1  : nicholas@unilibra.local / $internalPassword"
 Write-Host "  Owner 2  : rania@unilibra.local / $internalPassword"
 Write-Host "  Peminjam : ammar@unilibra.local / $internalPassword"
-Write-Host "  Demo     : lara.demo@unilibra.local / $internalPassword"
+Write-Host "  Pembaca  : lara@unilibra.local / $internalPassword"
 Write-Host ""
 Write-Host "Data dibuat:"
 Write-Host "  Users    : 16"
 Write-Host "  Books    : $($createdBooks.Count)"
-Write-Host "  Transaksi: 34+"
-Write-Host "  Rating   : 29"
+Write-Host "  Transaksi: 86+"
+Write-Host "  Rating   : 77"
 Write-Host "  Chat     : 2 thread"

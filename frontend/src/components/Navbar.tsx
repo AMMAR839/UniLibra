@@ -245,7 +245,7 @@ function Navbar({
   return (
     <nav>
       <a href="/" className="nav-logo" onClick={handleNavigate("/")}>
-        <div className="logo-mark"></div>
+        <img className="logo-mark" src="/Lambang.png" alt="UniLibra" />
         <span className="logo-text">UniLibra</span>
       </a>
 

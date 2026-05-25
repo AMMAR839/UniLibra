@@ -17,6 +17,7 @@ function NotificationPage() {
         : notifications,
     [filter, notifications],
   );
+  const unreadCount = notifications.filter((notification) => !notification.read_at).length;
 
   async function loadNotifications() {
     try {
@@ -46,16 +47,28 @@ function NotificationPage() {
     await loadNotifications();
   }
 
+  async function markAllRead() {
+    if (unreadCount === 0) {
+      return;
+    }
+
+    await apiFetch("/api/notifications/read-all", {
+      method: "PUT",
+    });
+    await loadNotifications();
+  }
+
   return (
     <main className="notification-page">
       <section className="notification-shell">
         <section className="notification-stream" aria-label="Daftar notifikasi">
-            <div className="notification-toolbar">
-              <div className="notification-toolbar-copy">
-                <span>Timeline</span>
-                <h2>Notifikasi Sistem</h2>
-              </div>
-              <div className="notification-toolbar-actions" aria-label="Filter notifikasi">
+          <div className="notification-toolbar">
+            <div className="notification-toolbar-copy">
+              <span>{unreadCount} belum dibaca</span>
+              <h2>Notifikasi</h2>
+            </div>
+            <div className="notification-toolbar-actions" aria-label="Aksi notifikasi">
+              <div className="notification-filter-tabs">
                 <button
                   className={filter === "all" ? "is-active" : undefined}
                   onClick={() => setFilter("all")}
@@ -71,43 +84,47 @@ function NotificationPage() {
                   Belum dibaca
                 </button>
               </div>
+              <button
+                className="notification-mark-all"
+                disabled={unreadCount === 0}
+                onClick={() => void markAllRead()}
+                type="button"
+              >
+                Tandai semua dibaca
+              </button>
             </div>
+          </div>
 
-            {message ? <div className="notification-mini-log">{message}</div> : null}
-            <div className="notification-list">
-              {visibleNotifications.map((notification) => (
-                <article
-                  className={`notification-row notification-tone-amber ${
-                    notification.read_at ? "" : "is-unread"
-                  }`.trim()}
-                  key={notification.id}
-                >
-                  <div className="notification-mark" aria-hidden="true">
-                    {notification.type.slice(0, 1).toUpperCase()}
-                  </div>
-                  <div className="notification-row-copy">
-                    <span>
-                      {notification.type}
-                      <small>{formatDate(notification.created_at)}</small>
-                    </span>
-                    <h3>{notification.title}</h3>
-                    <p>{notification.body}</p>
-                  </div>
-                  {!notification.read_at ? (
-                    <button type="button" onClick={() => void markRead(notification.id)}>
-                      Tandai dibaca
-                    </button>
-                  ) : (
-                    <b>Tercatat</b>
-                  )}
-                </article>
-              ))}
-              {visibleNotifications.length === 0 ? (
-                <div className="notification-mini-log">
-                  Belum ada notifikasi untuk filter ini.
+          {message ? <div className="notification-mini-log">{message}</div> : null}
+          <div className="notification-list">
+            {visibleNotifications.map((notification) => (
+              <article
+                className={`notification-row notification-tone-amber ${
+                  notification.read_at ? "" : "is-unread"
+                }`.trim()}
+                key={notification.id}
+              >
+                <div className="notification-row-copy">
+                  <span>
+                    {notification.type}
+                    <small>{formatDate(notification.created_at)}</small>
+                  </span>
+                  <h3>{notification.title}</h3>
+                  <p>{notification.body}</p>
                 </div>
-              ) : null}
-            </div>
+                {!notification.read_at ? (
+                  <button type="button" onClick={() => void markRead(notification.id)}>
+                    Tandai
+                  </button>
+                ) : null}
+              </article>
+            ))}
+            {visibleNotifications.length === 0 ? (
+              <div className="notification-mini-log">
+                Belum ada notifikasi untuk filter ini.
+              </div>
+            ) : null}
+          </div>
         </section>
       </section>
     </main>

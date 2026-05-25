@@ -46,6 +46,7 @@ export type CatalogBook = {
   max_price: number;
   min_distance_km?: number;
   max_distance_km?: number;
+  personal_score?: number;
   updated_at: string;
 };
 
