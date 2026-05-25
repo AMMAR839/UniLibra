@@ -485,21 +485,37 @@ def chatbot_unilibra(req: ChatRequest):
         - Akhiri dengan satu kalimat ajakan memilih kartu buku di bawah.
         """
 
-        # Langkah 3: Generation
-        response = client.models.generate_content(
-            model='gemini-flash-latest',
-            contents=prompt
-        )
-        
-        return {
-            "status": "success",
-            "jawaban": response.text,
-            "buku_referensi": buku_relevan,
-            "actions": [
-                {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
-                for b in buku_relevan[:3]
-            ],
-            "engine": "gemini",
-        }
+        try:
+            response = client.models.generate_content(
+                model='gemini-flash-latest',
+                contents=prompt
+            )
+
+            return {
+                "status": "success",
+                "jawaban": response.text,
+                "buku_referensi": buku_relevan,
+                "actions": [
+                    {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
+                    for b in buku_relevan[:3]
+                ],
+                "engine": "gemini",
+            }
+        except Exception as generation_error:
+            print(f"Gemini generation error: {generation_error}")
+            return {
+                "status": "success",
+                "jawaban": build_chat_fallback_answer(
+                    req.pesan,
+                    buku_relevan,
+                    req.latitude is not None and req.longitude is not None,
+                ),
+                "buku_referensi": buku_relevan,
+                "actions": [
+                    {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
+                    for b in buku_relevan[:3]
+                ],
+                "engine": "semantic-fallback",
+            }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
