@@ -72,7 +72,7 @@ jobs:
           VITE_WS_URL: ${{ vars.VITE_WS_URL }}
           VITE_GOOGLE_LOGIN_URL: ${{ vars.VITE_GOOGLE_LOGIN_URL }}
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_WHITE_WATER_04F745700 || secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           github_id_token: ${{ steps.idtoken.outputs.result }}
