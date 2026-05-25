@@ -40,6 +40,11 @@ export default function Login({ onRegisterClick }: LoginProps) {
       if (data.token) {
         setToken(data.token);
       }
+      if (data.user?.role === "admin") {
+        localStorage.setItem("unilibra:prolog-done", "true");
+      } else {
+        localStorage.removeItem("unilibra:prolog-done");
+      }
 
       window.location.href = data.user?.role === "admin" ? "/admin" : "/";
     } catch (error) {
