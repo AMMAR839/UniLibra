@@ -13,6 +13,11 @@ type SortMode = "latest" | "price_asc" | "price_desc" | "nearest";
 type ChoiceFilter = "" | "2" | "3";
 type LocationFilter = "" | "located";
 type LocationStatus = "idle" | "requesting" | "granted" | "denied" | "unsupported";
+type AISearchResponse = {
+  results?: Book[];
+  fallback?: boolean;
+  warning?: string;
+};
 
 function CatalogPage({ onBorrowBook, onSelectBookVersions, onLendBook }: CatalogPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,6 +53,7 @@ function CatalogPage({ onBorrowBook, onSelectBookVersions, onLendBook }: Catalog
       setLoading(true);
       setNotice("");
       try {
+        const hasSearchQuery = Boolean(searchQuery.trim());
         const params = new URLSearchParams();
         if (searchQuery.trim()) {
           params.set("q", searchQuery.trim());
@@ -85,14 +91,80 @@ function CatalogPage({ onBorrowBook, onSelectBookVersions, onLendBook }: Catalog
         }
 
         const queryString = params.toString();
-        const response = await apiFetch<{ data: RawCatalogBook[]; personalized?: boolean }>(
-          `/api/books${queryString ? `?${queryString}` : ""}`,
-          {
-            signal: controller.signal,
-          },
-        );
-        setBooks(dedupeCatalogBooks(response.data.map((book) => toCatalogBook(book, userLocation))));
-        setPersonalized(Boolean(response.personalized));
+        if (hasSearchQuery) {
+          const aiParams = new URLSearchParams();
+          aiParams.set("q", searchQuery.trim());
+          aiParams.set("limit", "72");
+          if (userLocation) {
+            aiParams.set("latitude", String(userLocation.latitude));
+            aiParams.set("longitude", String(userLocation.longitude));
+          }
+
+          const fallbackParams = new URLSearchParams();
+          fallbackParams.set("q", searchQuery.trim());
+          if (userLocation) {
+            fallbackParams.set("latitude", String(userLocation.latitude));
+            fallbackParams.set("longitude", String(userLocation.longitude));
+          }
+
+          const [aiResult, catalogResult] = await Promise.all([
+            apiFetch<AISearchResponse>(
+              `/api/ai/search?${aiParams.toString()}`,
+              { signal: controller.signal, auth: false },
+            ).catch((error): AISearchResponse => ({
+              results: [],
+              warning: error instanceof Error ? error.message : "AI belum tersedia.",
+            })),
+            apiFetch<{ data: RawCatalogBook[] }>(
+              `/api/books?${fallbackParams.toString()}`,
+              { signal: controller.signal, auth: false },
+            ).catch(() => ({ data: [] })),
+          ]);
+
+          const semanticBooks = (aiResult.results ?? []).map((book) => toCatalogBook(book, userLocation));
+          const fallbackBooks = (catalogResult.data ?? []).map((book) => toCatalogBook(book, userLocation));
+          const combinedBooks = dedupeCatalogBooks([...fallbackBooks, ...semanticBooks]);
+          const directMatches = combinedBooks.filter((book) => catalogBookMatchesSearch(book, searchQuery));
+          let searchBooks = sortCatalogSearchBooks(
+            directMatches.length > 0 ? directMatches : combinedBooks,
+            searchQuery,
+          );
+          if (searchBooks.length === 0) {
+            const allBooks = await apiFetch<{ data: RawCatalogBook[] }>("/api/books", {
+              signal: controller.signal,
+              auth: false,
+            }).catch(() => ({ data: [] }));
+            searchBooks = sortCatalogSearchBooks(dedupeCatalogBooks(
+              (allBooks.data ?? [])
+                .map((book) => toCatalogBook(book, userLocation))
+                .filter((book) => catalogBookMatchesSearch(book, searchQuery)),
+            ), searchQuery);
+          }
+
+          const filteredSearchBooks = filterCatalogBooks(searchBooks, {
+            category: categoryFilter,
+            theme: themeFilter,
+            minPrice: minPriceFilter,
+            maxPrice: maxPriceFilter,
+            minDistance: minDistanceFilter,
+            maxDistance: maxDistanceFilter,
+            minChoices: choiceFilter,
+            locatedOnly: locationFilter === "located",
+            sortMode,
+          });
+          setBooks(filteredSearchBooks.length > 0 ? filteredSearchBooks : searchBooks);
+          setPersonalized(false);
+          setNotice(aiResult.warning ?? (aiResult.fallback ? "AI belum tersedia. Katalog biasa ditampilkan." : ""));
+        } else {
+          const response = await apiFetch<{ data: RawCatalogBook[]; personalized?: boolean }>(
+            `/api/books${queryString ? `?${queryString}` : ""}`,
+            {
+              signal: controller.signal,
+            },
+          );
+          setBooks(dedupeCatalogBooks(response.data.map((book) => toCatalogBook(book, userLocation))));
+          setPersonalized(Boolean(response.personalized));
+        }
       } catch (error) {
         if (!controller.signal.aborted) {
           setBooks([]);
@@ -141,7 +213,21 @@ function CatalogPage({ onBorrowBook, onSelectBookVersions, onLendBook }: Catalog
   }, [userLocation]);
 
   function handleSearchChange(event: ChangeEvent<HTMLInputElement>) {
-    setSearchQuery(event.target.value);
+    const nextQuery = event.target.value;
+    setSearchQuery(nextQuery);
+
+    if (nextQuery.trim()) {
+      setCategoryFilter("");
+      setThemeFilter("");
+      setMinPriceFilter("");
+      setMaxPriceFilter("");
+      setMinDistanceFilter("");
+      setMaxDistanceFilter("");
+      setChoiceFilter("");
+      setLocationFilter("");
+      setSortMode("latest");
+      setNotice("");
+    }
   }
 
   function handleNearestSort() {
@@ -677,6 +763,129 @@ function dedupeCatalogBooks(items: CatalogBook[]) {
   }
 
   return Array.from(groups.values());
+}
+
+function filterCatalogBooks(
+  items: CatalogBook[],
+  filters: {
+    category: string;
+    theme: string;
+    minPrice: string;
+    maxPrice: string;
+    minDistance: string;
+    maxDistance: string;
+    minChoices: ChoiceFilter;
+    locatedOnly: boolean;
+    sortMode: SortMode;
+  },
+) {
+  const minPrice = finiteNumber(filters.minPrice);
+  const maxPrice = finiteNumber(filters.maxPrice);
+  const minDistance = finiteNumber(filters.minDistance);
+  const maxDistance = finiteNumber(filters.maxDistance);
+  const minChoices = finiteNumber(filters.minChoices);
+
+  const filtered = items.filter((book) => {
+    if (filters.category && normalizeBookTitleKey(book.category ?? "") !== normalizeBookTitleKey(filters.category)) {
+      return false;
+    }
+    if (filters.theme && normalizeBookTitleKey(book.theme ?? "") !== normalizeBookTitleKey(filters.theme)) {
+      return false;
+    }
+    if (minPrice !== undefined && book.max_price < minPrice) {
+      return false;
+    }
+    if (maxPrice !== undefined && book.min_price > maxPrice) {
+      return false;
+    }
+    if (minChoices !== undefined && book.available_count < minChoices) {
+      return false;
+    }
+    if (filters.locatedOnly && book.min_distance_km === undefined) {
+      return false;
+    }
+    if (minDistance !== undefined && (book.max_distance_km === undefined || book.max_distance_km < minDistance)) {
+      return false;
+    }
+    if (maxDistance !== undefined && (book.min_distance_km === undefined || book.min_distance_km > maxDistance)) {
+      return false;
+    }
+
+    return true;
+  });
+
+  if (filters.sortMode === "nearest") {
+    return [...filtered].sort((left, right) => {
+      const leftDistance = finiteNumber(left.min_distance_km) ?? Number.POSITIVE_INFINITY;
+      const rightDistance = finiteNumber(right.min_distance_km) ?? Number.POSITIVE_INFINITY;
+      return leftDistance - rightDistance;
+    });
+  }
+  if (filters.sortMode === "price_asc") {
+    return [...filtered].sort((left, right) => left.min_price - right.min_price);
+  }
+  if (filters.sortMode === "price_desc") {
+    return [...filtered].sort((left, right) => right.max_price - left.max_price);
+  }
+
+  return filtered;
+}
+
+function catalogBookMatchesSearch(book: CatalogBook, query: string) {
+  const normalizedQuery = normalizeBookTitleKey(query);
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  const searchableText = normalizeBookTitleKey(
+    [
+      book.title,
+      book.author,
+      book.category ?? "",
+      book.theme ?? "",
+    ].join(" "),
+  );
+  return searchableText.includes(normalizedQuery);
+}
+
+function sortCatalogSearchBooks(items: CatalogBook[], query: string) {
+  return [...items].sort((left, right) => {
+    const scoreDiff = catalogSearchScore(left, query) - catalogSearchScore(right, query);
+    if (scoreDiff !== 0) {
+      return scoreDiff;
+    }
+
+    return new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime();
+  });
+}
+
+function catalogSearchScore(book: CatalogBook, query: string) {
+  const normalizedQuery = normalizeBookTitleKey(query);
+  const title = normalizeBookTitleKey(book.title);
+  const author = normalizeBookTitleKey(book.author);
+  const category = normalizeBookTitleKey(book.category ?? "");
+  const theme = normalizeBookTitleKey(book.theme ?? "");
+
+  if (title === normalizedQuery) {
+    return 0;
+  }
+  if (title.startsWith(normalizedQuery)) {
+    return 1;
+  }
+  if (title.includes(normalizedQuery)) {
+    return 2;
+  }
+  if (author === normalizedQuery) {
+    return 3;
+  }
+  if (author.includes(normalizedQuery)) {
+    return 4;
+  }
+  if (category.includes(normalizedQuery) || theme.includes(normalizedQuery)) {
+    return 5;
+  }
+
+  return 10;
 }
 
 function normalizeBookTitleKey(title: string) {

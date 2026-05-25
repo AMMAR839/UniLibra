@@ -5,3 +5,4 @@ scripts/dummy-covers/
 scripts/api-covers/
 backend/uploads/
 uploads/
+supabase-uploads/

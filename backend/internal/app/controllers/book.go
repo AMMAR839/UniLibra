@@ -207,8 +207,14 @@ func availableBooks(filters BookFilters, limit int) ([]models.Book, error) {
 		}
 	}
 
-	if limit > 0 {
-		db = db.Limit(limit)
+	query := normalizeBookTitleKey(filters.Query)
+	queryLimit := limit
+	if query != "" && limit > 0 {
+		queryLimit = max(limit*4, 80)
+	}
+
+	if queryLimit > 0 {
+		db = db.Limit(queryLimit)
 	}
 
 	switch filters.Sort {
@@ -232,7 +238,24 @@ func availableBooks(filters BookFilters, limit int) ([]models.Book, error) {
 		db = db.Order("books.rental_price DESC")
 	}
 
-	return books, db.Order("books.updated_at DESC").Find(&books).Error
+	if err := db.Order("books.updated_at DESC").Find(&books).Error; err != nil {
+		return nil, err
+	}
+	if query != "" {
+		sort.SliceStable(books, func(i, j int) bool {
+			leftScore := bookSearchScore(books[i], query)
+			rightScore := bookSearchScore(books[j], query)
+			if leftScore != rightScore {
+				return leftScore > rightScore
+			}
+			return books[i].UpdatedAt.After(books[j].UpdatedAt)
+		})
+		if limit > 0 && len(books) > limit {
+			books = books[:limit]
+		}
+	}
+
+	return books, nil
 }
 
 func catalogBooks(filters BookFilters, limit int) ([]CatalogBook, bool, error) {
@@ -486,6 +509,20 @@ func catalogSearchScore(book CatalogBook, normalizedQuery string) float64 {
 
 	score := 0.0
 	score = math.Max(score, textMatchScore(title, normalizedQuery)*1.25)
+	score = math.Max(score, textMatchScore(author, normalizedQuery)*1.05)
+	score = math.Max(score, textMatchScore(category, normalizedQuery)*0.82)
+	score = math.Max(score, textMatchScore(theme, normalizedQuery)*0.82)
+	return score
+}
+
+func bookSearchScore(book models.Book, normalizedQuery string) float64 {
+	title := normalizeBookTitleKey(book.Title)
+	author := normalizeBookTitleKey(book.Author)
+	category := normalizeBookTitleKey(book.Category)
+	theme := normalizeBookTitleKey(book.Theme)
+
+	score := 0.0
+	score = math.Max(score, textMatchScore(title, normalizedQuery)*1.5)
 	score = math.Max(score, textMatchScore(author, normalizedQuery)*1.05)
 	score = math.Max(score, textMatchScore(category, normalizedQuery)*0.82)
 	score = math.Max(score, textMatchScore(theme, normalizedQuery)*0.82)
