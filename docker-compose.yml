@@ -24,12 +24,13 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Koneksi database diarahkan ke service "db" di atas
-      DB_HOST: db 
+      # Default local tetap ke service "db", tapi bisa diarahkan ke Supabase lewat .env.
+      DB_HOST: ${DB_HOST:-db}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
-      DB_PORT: 5432
+      DB_PORT: ${DB_PORT:-5432}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
       JWT_SECRET: ${JWT_SECRET}
       ADMIN_EMAILS: ${ADMIN_EMAILS}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
@@ -80,7 +81,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}}
       AI_INTERNAL_TOKEN: ${AI_INTERNAL_TOKEN}
       GEMINI_API: ${GEMINI_API}
     depends_on:
