@@ -106,7 +106,8 @@ function App() {
     pageFromPath(window.location.pathname),
   );
   const [isPrologDone, setIsPrologDone] = useState(() =>
-    pageFromPath(window.location.pathname) !== "home",
+    pageFromPath(window.location.pathname) !== "home" ||
+    localStorage.getItem("unilibra:prolog-done") === "true",
   );
   const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(getToken()));
 
@@ -162,6 +163,7 @@ function App() {
   }
 
   function finishProlog() {
+    localStorage.setItem("unilibra:prolog-done", "true");
     setIsPrologDone(true);
     window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
   }

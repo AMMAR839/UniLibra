@@ -44,8 +44,6 @@ function PrologPage({ onDone }: PrologPageProps) {
   const currentRef = useRef(current);
   const animatingRef = useRef(animating);
   const exitingRef = useRef(false);
-  const finalScrollArmedRef = useRef(false);
-  const finalScrollTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     doneRef.current = onDone;
@@ -68,12 +66,6 @@ function PrologPage({ onDone }: PrologPageProps) {
       return;
     }
 
-    if (finalScrollTimerRef.current) {
-      window.clearTimeout(finalScrollTimerRef.current);
-      finalScrollTimerRef.current = null;
-    }
-    finalScrollArmedRef.current = false;
-
     setAnimating(true);
     currentRef.current = next;
     setCurrent(next);
@@ -90,10 +82,6 @@ function PrologPage({ onDone }: PrologPageProps) {
     }
 
     if (currentRef.current >= prologPages.length - 1) {
-      if (!finalScrollArmedRef.current) {
-        return;
-      }
-
       exitingRef.current = true;
       setIsExiting(true);
       window.setTimeout(() => {
@@ -117,22 +105,6 @@ function PrologPage({ onDone }: PrologPageProps) {
     function handleWheel(event: WheelEvent) {
       event.preventDefault();
 
-      if (
-        currentRef.current >= prologPages.length - 1 &&
-        event.deltaY > 0 &&
-        !finalScrollArmedRef.current
-      ) {
-        wheelAcc.current = 0;
-        if (finalScrollTimerRef.current) {
-          window.clearTimeout(finalScrollTimerRef.current);
-        }
-        finalScrollTimerRef.current = window.setTimeout(() => {
-          finalScrollArmedRef.current = true;
-          finalScrollTimerRef.current = null;
-        }, 420);
-        return;
-      }
-
       wheelAcc.current += event.deltaY;
 
       if (wheelAcc.current > 80) {
@@ -155,14 +127,6 @@ function PrologPage({ onDone }: PrologPageProps) {
       const distance = touchStartY.current - endY;
 
       if (distance > 50) {
-        if (
-          currentRef.current >= prologPages.length - 1 &&
-          !finalScrollArmedRef.current
-        ) {
-          finalScrollArmedRef.current = true;
-          return;
-        }
-
         continueForward();
       }
 
@@ -174,14 +138,6 @@ function PrologPage({ onDone }: PrologPageProps) {
     function handleKeyDown(event: KeyboardEvent) {
       if (["ArrowDown", "PageDown", " "].includes(event.key)) {
         event.preventDefault();
-        if (
-          currentRef.current >= prologPages.length - 1 &&
-          !finalScrollArmedRef.current
-        ) {
-          finalScrollArmedRef.current = true;
-          return;
-        }
-
         continueForward();
       }
 
@@ -197,9 +153,6 @@ function PrologPage({ onDone }: PrologPageProps) {
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      if (finalScrollTimerRef.current) {
-        window.clearTimeout(finalScrollTimerRef.current);
-      }
       window.removeEventListener("wheel", handleWheel);
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchend", handleTouchEnd);

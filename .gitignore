@@ -6,3 +6,4 @@ scripts/api-covers/
 backend/uploads/
 uploads/
 supabase-uploads/
+frontend/.vite/
