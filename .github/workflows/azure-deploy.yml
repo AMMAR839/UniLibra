@@ -58,16 +58,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install OIDC client
-        run: npm install @actions/core@1.6.0 @actions/http-client
-
       - name: Get GitHub ID token
         uses: actions/github-script@v7
         id: idtoken
         with:
-          script: |
-            const core = require('@actions/core')
-            return await core.getIDToken()
+          script: return await core.getIDToken()
           result-encoding: string
 
       - name: Deploy frontend
