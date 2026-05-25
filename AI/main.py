@@ -301,13 +301,44 @@ def build_chat_fallback_answer(message, books, has_location):
             f"   Rp {int(book.get('rental_price') or 0):,}/minggu".replace(",", ".")
         )
 
+    intro = fallback_intro_for_message(message)
     return (
-        f"Aku menemukan {len(books)} buku yang cocok"
+        intro
+        + "\n\n"
+        + f"Aku menemukan {len(books)} buku yang cocok"
         + (" dan dekat dari lokasimu." if has_location else ".")
         + "\n\n"
         + "\n\n".join(recommendations)
         + "\n\nPilih salah satu kartu buku di bawah untuk lanjut meminjam."
     )
+
+def fallback_intro_for_message(message):
+    normalized = message.lower()
+    if any(word in normalized for word in ["sedih", "galau", "kecewa", "patah hati", "capek hati"]):
+        return (
+            "Maaf kamu lagi merasa berat. Aku pilihkan bacaan yang bisa menemani pelan-pelan, "
+            "dari cerita yang hangat sampai buku reflektif yang tidak terlalu menggurui."
+        )
+    if any(word in normalized for word in ["stres", "stress", "cemas", "overthinking", "burnout", "lelah"]):
+        return (
+            "Kalau pikiran sedang penuh, bacaan yang ritmenya tenang biasanya lebih enak. "
+            "Aku pilihkan beberapa buku yang bisa jadi jeda."
+        )
+    if any(word in normalized for word in ["motivasi", "semangat", "produktif", "malas", "bingung mulai"]):
+        return (
+            "Aku pilihkan buku yang bisa bantu membangun dorongan kecil dulu, bukan motivasi yang terasa memaksa."
+        )
+    return "Aku bantu pilihkan dari katalog UniLibra."
+
+def retrieval_query_for_message(message):
+    normalized = message.lower()
+    if any(word in normalized for word in ["sedih", "galau", "kecewa", "patah hati", "capek hati"]):
+        return "novel romance sastra pengembangan diri refleksi hangat"
+    if any(word in normalized for word in ["stres", "stress", "cemas", "overthinking", "burnout", "lelah"]):
+        return "pengembangan diri psikologi kebiasaan tenang refleksi"
+    if any(word in normalized for word in ["motivasi", "semangat", "produktif", "malas", "bingung mulai"]):
+        return "motivasi produktivitas kebiasaan pengembangan diri"
+    return message
 
 def require_internal_token(token):
     if AI_INTERNAL_TOKEN and token != AI_INTERNAL_TOKEN:
@@ -428,9 +459,11 @@ def chatbot_unilibra(req: ChatRequest):
                 "engine": "database-count",
             }
 
+        retrieval_query = retrieval_query_for_message(req.pesan)
+
         # Langkah 1: Retrieval (Menggunakan fungsi utilitas yang sama dengan /search)
         buku_relevan = execute_semantic_search(
-            req.pesan,
+            retrieval_query,
             limit=12,
             latitude=req.latitude,
             longitude=req.longitude,
@@ -444,20 +477,7 @@ def chatbot_unilibra(req: ChatRequest):
             konteks_buku = "Tidak ada buku spesifik yang relevan di database."
 
         if client is None:
-            return {
-                "status": "success",
-                "jawaban": build_chat_fallback_answer(
-                    req.pesan,
-                    buku_relevan,
-                    req.latitude is not None and req.longitude is not None,
-                ),
-                "buku_referensi": buku_relevan,
-                "actions": [
-                    {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
-                    for b in buku_relevan[:3]
-                ],
-                "engine": "semantic-fallback",
-            }
+            raise HTTPException(status_code=503, detail="GEMINI_API belum dikonfigurasi di AI service")
 
         # Langkah 2: Augmented Prompt
         prompt = f"""
@@ -485,37 +505,20 @@ def chatbot_unilibra(req: ChatRequest):
         - Akhiri dengan satu kalimat ajakan memilih kartu buku di bawah.
         """
 
-        try:
-            response = client.models.generate_content(
-                model='gemini-flash-latest',
-                contents=prompt
-            )
+        response = client.models.generate_content(
+            model='gemini-flash-latest',
+            contents=prompt
+        )
 
-            return {
-                "status": "success",
-                "jawaban": response.text,
-                "buku_referensi": buku_relevan,
-                "actions": [
-                    {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
-                    for b in buku_relevan[:3]
-                ],
-                "engine": "gemini",
-            }
-        except Exception as generation_error:
-            print(f"Gemini generation error: {generation_error}")
-            return {
-                "status": "success",
-                "jawaban": build_chat_fallback_answer(
-                    req.pesan,
-                    buku_relevan,
-                    req.latitude is not None and req.longitude is not None,
-                ),
-                "buku_referensi": buku_relevan,
-                "actions": [
-                    {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
-                    for b in buku_relevan[:3]
-                ],
-                "engine": "semantic-fallback",
-            }
+        return {
+            "status": "success",
+            "jawaban": response.text,
+            "buku_referensi": buku_relevan,
+            "actions": [
+                {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
+                for b in buku_relevan[:3]
+            ],
+            "engine": "gemini",
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

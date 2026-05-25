@@ -147,7 +147,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}) {
       clearToken();
     }
 
-    throw new Error(payload?.error || "Permintaan ke server gagal.");
+    throw new Error(payload?.error || payload?.detail || "Permintaan ke server gagal.");
   }
 
   return payload as T;
