@@ -30,7 +30,7 @@ func RequestBorrow(c *gin.Context) {
 	}
 
 	userID, _ := c.Get("userID")
-	borrowerID := uint(userID.(float64))
+	borrowerID := userID.(uint)
 
 	var book models.Book
 	if err := config.DB.First(&book, input.BookID).Error; err != nil {
@@ -63,7 +63,7 @@ func RequestBorrow(c *gin.Context) {
 	if weeks <= 0 {
 		weeks = 1
 	}
-	totalPrice := int(float64(weeks) * book.RentalPrice)
+	totalPrice := float64(weeks) * book.RentalPrice
 
 	transaction := models.Transaction{
 		BookID:             book.ID,
@@ -120,7 +120,7 @@ func RespondToBorrowRequest(c *gin.Context) {
 	}
 
 	userID, _ := c.Get("userID")
-	currentUserID := uint(userID.(float64))
+	currentUserID := userID.(uint)
 
 	var transaction models.Transaction
 	if err := config.DB.First(&transaction, transactionID).Error; err != nil {
@@ -177,7 +177,7 @@ func InitiateReturn(c *gin.Context) {
 	transactionID := c.Param("id")
 
 	userID, _ := c.Get("userID")
-	currentUserID := uint(userID.(float64))
+	currentUserID := userID.(uint)
 
 	var transaction models.Transaction
 	if err := config.DB.First(&transaction, transactionID).Error; err != nil {
@@ -219,7 +219,7 @@ func ConfirmReturn(c *gin.Context) {
 	transactionID := c.Param("id")
 
 	userID, _ := c.Get("userID")
-	currentUserID := uint(userID.(float64))
+	currentUserID := userID.(uint)
 
 	var transaction models.Transaction
 	if err := config.DB.First(&transaction, transactionID).Error; err != nil {
@@ -278,7 +278,7 @@ func RateCompletedTransaction(c *gin.Context) {
 	}
 
 	userID, _ := c.Get("userID")
-	currentUserID := uint(userID.(float64))
+	currentUserID := userID.(uint)
 
 	var transaction models.Transaction
 	if err := config.DB.First(&transaction, transactionID).Error; err != nil {

@@ -28,7 +28,7 @@ func AuthRequired() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("userID", float64(userID))
+		c.Set("userID", userID)
 
 		c.Next()
 	}
@@ -44,7 +44,7 @@ func AdminRequired() gin.HandlerFunc {
 		}
 
 		var user models.User
-		if err := config.DB.Select("id", "role", "status").First(&user, uint(userID.(float64))).Error; err != nil {
+		if err := config.DB.Select("id", "role", "status").First(&user, userID.(uint)).Error; err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Pengguna tidak ditemukan."})
 			c.Abort()
 			return

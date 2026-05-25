@@ -13,7 +13,7 @@ func GetUserProfile(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	var user models.User
 
-	if err := config.DB.First(&user, uint(userID.(float64))).Error; err != nil {
+	if err := config.DB.First(&user, userID.(uint)).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Pengguna tidak ditemukan"})
 		return
 	}
@@ -35,7 +35,7 @@ func UpdateUserProfile(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	var user models.User
 
-	if err := config.DB.First(&user, uint(userID.(float64))).Error; err != nil {
+	if err := config.DB.First(&user, userID.(uint)).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Pengguna tidak ditemukan"})
 		return
 	}
@@ -65,7 +65,7 @@ func GetMyBooks(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	var books []models.Book
 
-	if err := config.DB.Preload("Owner").Where("owner_id = ?", uint(userID.(float64))).Find(&books).Error; err != nil {
+	if err := config.DB.Preload("Owner").Where("owner_id = ?", userID.(uint)).Find(&books).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil daftar buku Anda"})
 		return
 	}
@@ -82,7 +82,7 @@ func GetMyBorrowings(c *gin.Context) {
 	var transactions []models.Transaction
 
 	if err := config.DB.Preload("Book").Preload("Book.Owner").Preload("Borrower").
-		Where("borrower_id = ?", uint(userID.(float64))).
+		Where("borrower_id = ?", userID.(uint)).
 		Order("created_at DESC").
 		Find(&transactions).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil riwayat peminjaman"})
@@ -103,7 +103,7 @@ func GetMyLendings(c *gin.Context) {
 	// Join dengan tabel books untuk mendapatkan transaksi dari buku milik user
 	err := config.DB.Preload("Book").Preload("Book.Owner").Preload("Borrower").
 		Joins("JOIN books ON transactions.book_id = books.id").
-		Where("books.owner_id = ?", uint(userID.(float64))).
+		Where("books.owner_id = ?", userID.(uint)).
 		Order("transactions.created_at DESC").
 		Find(&transactions).Error
 

@@ -89,7 +89,7 @@ func CreateBook(c *gin.Context) {
 		return
 	}
 
-	ownerID := uint(userID.(float64))
+	ownerID := userID.(uint)
 
 	book := models.Book{
 		Title:       input.Title,
@@ -675,7 +675,7 @@ func UpdateBook(c *gin.Context) {
 	}
 
 	userID, _ := c.Get("userID")
-	if book.OwnerID != uint(userID.(float64)) {
+	if book.OwnerID != userID.(uint) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Akses ditolak: Anda bukan pemilik buku ini"})
 		return
 	}
@@ -734,7 +734,7 @@ func DeleteBook(c *gin.Context) {
 	}
 
 	userID, _ := c.Get("userID")
-	if book.OwnerID != uint(userID.(float64)) {
+	if book.OwnerID != userID.(uint) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Akses ditolak: Anda bukan pemilik buku ini"})
 		return
 	}
