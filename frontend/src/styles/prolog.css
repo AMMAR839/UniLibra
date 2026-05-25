@@ -1,0 +1,422 @@
+.prolog-page {
+  --prolog-ink: #130d08;
+  --prolog-ink-soft: #1c1208;
+  --prolog-paper: #f5f0e8;
+  --prolog-amber: #c8831a;
+  --prolog-amber-light: #f5d061;
+  --prolog-book-width: 270px;
+  --prolog-book-height: 410px;
+  --prolog-book-depth: 88px;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--prolog-ink);
+  color: var(--prolog-paper);
+  font-family: "DM Sans", "Inter", sans-serif;
+}
+
+.prolog-page *,
+.prolog-page *::before,
+.prolog-page *::after {
+  box-sizing: border-box;
+}
+
+.prolog-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: 0.3;
+  mix-blend-mode: overlay;
+}
+
+.prolog-dots {
+  position: fixed;
+  top: 50%;
+  right: 36px;
+  z-index: 1300;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: translateY(-50%);
+}
+
+.prolog-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 1.5px solid rgba(245, 240, 232, 0.45);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.prolog-dot.active {
+  border-color: var(--prolog-paper);
+  background: var(--prolog-paper);
+  transform: scale(1.5);
+}
+
+.prolog-book-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  pointer-events: none;
+  perspective: 1600px;
+}
+
+.prolog-book-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--prolog-book-width);
+  height: var(--prolog-book-height);
+  animation: prologFloatBook 4s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+@keyframes prologFloatBook {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-15px);
+  }
+}
+
+.prolog-book-3d {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 1.2s cubic-bezier(0.65, 0, 0.15, 1);
+}
+
+.prolog-face {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  outline: 1px solid transparent;
+  backface-visibility: hidden;
+}
+
+.prolog-face-front,
+.prolog-face-back {
+  width: var(--prolog-book-width);
+  height: var(--prolog-book-height);
+  overflow: hidden;
+  background: var(--prolog-ink);
+}
+
+.prolog-face-front {
+  border-radius: 2px 4px 4px 2px;
+  transform: translate(-50%, -50%) translateZ(calc(var(--prolog-book-depth) / 2));
+}
+
+.prolog-face-back {
+  border-radius: 4px 2px 2px 4px;
+  transform: translate(-50%, -50%) rotateY(180deg) translateZ(calc(var(--prolog-book-depth) / 2));
+}
+
+.prolog-face-front img,
+.prolog-face-back img,
+.prolog-face-spine img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.prolog-face-front img {
+  object-position: right center;
+}
+
+.prolog-face-front::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background:
+    linear-gradient(to right, rgba(0, 0, 0, 0.6) 0%, rgba(255, 255, 255, 0.1) 4%, transparent 10%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 40%, rgba(0, 0, 0, 0.2) 100%);
+  box-shadow: inset -5px 0 15px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.prolog-face-back img {
+  object-position: left center;
+  transform: scaleX(-1);
+  -webkit-mask-image: linear-gradient(to right, #000 0%, rgba(0, 0, 0, 0.3) 50%, #000 100%);
+  mask-image: linear-gradient(to right, #000 0%, rgba(0, 0, 0, 0.3) 50%, #000 100%);
+}
+
+.prolog-face-spine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--prolog-book-depth);
+  height: var(--prolog-book-height);
+  overflow: hidden;
+  background: var(--prolog-ink);
+  transform: translate(-50%, -50%) rotateY(-90deg) translateZ(calc(var(--prolog-book-width) / 2));
+}
+
+.prolog-face-spine img {
+  object-position: center center;
+}
+
+.prolog-face-spine::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  box-shadow: inset 4px 0 8px rgba(0, 0, 0, 0.8), inset -4px 0 8px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.prolog-face-pages-r {
+  width: var(--prolog-book-depth);
+  height: var(--prolog-book-height);
+  background: repeating-linear-gradient(to right, #f3ebd8 0, #e3d5bb 2px, #f3ebd8 4px);
+  box-shadow:
+    inset 0 5px 8px rgba(0, 0, 0, 0.4),
+    inset 0 -5px 8px rgba(0, 0, 0, 0.4),
+    inset -5px 0 8px rgba(0, 0, 0, 0.3);
+  transform: translate(-50%, -50%) rotateY(90deg) translateZ(calc(var(--prolog-book-width) / 2));
+}
+
+.prolog-face-pages-t,
+.prolog-face-pages-b {
+  width: var(--prolog-book-width);
+  height: var(--prolog-book-depth);
+  background: repeating-linear-gradient(to bottom, #f3ebd8 0, #e3d5bb 2px, #f3ebd8 4px);
+  box-shadow:
+    inset 5px 0 8px rgba(0, 0, 0, 0.4),
+    inset -5px 0 8px rgba(0, 0, 0, 0.3),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.2);
+}
+
+.prolog-face-pages-t {
+  transform: translate(-50%, -50%) rotateX(90deg) translateZ(calc(var(--prolog-book-height) / 2));
+}
+
+.prolog-face-pages-b {
+  transform: translate(-50%, -50%) rotateX(-90deg) translateZ(calc(var(--prolog-book-height) / 2));
+}
+
+.prolog-shadow-anchor {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 260px;
+  height: 40px;
+  transition: transform 1.2s cubic-bezier(0.65, 0, 0.15, 1);
+}
+
+.prolog-shadow-pulse {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.65) 0%, transparent 70%);
+  filter: blur(12px);
+  animation: prologPulseShadow 4s ease-in-out infinite;
+}
+
+@keyframes prologPulseShadow {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scaleX(0.9);
+  }
+}
+
+.prolog-pages {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(
+    180deg,
+    #130d08 0%,
+    #1c1208 32%,
+    #18100a 66%,
+    #130d08 100%
+  );
+}
+
+.prolog-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  transform: translateY(100%);
+  transition: transform 0.85s cubic-bezier(0.76, 0, 0.24, 1);
+  will-change: transform;
+}
+
+.prolog-panel.active {
+  transform: translateY(0);
+}
+
+.prolog-panel.above {
+  transform: translateY(-100%);
+}
+
+.prolog-panel-1,
+.prolog-panel-4 {
+  background: transparent;
+}
+
+.prolog-panel-2 {
+  background: transparent;
+}
+
+.prolog-panel-3 {
+  background: transparent;
+}
+
+.prolog-giant-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1110;
+  display: flex;
+  flex-direction: column;
+  color: var(--prolog-paper);
+  font-family: "Playfair Display", serif;
+  font-size: clamp(4.5rem, 15vw, 17rem);
+  font-weight: 900;
+  line-height: 0.85;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: 0;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0;
+  transform: translate(-50%, calc(-50% + 30px));
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.prolog-panel-2 .prolog-giant-text {
+  left: 73%;
+  color: rgba(245, 240, 232, 0.9);
+  font-size: clamp(3.8rem, 11vw, 12rem);
+}
+
+.prolog-panel-3 .prolog-giant-text {
+  left: 27%;
+  color: var(--prolog-amber-light);
+  font-size: clamp(3.8rem, 11vw, 12rem);
+  opacity: 0;
+}
+
+.prolog-panel-3 .prolog-foreground {
+  flex-direction: row-reverse;
+}
+
+.prolog-panel-3 .prolog-kicker {
+  text-align: left;
+}
+
+.prolog-panel.active .prolog-giant-text {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+  transition-delay: 0.2s;
+}
+
+.prolog-foreground {
+  position: absolute;
+  right: 7vw;
+  bottom: 10vh;
+  left: 7vw;
+  z-index: 1200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.prolog-foreground > * {
+  pointer-events: auto;
+}
+
+.prolog-kicker {
+  color: var(--prolog-amber);
+  text-align: right;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.prolog-kicker-italic {
+  display: block;
+  margin-bottom: 2px;
+  color: rgba(200, 131, 26, 0.8);
+  font-family: "Playfair Display", serif;
+  font-size: 1.2rem;
+  font-style: italic;
+}
+
+.prolog-kicker-bold {
+  display: block;
+  color: var(--prolog-amber);
+  font-family: "Playfair Display", serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.prolog-panel.active .prolog-kicker {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.5s;
+}
+
+@media (max-width: 760px) {
+  .prolog-page {
+    --prolog-book-width: 160px;
+    --prolog-book-height: 245px;
+    --prolog-book-depth: 52px;
+  }
+
+  .prolog-dots {
+    right: 18px;
+  }
+
+  .prolog-foreground {
+    bottom: 8vh;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 22px;
+  }
+
+  .prolog-panel-3 .prolog-foreground {
+    flex-direction: column-reverse;
+  }
+
+  .prolog-panel-2 .prolog-giant-text,
+  .prolog-panel-3 .prolog-giant-text {
+    left: 50%;
+    font-size: clamp(3.2rem, 14vw, 6.5rem);
+  }
+
+  .prolog-kicker {
+    text-align: left;
+  }
+
+  .prolog-kicker-bold {
+    font-size: 1.8rem;
+  }
+
+}

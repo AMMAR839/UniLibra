@@ -14,6 +14,7 @@ import LendBookPage from "./pages/LendBook";
 import Login from "./pages/login";
 import NotificationPage from "./pages/Notification";
 import ProfilePage from "./pages/Profile";
+import PrologPage from "./pages/Prolog";
 import Register from "./pages/register";
 import { getToken, setToken } from "./lib/api";
 
@@ -104,6 +105,9 @@ function App() {
   const [page, setPage] = useState<AppPage>(() =>
     pageFromPath(window.location.pathname),
   );
+  const [isPrologDone, setIsPrologDone] = useState(() =>
+    pageFromPath(window.location.pathname) !== "home",
+  );
   const [isLoggedIn, setIsLoggedIn] = useState(() => Boolean(getToken()));
 
   useEffect(() => {
@@ -157,6 +161,11 @@ function App() {
     navigateTo("/login");
   }
 
+  function finishProlog() {
+    setIsPrologDone(true);
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
+  }
+
   const aiButton = (
     <FloatingAIButton isActive={page === "ai"} onOpen={() => navigateTo("/ai")} />
   );
@@ -186,6 +195,10 @@ function App() {
         {aiButton}
       </>
     );
+  }
+
+  if (page === "home" && !isPrologDone) {
+    return <PrologPage onDone={finishProlog} />;
   }
 
   if (!isLoggedIn && protectedPages.has(page)) {

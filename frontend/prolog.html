@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UniLibra - Bedebah di Ujung Tanduk 3D</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,900;1,400;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Color Palette UniLibra (Tidak dirubah) */
+      --ink:         #130d08;
+      --ink-soft:    #1c1208;
+      --paper:       #f5f0e8;
+      --amber:       #c8831a;
+      --amber-light: #f5d061;
+      
+      /* DIMENSI BUKU (Ketebalan disesuaikan agar proporsional dengan gambar) */
+      --bw: 230px; /* Lebar Cover */
+      --bh: 350px; /* Tinggi Cover */
+      --bd: 75px;  /* Ketebalan Buku */
+    }
+    
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: auto; }
+    body {
+      background: var(--ink);
+      color: var(--paper);
+      font-family: "DM Sans", sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ── GRAIN EFFECT ── */
+    #grain {
+      position:fixed; inset:0; z-index:999; pointer-events:none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity:0.3; mix-blend-mode:overlay;
+    }
+
+    /* ── STAGE 3D ── */
+    #book-stage {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 100;
+      perspective: 1600px;
+    }
+
+    /* ── LAPISAN ANIMASI MELAYANG (CSS Murni) ── */
+    #book-wrapper {
+      position: absolute;
+      width: var(--bw); height: var(--bh);
+      top: 50%; left: 50%;
+      animation: floatBook 4s ease-in-out infinite;
+      transform-style: preserve-3d;
+    }
+
+    @keyframes floatBook {
+      0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
+      50%      { transform: translate(-50%, -50%) translateY(-15px); }
+    }
+
+    /* ── LAPISAN TRANSISI (Dikontrol Javascript) ── */
+    #book-3d {
+      position: absolute;
+      width: 100%; height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 1.2s cubic-bezier(0.65, 0, 0.15, 1);
+    }
+
+    /* ── SISI-SISI BUKU PRESISI ── */
+    .face {
+      position: absolute;
+      top: 50%; left: 50%;
+      backface-visibility: hidden;
+      outline: 1px solid transparent; 
+    }
+
+    /* Cover Depan (Mengambil bagian kanan dari gambar) */
+    .face-front {
+      width: var(--bw); height: var(--bh);
+      transform: translate(-50%, -50%) translateZ(calc(var(--bd) / 2));
+      border-radius: 2px 4px 4px 2px; overflow: hidden; background: var(--ink);
+    }
+    .face-front img { 
+      width: 100%; height: 100%; display: block;
+      object-fit: cover; 
+      object-position: right center; /* Fokus ke ujung kanan gambar */
+    }
+    .face-front::after {
+      content:''; position:absolute; inset:0; pointer-events: none;
+      background: linear-gradient(to right, rgba(0,0,0,0.6) 0%, rgba(255,255,255,0.1) 4%, transparent 10%),
+                  linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 40%, rgba(0,0,0,0.2) 100%);
+      box-shadow: inset -5px 0 15px rgba(0,0,0,0.4);
+    }
+
+    /* Cover Belakang (Mengambil bagian kiri dari gambar) */
+    .face-back {
+      width: var(--bw); height: var(--bh);
+      transform: translate(-50%, -50%) rotateY(180deg) translateZ(calc(var(--bd) / 2));
+      border-radius: 4px 2px 2px 4px; overflow: hidden; background: var(--ink);
+    }
+    .face-back img { 
+      width: 100%; height: 100%; display: block;
+      object-fit: cover; 
+      object-position: left center; /* Fokus ke ujung kiri gambar */
+      transform: scaleX(-1); /* Penting! Membalik gambar agar teks bisa dibaca normal di 3D */
+      /* Masking Opacity: Pekat di kiri/kanan, transparan di tengah */
+      -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,1) 100%);
+      mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,1) 100%);
+    }
+
+    /* Punggung Buku / Spine (Mengambil bagian persis di tengah gambar) */
+    .face-spine {
+      width: var(--bd); height: var(--bh);
+      transform: translate(-50%, -50%) rotateY(-90deg) translateZ(calc(var(--bw) / 2));
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      background: var(--ink);
+    }
+    .face-spine img {
+      width: 100%; height: 100%; display: block;
+      object-fit: cover; 
+      object-position: center center; /* Fokus tepat di punggung buku */
+    }
+    .face-spine::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      box-shadow: inset 4px 0 8px rgba(0,0,0,0.8), inset -4px 0 8px rgba(0,0,0,0.6);
+    }
+
+    /* Tekstur Kertas dengan Inner Shadow */
+    .face-pages-r {
+      width: var(--bd); height: var(--bh);
+      transform: translate(-50%, -50%) rotateY(90deg) translateZ(calc(var(--bw) / 2));
+      background: repeating-linear-gradient(to right, #f3ebd8 0px, #e3d5bb 2px, #f3ebd8 4px);
+      box-shadow: inset 0 5px 8px rgba(0,0,0,0.4), inset 0 -5px 8px rgba(0,0,0,0.4), inset -5px 0 8px rgba(0,0,0,0.3);
+    }
+    .face-pages-t {
+      width: var(--bw); height: var(--bd);
+      transform: translate(-50%, -50%) rotateX(90deg) translateZ(calc(var(--bh) / 2));
+      background: repeating-linear-gradient(to bottom, #f3ebd8 0px, #e3d5bb 2px, #f3ebd8 4px);
+      box-shadow: inset 5px 0 8px rgba(0,0,0,0.4), inset -5px 0 8px rgba(0,0,0,0.3), inset 0 -3px 5px rgba(0,0,0,0.2);
+    }
+    .face-pages-b {
+      width: var(--bw); height: var(--bd);
+      transform: translate(-50%, -50%) rotateX(-90deg) translateZ(calc(var(--bh) / 2));
+      background: repeating-linear-gradient(to bottom, #f3ebd8 0px, #e3d5bb 2px, #f3ebd8 4px);
+      box-shadow: inset 5px 0 8px rgba(0,0,0,0.4), inset -5px 0 8px rgba(0,0,0,0.3), inset 0 -3px 5px rgba(0,0,0,0.2);
+    }
+
+    /* ── BAYANGAN DI LANTAI ── */
+    #shadow-anchor {
+      position: absolute; top: 50%; left: 50%;
+      width: 260px; height: 40px;
+      transition: transform 1.2s cubic-bezier(0.65, 0, 0.15, 1);
+    }
+    #shadow-pulse {
+      width: 100%; height: 100%;
+      background: radial-gradient(ellipse, rgba(0,0,0,0.65) 0%, transparent 70%);
+      filter: blur(12px);
+      animation: pulseShadow 4s ease-in-out infinite;
+    }
+    @keyframes pulseShadow {
+      0%, 100% { transform: scaleX(1); opacity: 0.7; }
+      50%      { transform: scaleX(0.9); opacity: 0.4; }
+    }
+
+    /* ── PAGES & SNAP SCROLL ── */
+    #app { position: relative; width: 100vw; height: 100vh; }
+
+    .page {
+      position: absolute; inset: 0; width: 100vw; height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      overflow: hidden; transform: translateY(100%);
+      transition: transform 0.85s cubic-bezier(0.76, 0, 0.24, 1);
+      will-change: transform;
+    }
+    .page.active { transform: translateY(0%); }
+    .page.above  { transform: translateY(-100%); }
+
+    .page-1 { background: var(--ink); }
+    .page-2 { background: var(--ink-soft); }
+    .page-3 { background: #18100a; }
+    .page-4 { background: var(--ink); }
+
+    /* ── TYPOGRAPHY RAKSASA ── */
+    .giant-bg-text {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: "Playfair Display", serif;
+      font-size: clamp(4.5rem, 15vw, 17rem);
+      font-weight: 900; color: var(--paper);
+      line-height: 0.85; text-align: center; white-space: nowrap;
+      z-index: 10; pointer-events: none; user-select: none; letter-spacing: -3px;
+    }
+    .page-2 .giant-bg-text { color: rgba(245, 240, 232, 0.9); }
+    .page-3 .giant-bg-text { color: var(--amber-light); opacity: 0.85; }
+
+    /* ── FOREGROUND UI ── */
+    .foreground-ui {
+      position: absolute; bottom: 10vh; left: 7vw; right: 7vw;
+      z-index: 200; display: flex; justify-content: space-between;
+      align-items: flex-end; pointer-events: none;
+    }
+    .foreground-ui > * { pointer-events: auto; }
+
+    .btn {
+      display: inline-flex; align-items: center; padding: 14px 36px;
+      border-radius: 100px; font-family: "DM Sans", sans-serif;
+      font-size: 0.95rem; font-weight: 500; letter-spacing: 1px;
+      cursor: pointer; text-decoration: none;
+      border: 1px solid rgba(245,240,232,0.15); background: transparent;
+      color: var(--paper); transition: all 0.3s ease; backdrop-filter: blur(4px);
+    }
+    .btn:hover { background: var(--paper); color: var(--ink); }
+
+    .kicker-box { text-align: right; color: var(--amber); }
+    .kicker-italic {
+      display: block; font-family: "Playfair Display", serif;
+      font-style: italic; font-size: 1.2rem; margin-bottom: 2px;
+      color: rgba(200,131,26,0.8);
+    }
+    .kicker-bold {
+      display: block; font-family: "Playfair Display", serif; font-weight: 900;
+      font-size: 2.2rem; letter-spacing: 1px; line-height: 1;
+      color: var(--amber); text-transform: uppercase;
+    }
+
+    /* ── NAVIGASI ── */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 300;
+      padding: 30px 7vw; display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { font-family: "Playfair Display", serif; font-weight: 900; font-size: 1.4rem; color: var(--paper); }
+    
+    #nav-dots {
+      position: fixed; right: 36px; top: 50%; transform: translateY(-50%); z-index: 300;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .dot {
+      width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid rgba(245,240,232,0.45);
+      background: transparent; cursor: pointer; transition: all 0.3s ease;
+    }
+    .dot.active { background: var(--paper); border-color: var(--paper); transform: scale(1.5); }
+
+    /* ── REVEAL ANIMATIONS ── */
+    .giant-bg-text, .btn, .kicker-box {
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .page.active .giant-bg-text { opacity: 1; transform: translate(-50%, -50%); transition-delay: 0.2s; }
+    .page.active .btn           { opacity: 1; transform: none; transition-delay: 0.4s; }
+    .page.active .kicker-box    { opacity: 1; transform: none; transition-delay: 0.5s; }
+  </style>
+</head>
+<body>
+
+<div id="grain"></div>
+
+<nav id="nav">
+  <div class="nav-logo">UniLibra</div>
+</nav>
+
+<div id="nav-dots">
+  <div class="dot active" data-page="0"></div>
+  <div class="dot" data-page="1"></div>
+  <div class="dot" data-page="2"></div>
+  <div class="dot" data-page="3"></div>
+</div>
+
+<div id="book-stage">
+  <div id="shadow-anchor">
+    <div id="shadow-pulse"></div>
+  </div>
+
+  <div id="book-wrapper">
+    <div id="book-3d">
+      
+      <div class="face face-front">
+        <img src="cover.png" alt="Cover Depan" draggable="false">
+      </div>
+      
+      <div class="face face-back">
+        <img src="cover.png" alt="Cover Belakang" draggable="false">
+      </div>
+      
+      <div class="face face-spine">
+        <img src="cover.png" alt="Punggung Buku" draggable="false">
+      </div>
+      
+      <div class="face face-pages-r"></div>
+      <div class="face face-pages-t"></div>
+      <div class="face face-pages-b"></div>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="page page-1 active" data-index="0">
+    <div class="giant-bg-text">UNI<br>LIBRA</div>
+    <div class="foreground-ui">
+      <a class="btn" href="#">Jelajahi Katalog</a>
+      <div class="kicker-box"><span class="kicker-italic">platform</span><span class="kicker-bold">PINJAM BUKU</span></div>
+    </div>
+  </div>
+  <div class="page page-2" data-index="1">
+    <div class="giant-bg-text">BUKU<br>VIRAL</div>
+    <div class="foreground-ui">
+      <a class="btn" href="#">Lihat Trending</a>
+      <div class="kicker-box"><span class="kicker-italic">sedang ramai di</span><span class="kicker-bold">SEKITARMU</span></div>
+    </div>
+  </div>
+  <div class="page page-3" data-index="2">
+    <div class="giant-bg-text">BACA<br>GRATIS</div>
+    <div class="foreground-ui">
+      <a class="btn" href="#">Cara Kerja</a>
+      <div class="kicker-box"><span class="kicker-italic">tanpa harus</span><span class="kicker-bold">BIAYA BELI</span></div>
+    </div>
+  </div>
+  <div class="page page-4" data-index="3">
+    <div class="giant-bg-text">PINTU<br>BACA</div>
+    <div class="foreground-ui">
+      <a class="btn" href="#">Mulai Pinjamkan</a>
+      <div class="kicker-box"><span class="kicker-italic">jadikan rakmu</span><span class="kicker-bold">PINTU BACA</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const pages        = document.querySelectorAll('.page');
+  const dots         = document.querySelectorAll('.dot');
+  const book3D       = document.getElementById('book-3d');
+  const shadowAnchor = document.getElementById('shadow-anchor');
+  const total        = pages.length;
+  let current        = 0;
+  let animating      = false;
+
+  // Animasi rotasi buku per halaman
+  const poses = [
+    { tx: '0vw',   ry: -35, rx: 10, rz: -3, sc: 1.05 }, // P1: Tampilan depan elegan
+    { tx: '-22vw', ry: 40,  rx: -5, rz: 3,  sc: 0.95 }, // P2: Geser memamerkan sisi kertas
+    { tx: '22vw',  ry: -55, rx: 15, rz: -6, sc: 0.90 }, // P3: Menukik menampilkan sudut
+    { tx: '0vw',   ry: 180, rx: 5,  rz: 2,  sc: 1.10 }  // P4: Putar 180 derajat untuk melihat belakang
+  ];
+
+  function setBook(idx) {
+    const p = poses[idx];
+    
+    book3D.style.transform = `
+      translateX(${p.tx})
+      rotateX(${p.rx}deg)
+      rotateY(${p.ry}deg)
+      rotateZ(${p.rz}deg)
+      scale(${p.sc})
+    `;
+    
+    shadowAnchor.style.transform = `
+      translate(-50%, 190px)
+      translateX(${p.tx})
+      scaleX(${p.sc * 0.95})
+    `;
+  }
+
+  function goTo(next) {
+    if (next === current || animating) return;
+    animating = true;
+    const dir = next > current ? 1 : -1;
+    const prev = current;
+    current = next;
+
+    if (dir === 1) {
+      pages[prev].classList.remove('active');
+      pages[prev].classList.add('above');
+      pages[current].classList.remove('above');
+      pages[current].classList.add('active');
+    } else {
+      pages[prev].classList.remove('active', 'above');
+      pages[prev].style.transition = 'none';
+      pages[prev].style.transform  = 'translateY(100%)';
+      pages[prev].offsetHeight; 
+      pages[prev].style.transition = '';
+      pages[current].classList.remove('above');
+      pages[current].classList.add('active');
+    }
+
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    setBook(current);
+    
+    setTimeout(() => { animating = false; }, 900);
+  }
+
+  pages.forEach((p, i) => {
+    if (i !== 0) {
+      p.style.transition = 'none';
+      p.style.transform  = 'translateY(100%)';
+      p.offsetHeight;
+      p.style.transition = '';
+    }
+  });
+  
+  setTimeout(() => { setBook(0); }, 50);
+
+  let acc = 0;
+  window.addEventListener('wheel', e => {
+    e.preventDefault();
+    acc += e.deltaY;
+    if (acc >  80 && current < total - 1) { acc = 0; goTo(current + 1); }
+    if (acc < -80 && current > 0)          { acc = 0; goTo(current - 1); }
+  }, { passive: false });
+
+  let ty0 = 0;
+  window.addEventListener('touchstart', e => { ty0 = e.touches[0].clientY; });
+  window.addEventListener('touchend',   e => {
+    const d = ty0 - e.changedTouches[0].clientY;
+    if (d >  50 && current < total - 1) goTo(current + 1);
+    if (d < -50 && current > 0)         goTo(current - 1);
+  });
+
+  window.addEventListener('keydown', e => {
+    if (['ArrowDown','PageDown'].includes(e.key) && current < total-1) goTo(current+1);
+    if (['ArrowUp','PageUp'].includes(e.key)     && current > 0)       goTo(current-1);
+  });
+
+  dots.forEach(d => d.addEventListener('click', () => goTo(+d.dataset.page)));
+</script>
+</body>
+</html>
