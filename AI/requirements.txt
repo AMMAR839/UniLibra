@@ -1,5 +1,7 @@
 fastapi
 uvicorn
-sentence-transformers
 psycopg2-binary
-pandas
+sentence-transformers
+google-genai
+python-dotenv
+pydantic
