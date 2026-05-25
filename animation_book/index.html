@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Book - Harga Sebuah Percaya</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <div class="info">
+      <p class="eyebrow">Demo Buku 3D</p>
+      <h1>Harga Sebuah Percaya</h1>
+      <p class="desc">
+        Drag bukunya untuk memutar. Scroll mouse untuk zoom.
+        Tombol di bawah bisa dipakai untuk melihat sisi depan, samping, atau belakang.
+      </p>
+
+      <div class="controls">
+        <button data-view="front">Depan</button>
+        <button data-view="spine">Samping</button>
+        <button data-view="back">Belakang</button>
+        <button data-view="three">3D View</button>
+        <button id="resetBtn" class="ghost">Reset</button>
+      </div>
+    </div>
+
+    <section class="scene" id="scene">
+      <div class="book" id="book">
+        <div class="face front"></div>
+        <div class="face back"></div>
+
+        <div class="face spine">
+          <div class="spine-content">
+            <span class="spine-title">Harga Sebuah Percaya</span>
+            <span class="spine-author">Tere Liye</span>
+          </div>
+        </div>
+
+        <div class="face pages"></div>
+        <div class="face top"></div>
+        <div class="face bottom"></div>
+      </div>
+
+      <div class="ground-shadow"></div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -578,7 +578,6 @@ function BookCard({
         ) : (
           <div className="book-cover-img bc-5">{book.title}</div>
         )}
-        <span className="book-badge badge-available">Tersedia</span>
       </div>
       <div className="book-body">
         <span className="catalog-book-genre">{book.category || "Katalog"}</span>

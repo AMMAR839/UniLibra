@@ -124,7 +124,7 @@ func PatchAdminBook(c *gin.Context) {
 
 func GetAdminTransactions(c *gin.Context) {
 	var transactions []models.Transaction
-	if err := config.DB.Preload("Book").Preload("Borrower").
+	if err := config.DB.Preload("Book").Preload("Book.Owner").Preload("Borrower").
 		Order("created_at DESC").
 		Limit(160).
 		Find(&transactions).Error; err != nil {

@@ -103,7 +103,6 @@
       width: 100%; height: 100%; display: block;
       object-fit: cover; 
       object-position: left center; /* Fokus ke ujung kiri gambar */
-      transform: scaleX(-1); /* Penting! Membalik gambar agar teks bisa dibaca normal di 3D */
       /* Masking Opacity: Pekat di kiri/kanan, transparan di tengah */
       -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,1) 100%);
       mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,1) 100%);
@@ -283,7 +282,7 @@
       </div>
       
       <div class="face face-spine">
-        <img src="cover.png" alt="Punggung Buku" draggable="false">
+        <img src="cover.png" alt="Punggung Buku" draggable="false" style="transform: scaleX(-1);">
       </div>
       
       <div class="face face-pages-r"></div>

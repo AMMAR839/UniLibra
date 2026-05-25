@@ -12,24 +12,6 @@ type AIRecommendationResponse = {
   warning?: string;
 };
 
-const benefits = [
-  {
-    number: "01",
-    title: "Buku dekat dengan hidupmu",
-    text: "Cari buku dari orang di sekitar rumah, kampus, atau komunitas yang kamu ikuti.",
-  },
-  {
-    number: "02",
-    title: "Rak pribadi jadi berguna",
-    text: "Buku yang jarang dibuka bisa dipinjamkan dan kembali punya nilai untuk orang lain.",
-  },
-  {
-    number: "03",
-    title: "Pilihan baca terasa personal",
-    text: "Katalog dapat dikembangkan menjadi rekomendasi berdasarkan genre, lokasi, dan riwayat.",
-  },
-];
-
 function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const [backendBooks, setBackendBooks] = useState<Book[]>([]);
@@ -112,7 +94,7 @@ function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
                 }`}
                 key={`hero-${book.id}`}
               >
-                {book.cover_url ? <img src={mediaURL(book.cover_url)} alt="" /> : null}
+                {bookCoverSrc(book) ? <img src={bookCoverSrc(book)} alt="" /> : null}
               </div>
             ))}
           </div>
@@ -129,7 +111,7 @@ function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
                 key={`featured-${book.id}`}
               >
                 <div className="home-featured-book">
-                  {book.cover_url ? <img src={mediaURL(book.cover_url)} alt="" /> : null}
+                  {bookCoverSrc(book) ? <img src={bookCoverSrc(book)} alt="" /> : null}
                   <span>{book.title}</span>
                 </div>
               </div>
@@ -216,7 +198,7 @@ function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
               type="button"
             >
               <div className="home-poster-cover">
-                {book.cover_url ? <img src={mediaURL(book.cover_url)} alt="" /> : null}
+                {bookCoverSrc(book) ? <img src={bookCoverSrc(book)} alt="" /> : null}
                 <span>{book.title}</span>
               </div>
               <div className="home-poster-body">
@@ -231,51 +213,16 @@ function HomePage({ onExploreCatalog, onBorrowBook }: HomeProps) {
         </div>
       </section>
 
-      <section className="home-story-band" id="cara-kerja">
-        <div className="home-story-copy">
-          <span>Cara kerja UniLibra</span>
-          <h2>Buka katalog, pilih buku, lalu baca tanpa harus membeli baru.</h2>
-          <p>
-            Setiap buku punya konteks: siapa penulisnya, lokasinya, status
-            ketersediaannya, dan biaya pinjamnya. Dari situ pembaca bisa
-            menemukan bacaan yang relevan, sementara pemilik buku punya alasan
-            untuk merawat koleksinya.
-          </p>
-        </div>
-        <div className="home-benefits">
-          {benefits.map((benefit) => (
-            <article className="home-benefit" key={benefit.number}>
-              <span>{benefit.number}</span>
-              <h3>{benefit.title}</h3>
-              <p>{benefit.text}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="home-owner-section" id="pinjamkan">
-        <div>
-          <span>Untuk pemilik buku</span>
-          <h2>Rak yang diam bisa jadi pintu masuk pembaca lain.</h2>
-        </div>
-        <p>
-          UniLibra membuat koleksi pribadi lebih mudah ditemukan. Buku yang
-          jarang dibaca bisa berpindah tangan sementara, memberi manfaat, lalu
-          kembali ke rak dengan cerita baru.
-        </p>
-      </section>
-
-      <section className="home-final-cta" id="kontak">
-        <div>
-          <span>Siap mulai?</span>
-          <h2>Lihat dulu bukunya. Setelah itu baru putuskan mau pinjam yang mana.</h2>
-        </div>
-        <button className="btn-banner" type="button" onClick={onExploreCatalog}>
-          Masuk ke Katalog
-        </button>
-      </section>
     </main>
   );
+}
+
+function bookCoverSrc(book: Book) {
+  if (book.title.toLowerCase().includes("atomic habits")) {
+    return "/atomic-habits-book.png";
+  }
+
+  return book.cover_url ? mediaURL(book.cover_url) : "";
 }
 
 function formatBookPrice(book: Book) {

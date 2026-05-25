@@ -658,25 +658,17 @@ footer {
   }
 
   .home-book-rail {
-    grid-template-columns: repeat(3, minmax(160px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 220px));
+    justify-content: space-between;
   }
 
-  .home-story-band,
-  .home-owner-section,
-  .home-final-cta {
-    grid-template-columns: 1fr;
+  .home-poster-cover {
+    height: 330px;
   }
 
-  .home-final-cta {
-    gap: 26px;
-  }
-
-  .home-final-cta .btn-banner {
-    justify-self: start;
-  }
-
-  .home-benefit {
-    grid-template-columns: 56px minmax(0, 0.9fr) minmax(260px, 1fr);
+  .home-poster {
+    max-width: 220px;
+    grid-template-rows: 330px 118px;
   }
 
   .hero-visual {
@@ -767,10 +759,7 @@ footer {
   }
 
   .home-tagline,
-  .home-section-heading h2,
-  .home-story-copy h2,
-  .home-owner-section h2,
-  .home-final-cta h2 {
+  .home-section-heading h2 {
     font-size: 2.2rem;
   }
 
@@ -796,8 +785,8 @@ footer {
 
   .home-hero-slide::after {
     background:
-      linear-gradient(90deg, rgba(19, 13, 8, 0.96) 0%, rgba(19, 13, 8, 0.82) 54%, rgba(19, 13, 8, 0.58) 100%),
-      linear-gradient(0deg, rgba(19, 13, 8, 0.82) 0%, rgba(19, 13, 8, 0.32) 46%, rgba(19, 13, 8, 0.44) 100%);
+      linear-gradient(90deg, rgba(21, 16, 12, 0.96) 0%, rgba(21, 16, 12, 0.82) 54%, rgba(48, 57, 43, 0.58) 100%),
+      linear-gradient(0deg, rgba(21, 16, 12, 0.88) 0%, rgba(21, 16, 12, 0.32) 38%, rgba(21, 16, 12, 0.42) 100%);
   }
 
   .hero-cta,
@@ -823,9 +812,14 @@ footer {
   }
 
   .home-rail-section,
-  .home-story-band,
   .books-section {
     padding-inline: 20px;
+  }
+
+  .home-rail-section {
+    padding-top: 148px;
+    background:
+      linear-gradient(180deg, #15100c 0px, #241d15 54px, #443b2c 112px, #7b6f56 176px, #b8aa92 238px, #e0d6c4 300px, #f4efe4 382px, #eee5d5 100%);
   }
 
   .home-book-rail,
@@ -833,9 +827,17 @@ footer {
     grid-template-columns: 1fr;
   }
 
-  .home-benefit {
-    grid-template-columns: 1fr;
-    gap: 8px;
+  .home-book-rail {
+    justify-items: center;
+  }
+
+  .home-poster {
+    max-width: 260px;
+    grid-template-rows: 390px 118px;
+  }
+
+  .home-poster-cover {
+    height: 390px;
   }
 
   .section-header {
@@ -844,20 +846,9 @@ footer {
     gap: 12px;
   }
 
-  .banner-strip,
-  .home-owner-section,
-  .home-final-cta {
+  .banner-strip {
     margin-inline: 20px;
     padding: 28px;
-  }
-
-  .home-owner-section {
-    padding-inline: 0;
-  }
-
-  .home-final-cta .btn-banner {
-    justify-self: stretch;
-    width: 100%;
   }
 
   .footer-bottom {
