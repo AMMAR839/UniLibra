@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import LoginCharacterArt from "../components/LoginCharacterArt";
+import { API_URL, apiFetch } from "../lib/api";
 import "../styles/register.css";
 
 type RegisterForm = {
@@ -65,8 +66,20 @@ export default function Register({ onLoginClick }: RegisterProps) {
     setLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 450));
-      alert("Akun berhasil disiapkan");
+      await apiFetch("/api/register", {
+        auth: false,
+        method: "POST",
+        body: JSON.stringify({
+          name: `${form.firstName} ${form.lastName}`.trim(),
+          email: form.email,
+          password: form.password,
+          city: form.city,
+        }),
+      });
+      alert("Akun berhasil dibuat. Silakan masuk.");
+      onLoginClick?.();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Registrasi gagal.");
     } finally {
       setLoading(false);
     }
@@ -183,7 +196,14 @@ function RegisterFormPanel({
 
         <div className="register-separator">atau daftar dengan</div>
 
-        <button className="register-google" type="button">
+        <button
+          className="register-google"
+          type="button"
+          onClick={() => {
+            window.location.href =
+              import.meta.env.VITE_GOOGLE_LOGIN_URL || `${API_URL}/api/auth/google`;
+          }}
+        >
           <GoogleIcon />
           Daftar dengan Google
         </button>

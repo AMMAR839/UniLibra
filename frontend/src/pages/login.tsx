@@ -2,9 +2,9 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { motion } from "framer-motion";
 import LoginCharacterArt from "../components/LoginCharacterArt";
+import { API_URL, setToken } from "../lib/api";
 import "../styles/login.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 const GOOGLE_LOGIN_URL =
   import.meta.env.VITE_GOOGLE_LOGIN_URL || `${API_URL}/api/auth/google`;
 
@@ -38,7 +38,7 @@ export default function Login({ onRegisterClick }: LoginProps) {
       const data = await response.json();
 
       if (data.token) {
-        localStorage.setItem("token", data.token);
+        setToken(data.token);
       }
 
       window.location.href = "/";

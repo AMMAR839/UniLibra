@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"net/http"
+	"os"
+	"strings"
 
 	"unilibra-backend/internal/pkg/config"
 	"unilibra-backend/internal/pkg/models"
@@ -15,6 +17,7 @@ type RegisterInput struct {
 	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
+	City     string `json:"city"`
 }
 
 func Register(c *gin.Context) {
@@ -41,6 +44,9 @@ func Register(c *gin.Context) {
 		Name:         input.Name,
 		Email:        input.Email,
 		PasswordHash: string(hashedPassword),
+		City:         input.City,
+		Role:         roleForEmail(input.Email),
+		Status:       "active",
 	}
 
 	if err := config.DB.Create(&newUser).Error; err != nil {
@@ -51,9 +57,11 @@ func Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Registrasi berhasil!",
 		"user": gin.H{
-			"id":    newUser.ID,
-			"name":  newUser.Name,
-			"email": newUser.Email,
+			"id":     newUser.ID,
+			"name":   newUser.Name,
+			"email":  newUser.Email,
+			"role":   newUser.Role,
+			"status": newUser.Status,
 		},
 	})
 }
@@ -76,6 +84,17 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email atau password salah."})
 		return
 	}
+	if user.Status == "suspended" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Akun sedang dinonaktifkan."})
+		return
+	}
+	if user.Role == "" || roleForEmail(user.Email) == "admin" && user.Role != "admin" {
+		user.Role = roleForEmail(user.Email)
+		if user.Status == "" {
+			user.Status = "active"
+		}
+		config.DB.Save(&user)
+	}
 
 	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password))
 	if err != nil {
@@ -93,9 +112,22 @@ func Login(c *gin.Context) {
 		"message": "Login berhasil!",
 		"token":   token,
 		"user": gin.H{
-			"id":    user.ID,
-			"name":  user.Name,
-			"email": user.Email,
+			"id":     user.ID,
+			"name":   user.Name,
+			"email":  user.Email,
+			"role":   user.Role,
+			"status": user.Status,
 		},
 	})
+}
+
+func roleForEmail(email string) string {
+	normalizedEmail := strings.TrimSpace(strings.ToLower(email))
+	for _, configuredEmail := range strings.Split(os.Getenv("ADMIN_EMAILS"), ",") {
+		if strings.TrimSpace(strings.ToLower(configuredEmail)) == normalizedEmail {
+			return "admin"
+		}
+	}
+
+	return "user"
 }

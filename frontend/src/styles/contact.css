@@ -1,0 +1,223 @@
+.contact-page {
+  min-height: 100vh;
+  background: #f5f0e8;
+  color: var(--ink);
+  padding: 54px 0 76px;
+}
+
+.contact-shell {
+  width: min(1040px, 90vw);
+  margin: 0 auto;
+}
+
+.contact-simple-head {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.contact-simple-head span,
+.contact-section-head span {
+  color: var(--amber);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.contact-simple-head h1 {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(2.4rem, 5vw, 4.4rem);
+  line-height: 0.98;
+}
+
+.contact-simple-head strong {
+  color: var(--text-muted);
+  font-size: 0.96rem;
+}
+
+.contact-channel-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.contact-channel,
+.contact-faq {
+  border: 1px solid rgba(26, 18, 8, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.contact-channel {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+  color: var(--ink);
+  padding: 16px;
+  text-decoration: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+
+.contact-channel:hover {
+  border-color: rgba(200, 131, 26, 0.38);
+  box-shadow: 0 16px 34px rgba(26, 18, 8, 0.1);
+  transform: translateY(-2px);
+}
+
+.contact-channel i {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--amber-light);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.contact-channel i svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.contact-channel span {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.contact-channel strong {
+  color: var(--ink);
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.contact-channel small {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.contact-tone-dark {
+  background: rgba(26, 18, 8, 0.06);
+}
+
+.contact-tone-green {
+  background: rgba(74, 103, 65, 0.1);
+}
+
+.contact-tone-amber {
+  background: rgba(232, 169, 58, 0.14);
+}
+
+.contact-tone-blue {
+  background: rgba(24, 52, 79, 0.08);
+}
+
+.contact-tone-sage {
+  background: rgba(74, 103, 65, 0.08);
+}
+
+.contact-layout {
+  display: block;
+}
+
+.contact-faq {
+  padding: 20px;
+}
+
+.contact-section-head {
+  margin-bottom: 8px;
+}
+
+.contact-section-head h2 {
+  font-family: "Playfair Display", serif;
+  font-size: 1.8rem;
+  line-height: 1.05;
+}
+
+.contact-question + .contact-question {
+  border-top: 1px solid rgba(26, 18, 8, 0.08);
+}
+
+.contact-question button {
+  width: 100%;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 900;
+  padding: 15px 0;
+  text-align: left;
+}
+
+.contact-question button strong {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(26, 18, 8, 0.08);
+  color: var(--ink);
+}
+
+.contact-question button:hover strong,
+.contact-question button[aria-expanded="true"] strong {
+  background: var(--ink);
+  color: var(--amber-light);
+}
+
+.contact-question p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.65;
+  padding: 0 40px 16px 0;
+}
+
+@media (max-width: 1120px) {
+  .contact-channel-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .contact-page {
+    padding: 38px 0 58px;
+  }
+
+  .contact-shell {
+    width: calc(100% - 34px);
+  }
+
+  .contact-channel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-faq {
+    padding: 18px;
+  }
+}

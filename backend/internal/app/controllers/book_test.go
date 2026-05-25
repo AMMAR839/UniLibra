@@ -23,7 +23,8 @@ func setupTestDB() {
 		panic("Gagal membuka database test")
 	}
 
-	db.AutoMigrate(&models.Book{})
+	db.Migrator().DropTable(&models.Book{}, &models.User{})
+	db.AutoMigrate(&models.User{}, &models.Book{})
 
 	config.DB = db
 }
@@ -97,6 +98,122 @@ func TestGetBooks(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "Buku Tersedia")
 	assert.NotContains(t, w.Body.String(), "Buku Dipinjam")
+}
+
+func TestGetBooks_AggregatesSameTitle(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	setupTestDB()
+
+	config.DB.Create(&models.Book{
+		Title:       "BULAN  ",
+		Author:      "Tere Liye",
+		Category:    "Novel",
+		Theme:       "Fantasi",
+		RentalPrice: 2000,
+		Status:      "available",
+	})
+	config.DB.Create(&models.Book{
+		Title:       "Bulan",
+		Author:      "Tere Liye",
+		Category:    "Novel",
+		Theme:       "Fantasi",
+		RentalPrice: 9000,
+		Status:      "available",
+	})
+	config.DB.Create(&models.Book{
+		Title:       "Matahari",
+		Author:      "Tere Liye",
+		RentalPrice: 7000,
+		Status:      "available",
+	})
+
+	r := gin.Default()
+	r.GET("/api/books", GetBooks)
+
+	req, _ := http.NewRequest("GET", "/api/books", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	var response struct {
+		Data []CatalogBook `json:"data"`
+	}
+	json.Unmarshal(w.Body.Bytes(), &response)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Len(t, response.Data, 2)
+	for _, item := range response.Data {
+		if item.Title == "Bulan" {
+			assert.Equal(t, 2, item.AvailableCount)
+			assert.Equal(t, float64(2000), item.MinPrice)
+			assert.Equal(t, float64(9000), item.MaxPrice)
+		}
+	}
+}
+
+func TestGetBooks_AggregatesDistanceRange(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	setupTestDB()
+
+	config.DB.Create(&models.Book{
+		Title:       "Bulan",
+		Author:      "Tere Liye",
+		RentalPrice: 2000,
+		Latitude:    -7.78,
+		Longitude:   110.37,
+		Status:      "available",
+	})
+	config.DB.Create(&models.Book{
+		Title:       "Bulan",
+		Author:      "Tere Liye",
+		RentalPrice: 9000,
+		Latitude:    -7.8,
+		Longitude:   110.39,
+		Status:      "available",
+	})
+
+	r := gin.Default()
+	r.GET("/api/books", GetBooks)
+
+	req, _ := http.NewRequest("GET", "/api/books?latitude=-7.77&longitude=110.38", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	var response struct {
+		Data []CatalogBook `json:"data"`
+	}
+	json.Unmarshal(w.Body.Bytes(), &response)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Len(t, response.Data, 1)
+	assert.NotNil(t, response.Data[0].MinDistanceKM)
+	assert.NotNil(t, response.Data[0].MaxDistanceKM)
+	assert.LessOrEqual(t, *response.Data[0].MinDistanceKM, *response.Data[0].MaxDistanceKM)
+}
+
+func TestGetBookVersions_ReturnsAllOwnersForTitle(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	setupTestDB()
+
+	config.DB.Create(&models.Book{Title: "Bulan", Author: "Tere Liye", RentalPrice: 9000, Status: "available", OwnerID: 1})
+	config.DB.Create(&models.Book{Title: "Bulan", Author: "Tere Liye", RentalPrice: 2000, Status: "available", OwnerID: 2})
+	config.DB.Create(&models.Book{Title: "Matahari", Author: "Tere Liye", RentalPrice: 7000, Status: "available", OwnerID: 3})
+
+	r := gin.Default()
+	r.GET("/api/books/versions", GetBookVersions)
+
+	req, _ := http.NewRequest("GET", "/api/books/versions?title=Bulan", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	var response struct {
+		Data []models.Book `json:"data"`
+	}
+	json.Unmarshal(w.Body.Bytes(), &response)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Len(t, response.Data, 2)
+	assert.Equal(t, float64(2000), response.Data[0].RentalPrice)
+	assert.Equal(t, float64(9000), response.Data[1].RentalPrice)
 }
 
 func TestGetBookByID(t *testing.T) {

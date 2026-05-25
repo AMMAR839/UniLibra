@@ -1,13 +1,14 @@
 package middlewares
 
 import (
-	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
+	"unilibra-backend/internal/pkg/config"
+	"unilibra-backend/internal/pkg/models"
+	"unilibra-backend/internal/pkg/utils"
+
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 func AuthRequired() gin.HandlerFunc {
@@ -19,25 +20,40 @@ func AuthRequired() gin.HandlerFunc {
 			return
 		}
 
-		tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
-
-		secretKey := os.Getenv("JWT_SECRET")
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("metode token tidak valid")
-			}
-			return []byte(secretKey), nil
-		})
-
-		if err != nil || !token.Valid {
+		tokenString := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
+		userID, err := utils.ParseToken(tokenString)
+		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Akses ditolak: Token tidak valid atau sudah kadaluarsa."})
 			c.Abort()
 			return
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			userID := claims["user_id"]
-			c.Set("userID", userID)
+		c.Set("userID", float64(userID))
+
+		c.Next()
+	}
+}
+
+func AdminRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("userID")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Akses admin membutuhkan sesi aktif."})
+			c.Abort()
+			return
+		}
+
+		var user models.User
+		if err := config.DB.Select("id", "role", "status").First(&user, uint(userID.(float64))).Error; err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Pengguna tidak ditemukan."})
+			c.Abort()
+			return
+		}
+
+		if user.Role != "admin" || user.Status != "active" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Akses admin ditolak."})
+			c.Abort()
+			return
 		}
 
 		c.Next()

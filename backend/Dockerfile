@@ -1,24 +1,40 @@
-# Gunakan image Golang versi ringan (Alpine)
-FROM golang:1.26-alpine
+FROM golang:1.26-alpine AS base
 
-# Set folder kerja di dalam container
 WORKDIR /app
 
-# Install Air untuk fitur Live Reload milidetik
-# (Ini hanya dijalankan 1 kali berkat Docker Cache)
-RUN go install github.com/air-verse/air@latest
+RUN apk add --no-cache ca-certificates tzdata
 
-# Salin file manajemen modul terlebih dahulu
 COPY go.mod go.sum ./
-
-# Unduh semua library yang dibutuhkan
 RUN go mod download
 
-# Salin seluruh kode sumber ke dalam container
+FROM base AS dev
+
+RUN go install github.com/air-verse/air@latest
+
 COPY . .
 
-# Buka port 8080 agar bisa diakses dari luar container
 EXPOSE 8080
 
-# Jalankan Air (Air yang akan mengeksekusi go build & go run di dalam container)
 CMD ["air", "--build.cmd", "go build -o tmp/main cmd/unilibra/main.go", "--build.bin", "./tmp/main"]
+
+FROM base AS build
+
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/unilibra ./cmd/unilibra
+
+FROM alpine:3.22 AS production
+
+WORKDIR /app
+
+RUN apk add --no-cache ca-certificates tzdata \
+  && adduser -D -H appuser \
+  && mkdir -p /app/uploads \
+  && chown -R appuser:appuser /app
+
+COPY --from=build /bin/unilibra /app/unilibra
+
+USER appuser
+
+EXPOSE 8080
+
+CMD ["/app/unilibra"]

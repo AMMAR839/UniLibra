@@ -1,1 +1,7 @@
 .env
+
+# Generated book covers and uploaded media
+scripts/dummy-covers/
+scripts/api-covers/
+backend/uploads/
+uploads/
