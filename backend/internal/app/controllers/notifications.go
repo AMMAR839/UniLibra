@@ -89,5 +89,5 @@ func createNotification(userID uint, notificationType string, title string, body
 
 func currentUserID(c *gin.Context) uint {
 	userID, _ := c.Get("userID")
-	return uint(userID.(float64))
+	return userID.(uint)
 }

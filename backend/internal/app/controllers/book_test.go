@@ -36,7 +36,7 @@ func TestCreateBook_Success(t *testing.T) {
 	r := gin.Default()
 
 	r.POST("/api/books", func(c *gin.Context) {
-		c.Set("userID", float64(1))
+		c.Set("userID", uint(1))
 		CreateBook(c)
 	})
 
@@ -64,7 +64,7 @@ func TestCreateBook_ValidationError(t *testing.T) {
 
 	r := gin.Default()
 	r.POST("/api/books", func(c *gin.Context) {
-		c.Set("userID", float64(1))
+		c.Set("userID", uint(1))
 		CreateBook(c)
 	})
 
@@ -244,7 +244,7 @@ func TestUpdateBook_Success(t *testing.T) {
 
 	r := gin.Default()
 	r.PUT("/api/books/:id", func(c *gin.Context) {
-		c.Set("userID", float64(1))
+		c.Set("userID", uint(1))
 		UpdateBook(c)
 	})
 
@@ -276,7 +276,7 @@ func TestDeleteBook_Success(t *testing.T) {
 
 	r := gin.Default()
 	r.DELETE("/api/books/:id", func(c *gin.Context) {
-		c.Set("userID", float64(1))
+		c.Set("userID", uint(1))
 		DeleteBook(c)
 	})
 

@@ -17,12 +17,18 @@ func GenerateToken(userID uint) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	secretKey := os.Getenv("JWT_SECRET")
+	if secretKey == "" {
+		panic("JWT_SECRET is not set in environment variables")
+	}
 
 	return token.SignedString([]byte(secretKey))
 }
 
 func ParseToken(tokenString string) (uint, error) {
 	secretKey := os.Getenv("JWT_SECRET")
+	if secretKey == "" {
+		panic("JWT_SECRET is not set in environment variables")
+	}
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("metode token tidak valid")

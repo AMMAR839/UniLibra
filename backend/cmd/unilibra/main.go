@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"unilibra-backend/internal/app/routes"
 	"unilibra-backend/internal/pkg/config"
@@ -22,8 +23,15 @@ func main() {
 
 	r := routes.SetupRouter()
 
-	fmt.Println("Server berjalan di port 8080")
-	if err := r.Run(":8080"); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Fallback ke 8080 jika dijalankan lokal di laptop
+	}
+
+	fmt.Printf("Server berjalan di port %s\n", port)
+
+	// Gunakan variabel port untuk menjalankan server
+	if err := r.Run(":" + port); err != nil {
 		log.Fatal("Gagal menjalankan server:", err)
 	}
 }
