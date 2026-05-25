@@ -149,6 +149,30 @@
   text-align: right;
 }
 
+.admin-logout-button {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(255, 253, 248, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #fffdf8;
+  cursor: pointer;
+  font-family: Inter, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-top: auto;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.admin-logout-button:hover {
+  border-color: rgba(216, 143, 31, 0.42);
+  background: rgba(216, 143, 31, 0.14);
+  color: var(--admin-gold-soft);
+}
+
 .admin-workspace {
   width: min(100%, 1480px);
   min-width: 0;

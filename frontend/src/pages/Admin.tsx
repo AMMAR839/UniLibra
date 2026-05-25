@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   apiFetch,
+  clearToken,
   formatCurrency,
   formatDate,
   type AdminSummary,
@@ -48,6 +49,11 @@ function AdminPage() {
     }
   }
 
+  function logoutAdmin() {
+    clearToken();
+    window.location.href = "/login";
+  }
+
   return (
     <main className="admin-page">
       <aside className="admin-sidebar">
@@ -69,6 +75,9 @@ function AdminPage() {
             </button>
           ))}
         </nav>
+        <button className="admin-logout-button" onClick={logoutAdmin} type="button">
+          Keluar
+        </button>
       </aside>
 
       <section className="admin-workspace">
