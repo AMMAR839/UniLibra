@@ -33,10 +33,18 @@ class BookEmbeddingRequest(BaseModel):
 # --- 2. FUNGSI UTILITAS ---
 def get_db_connection():
     try:
-        return psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
+        return psycopg2.connect(database_url(), cursor_factory=RealDictCursor)
     except Exception as e:
         print(f"Database connection error: {e}")
         raise HTTPException(status_code=500, detail="Database connection failed")
+
+def database_url():
+    if not DB_URL:
+        return DB_URL
+    if "supabase.com" in DB_URL and "sslmode=" not in DB_URL:
+        separator = "&" if "?" in DB_URL else "?"
+        return DB_URL + separator + "sslmode=require"
+    return DB_URL
 
 def is_catalog_count_question(message):
     normalized = message.lower()

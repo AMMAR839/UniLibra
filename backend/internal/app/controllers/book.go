@@ -5,6 +5,7 @@ import (
 	"math"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -121,6 +122,7 @@ func CreateBook(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan buku ke database: " + err.Error()})
 		return
 	}
+	book.CoverURL = publicCoverURL(book.CoverURL)
 
 	go refreshBookEmbedding(book.ID)
 
@@ -169,6 +171,7 @@ func GetBookVersions(c *gin.Context) {
 		books = append(books, book)
 	}
 	attachBookRatings(books)
+	normalizeBookCoverURLs(books)
 	sort.SliceStable(books, func(i, j int) bool {
 		if books[i].RentalPrice == books[j].RentalPrice {
 			return books[i].UpdatedAt.After(books[j].UpdatedAt)
@@ -241,6 +244,7 @@ func availableBooks(filters BookFilters, limit int) ([]models.Book, error) {
 	if err := db.Order("books.updated_at DESC").Find(&books).Error; err != nil {
 		return nil, err
 	}
+	normalizeBookCoverURLs(books)
 	if query != "" {
 		sort.SliceStable(books, func(i, j int) bool {
 			leftScore := bookSearchScore(books[i], query)
@@ -293,7 +297,7 @@ func catalogBooks(filters BookFilters, limit int) ([]CatalogBook, bool, error) {
 				Author:         book.Author,
 				Category:       book.Category,
 				Theme:          book.Theme,
-				CoverURL:       book.CoverURL,
+				CoverURL:       publicCoverURL(book.CoverURL),
 				AvailableCount: 1,
 				MinPrice:       book.RentalPrice,
 				MaxPrice:       book.RentalPrice,
@@ -315,10 +319,10 @@ func catalogBooks(filters BookFilters, limit int) ([]CatalogBook, bool, error) {
 				current.Category = book.Category
 				current.Theme = book.Theme
 				if book.CoverURL != "" {
-					current.CoverURL = book.CoverURL
+					current.CoverURL = publicCoverURL(book.CoverURL)
 				}
 			} else if current.CoverURL == "" && book.CoverURL != "" {
-				current.CoverURL = book.CoverURL
+				current.CoverURL = publicCoverURL(book.CoverURL)
 			}
 		}
 
@@ -695,6 +699,7 @@ func GetBookByID(c *gin.Context) {
 	ratedBooks := []models.Book{book}
 	attachBookRatings(ratedBooks)
 	book = ratedBooks[0]
+	book.CoverURL = publicCoverURL(book.CoverURL)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Berhasil mengambil detail buku",
@@ -752,6 +757,7 @@ func UpdateBook(c *gin.Context) {
 		return
 	}
 	config.DB.Preload("Owner").First(&book, book.ID)
+	book.CoverURL = publicCoverURL(book.CoverURL)
 
 	go refreshBookEmbedding(book.ID)
 
@@ -892,4 +898,35 @@ func parseOptionalFloat(value string) (float64, bool) {
 
 	parsedValue, err := strconv.ParseFloat(trimmedValue, 64)
 	return parsedValue, err == nil
+}
+
+func normalizeBookCoverURLs(books []models.Book) {
+	for index := range books {
+		books[index].CoverURL = publicCoverURL(books[index].CoverURL)
+	}
+}
+
+func publicCoverURL(value string) string {
+	coverURL := strings.TrimSpace(value)
+	if coverURL == "" {
+		return ""
+	}
+
+	for _, prefix := range []string{
+		"http://localhost:8080/uploads/",
+		"http://127.0.0.1:8080/uploads/",
+	} {
+		if strings.HasPrefix(coverURL, prefix) {
+			filename := strings.TrimPrefix(coverURL, prefix)
+			if publicBaseURL := strings.TrimRight(strings.TrimSpace(os.Getenv("SUPABASE_STORAGE_PUBLIC_BASE_URL")), "/"); publicBaseURL != "" {
+				return publicBaseURL + "/" + filename
+			}
+			if uploadBaseURL := strings.TrimRight(strings.TrimSpace(os.Getenv("UPLOAD_PUBLIC_BASE_URL")), "/"); uploadBaseURL != "" {
+				return uploadBaseURL + "/" + filename
+			}
+			return "/uploads/" + filename
+		}
+	}
+
+	return coverURL
 }
