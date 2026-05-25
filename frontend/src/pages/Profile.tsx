@@ -634,16 +634,28 @@ function TransactionsPanel({
             <span>{formatDate(transaction.created_at)}</span>
             <span>{transaction.status}</span>
             {transaction.status === "PENDING_APPROVAL" ? (
-              <span>
-                <button type="button" onClick={() => onRespond(transaction.id, "ACCEPTED")}>
+              <span className="profile-transaction-actions">
+                <button
+                  className="profile-action-button profile-action-accept"
+                  type="button"
+                  onClick={() => onRespond(transaction.id, "ACCEPTED")}
+                >
                   Terima
                 </button>
-                <button type="button" onClick={() => onRespond(transaction.id, "REJECTED")}>
+                <button
+                  className="profile-action-button profile-action-reject"
+                  type="button"
+                  onClick={() => onRespond(transaction.id, "REJECTED")}
+                >
                   Tolak
                 </button>
               </span>
             ) : transaction.status === "RETURN_PENDING" ? (
-              <button type="button" onClick={() => onComplete(transaction.id)}>
+              <button
+                className="profile-action-button profile-action-complete"
+                type="button"
+                onClick={() => onComplete(transaction.id)}
+              >
                 Selesaikan
               </button>
             ) : (
