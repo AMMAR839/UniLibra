@@ -43,12 +43,19 @@ function Navbar({
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [chatNotice, setChatNotice] = useState("");
+  const [isSendingChat, setIsSendingChat] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
+  const selectedChatIDRef = useRef<number | null>(null);
+  const isSendingChatRef = useRef(false);
 
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === selectedChatID) ?? null,
     [selectedChatID, threads],
   );
+
+  useEffect(() => {
+    selectedChatIDRef.current = selectedChatID;
+  }, [selectedChatID]);
 
   useEffect(() => {
     function openChatFromPage(event: Event) {
@@ -113,7 +120,7 @@ function Navbar({
         setMessages((current) =>
           current.some((item) => item.id === message.id)
             ? current
-            : message.thread_id === selectedChatID
+            : message.thread_id === selectedChatIDRef.current
               ? [...current, message]
               : current,
         );
@@ -122,13 +129,15 @@ function Navbar({
     };
 
     return () => socket.close();
-  }, [isLoggedIn, selectedChatID]);
+  }, [isLoggedIn]);
 
   useEffect(() => {
     if (!selectedChatID || !isLoggedIn) {
+      setMessages([]);
       return;
     }
 
+    setMessages([]);
     apiFetch<{ data: ChatMessage[] }>(`/api/chat/threads/${selectedChatID}/messages`)
       .then((response) => {
         setMessages(response.data);
@@ -216,24 +225,35 @@ function Navbar({
   }
 
   async function sendMessage() {
-    if (!selectedThread || !draftMessage.trim()) {
+    if (!selectedThread || !draftMessage.trim() || isSendingChatRef.current) {
       return;
     }
+    const threadID = selectedThread.id;
     const body = draftMessage.trim();
     setDraftMessage("");
+    isSendingChatRef.current = true;
+    setIsSendingChat(true);
     try {
       const response = await apiFetch<{ data: ChatMessage }>(
-        `/api/chat/threads/${selectedThread.id}/messages`,
+        `/api/chat/threads/${threadID}/messages`,
         {
           method: "POST",
           body: JSON.stringify({ body }),
         },
       );
-      setMessages((current) => [...current, response.data]);
+      setMessages((current) => {
+        if (selectedChatIDRef.current !== response.data.thread_id || current.some((item) => item.id === response.data.id)) {
+          return current;
+        }
+        return [...current, response.data];
+      });
       await loadThreads();
     } catch (error) {
       setDraftMessage(body);
       setChatNotice(error instanceof Error ? error.message : "Pesan belum terkirim.");
+    } finally {
+      isSendingChatRef.current = false;
+      setIsSendingChat(false);
     }
   }
 
@@ -340,7 +360,7 @@ function Navbar({
                       type="text"
                       value={draftMessage}
                     />
-                    <button type="button" onClick={() => void sendMessage()}>
+                    <button disabled={isSendingChat} type="button" onClick={() => void sendMessage()}>
                       Kirim
                     </button>
                   </div>
