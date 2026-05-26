@@ -1,10 +1,10 @@
 import os
 from dotenv import load_dotenv
+import requests
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from fastapi import FastAPI, Header, HTTPException
 from sentence_transformers import SentenceTransformer
-from google import genai
 from pydantic import BaseModel
 import torch
 from math import asin, cos, radians, sin, sqrt
@@ -17,10 +17,11 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 ai_model = SentenceTransformer('all-MiniLM-L6-v2', device=device)
 
 DB_URL = os.getenv("DATABASE_URL")
-GEMINI_API_KEY = os.getenv("GEMINI_API")
 AI_INTERNAL_TOKEN = os.getenv("AI_INTERNAL_TOKEN")
-
-client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT", "unilibra-chat")
+AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-21")
 
 class ChatRequest(BaseModel):
     pesan: str
@@ -476,8 +477,8 @@ def chatbot_unilibra(req: ChatRequest):
         else:
             konteks_buku = "Tidak ada buku spesifik yang relevan di database."
 
-        if client is None:
-            raise HTTPException(status_code=503, detail="GEMINI_API belum dikonfigurasi di AI service")
+        if not AZURE_OPENAI_ENDPOINT or not AZURE_OPENAI_API_KEY or not AZURE_OPENAI_DEPLOYMENT:
+            raise HTTPException(status_code=503, detail="Azure OpenAI belum dikonfigurasi di AI service")
 
         # Langkah 2: Augmented Prompt
         prompt = f"""
@@ -505,20 +506,49 @@ def chatbot_unilibra(req: ChatRequest):
         - Akhiri dengan satu kalimat ajakan memilih kartu buku di bawah.
         """
 
-        response = client.models.generate_content(
-            model='gemini-flash-latest',
-            contents=prompt
-        )
+        response_text = generate_azure_openai_response(prompt)
 
         return {
             "status": "success",
-            "jawaban": response.text,
+            "jawaban": response_text,
             "buku_referensi": buku_relevan,
             "actions": [
                 {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
                 for b in buku_relevan[:3]
             ],
-            "engine": "gemini",
+            "engine": "azure-openai",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+def generate_azure_openai_response(prompt):
+    url = (
+        f"{AZURE_OPENAI_ENDPOINT}/openai/deployments/"
+        f"{AZURE_OPENAI_DEPLOYMENT}/chat/completions"
+        f"?api-version={AZURE_OPENAI_API_VERSION}"
+    )
+    payload = {
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "Kamu adalah UniBot, asisten rekomendasi buku UniLibra. "
+                    "Jawab dalam bahasa Indonesia, singkat, hangat, dan hanya berdasarkan konteks yang diberikan."
+                ),
+            },
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.7,
+        "max_tokens": 700,
+    }
+    headers = {
+        "api-key": AZURE_OPENAI_API_KEY,
+        "Content-Type": "application/json",
+    }
+
+    response = requests.post(url, headers=headers, json=payload, timeout=30)
+    if response.status_code >= 400:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    data = response.json()
+    return data["choices"][0]["message"]["content"].strip()

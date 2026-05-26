@@ -4,4 +4,4 @@ sentence-transformers
 psycopg2-binary
 pandas
 python-dotenv
-google-genai
+requests
