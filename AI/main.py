@@ -283,6 +283,87 @@ def retrieval_query_for_message(message):
         return "motivasi produktivitas kebiasaan pengembangan diri"
     return message
 
+def gemini_retrieval_query(message: str) -> str:
+    if not GEMINI_API_KEY:
+        return retrieval_query_for_message(message)
+
+    system_instruction = (
+        "Kamu membantu mesin pencari katalog buku UniLibra. "
+        "Ubah chat pengguna menjadi query pencarian pendek untuk database buku. "
+        "Ambil mood, kebutuhan, genre, judul, penulis, topik kuliah, atau lokasi jika ada. "
+        "Jawab hanya query pencarian, maksimal 12 kata, tanpa penjelasan."
+    )
+    try:
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL,
+            system_instruction=system_instruction,
+        )
+        response = model.generate_content(message)
+        query = response.text.strip().replace("\n", " ")
+        if query:
+            return query[:180]
+    except Exception:
+        pass
+
+    return retrieval_query_for_message(message)
+
+def book_context_line(index, book):
+    distance = ""
+    if book.get("distance_km") is not None:
+        distance = f" | jarak sekitar {book['distance_km']} km"
+
+    price = book.get("rental_price") or 0
+    description = str(book.get("description") or "").strip()
+    if len(description) > 180:
+        description = description[:177].rstrip() + "..."
+
+    return (
+        f"{index}. {book['title']} - {book['author']} | "
+        f"kategori: {book.get('category') or 'belum diisi'} | "
+        f"tema: {book.get('theme') or 'belum diisi'} | "
+        f"lokasi: {book.get('location') or 'belum diisi'}{distance} | "
+        f"harga: Rp {int(price):,}/minggu | "
+        f"deskripsi: {description or 'tidak ada deskripsi'}"
+    ).replace(",", ".")
+
+def gemini_catalog_count_answer(message, stats, popular_books):
+    context = build_catalog_count_answer(stats)
+    popular_context = "\n".join(
+        book_context_line(index, book)
+        for index, book in enumerate(popular_books[:4], 1)
+    )
+    system_instruction = (
+        "Kamu adalah UniBot, asisten rekomendasi buku UniLibra. "
+        "Jawab hanya berdasarkan data katalog yang diberikan. "
+        "Bahasa Indonesia singkat, rapi, dan membantu."
+    )
+    prompt = f"""
+    Pertanyaan pengguna:
+    {message}
+
+    Statistik katalog:
+    {context}
+
+    Buku populer yang bisa direkomendasikan:
+    {popular_context}
+
+    Buat jawaban singkat dan arahkan pengguna untuk membuka katalog atau memilih buku yang tersedia.
+    """
+
+    try:
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL,
+            system_instruction=system_instruction,
+        )
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if text:
+            return text
+    except Exception:
+        pass
+
+    return context
+
 def require_internal_token(token):
     if AI_INTERNAL_TOKEN and token != AI_INTERNAL_TOKEN:
         raise HTTPException(status_code=401, detail="AI internal token tidak valid")
@@ -419,13 +500,13 @@ def chatbot_unilibra(req: ChatRequest):
             popular_books = get_popular_books(limit=4)["popular_books"]
             return {
                 "status": "success",
-                "jawaban": build_catalog_count_answer(stats),
+                "jawaban": gemini_catalog_count_answer(req.pesan, stats, popular_books),
                 "buku_referensi": popular_books,
                 "actions": [
                     {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
                     for b in popular_books[:3]
                 ],
-                "engine": "database-count",
+                "engine": "gemini-database-count",
             }
 
         # LANGKAH 1: Deteksi Niat (Intent Routing)
@@ -452,7 +533,7 @@ def chatbot_unilibra(req: ChatRequest):
             }
 
         # JIKA INTENT A (Cari Buku / Rekomendasi)
-        retrieval_query = retrieval_query_for_message(req.pesan)
+        retrieval_query = gemini_retrieval_query(req.pesan)
         buku_relevan = execute_semantic_search(
             retrieval_query,
             limit=12,
@@ -463,7 +544,7 @@ def chatbot_unilibra(req: ChatRequest):
         konteks_buku = ""
         if buku_relevan:
             for idx, b in enumerate(buku_relevan, 1):
-                konteks_buku += f"{idx}. {book_line(b)}\n"
+                konteks_buku += f"{book_context_line(idx, b)}\n"
         else:
             konteks_buku = "Tidak ada buku spesifik yang relevan di database saat ini."
 
@@ -471,8 +552,13 @@ def chatbot_unilibra(req: ChatRequest):
         system_instruction_rag = f"""
         Kamu adalah 'UniBot', asisten virtual ramah untuk platform peminjaman buku 'Unilibra'.
         Tugas utamamu adalah menjawab berdasarkan konteks buku di bawah ini.
+        Gemini tidak boleh mengarang buku di luar konteks. Jika buku yang diminta tidak ada di konteks,
+        katakan bahwa data UniLibra belum menemukan buku tersebut dan tawarkan alternatif terdekat.
         Jika ada lokasi pengguna (ditandai dengan 'sekitar X km'), prioritaskan buku yang terdekat.
         
+        Query database yang dibuat dari chat pengguna:
+        {retrieval_query}
+
         Konteks Buku yang Tersedia:
         {konteks_buku}
         
