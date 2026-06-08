@@ -1,0 +1,47 @@
+name: Deploy Frontend to Azure Container Apps
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+env:
+  ACR_LOGIN_SERVER: "unilibraregistry.azurecr.io" # Change this to your actual ACR name
+  CONTAINER_APP_NAME: "unilibra-frontend" # The name of your Container App
+  RESOURCE_GROUP: "unilibra-resource-group" # Your Azure Resource Group
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log into Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.ACR_LOGIN_SERVER }}/unilibra-frontend:${{ github.sha }},${{ env.ACR_LOGIN_SERVER }}/unilibra-frontend:latest
+
+      - name: Deploy to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          registryUrl: ${{ env.ACR_LOGIN_SERVER }}
+          registryUsername: ${{ secrets.ACR_USERNAME }}
+          registryPassword: ${{ secrets.ACR_PASSWORD }}
+          containerAppName: ${{ env.CONTAINER_APP_NAME }}
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          imageToDeploy: ${{ env.ACR_LOGIN_SERVER }}/unilibra-frontend:${{ github.sha }}
+          targetPort: 80
