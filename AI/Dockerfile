@@ -2,14 +2,14 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# 1. Install pustaka sistem C++ yang diwajibkan oleh PyTorch
-RUN apt-get update && apt-get install -y libgomp1 && rm -rf /var/lib/apt/lists/*
+# 1. Install pustaka sistem (termasuk build-essential jaga-jaga jika ada modul C yang kurang)
+RUN apt-get update && apt-get install -y libgomp1 build-essential && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 
-# 2. Paksa pip untuk SELALU mencari versi CPU setiap kali menginstal dependensi AI
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
-RUN pip install --no-cache-dir -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+# 2. Paksa pip mengabaikan cache lama dan menggunakan timeout lebih panjang
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir --default-timeout=100 -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
 COPY . .
 
