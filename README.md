@@ -1,7 +1,6 @@
 # UniLibra
-### Platform Peminjaman Buku Universal
 
-# EDIT UNTUK INHAL MODUL 2 (Christian Kevin Andhika Danidaiva - 23/513576/TK/56433
+UniLibra adalah platform peminjaman buku fisik berbasis lokasi yang mempertemukan pemilik buku dan peminjam dalam satu sistem katalog antarpengguna. Proyek ini dirancang sebagai solusi peer-to-peer untuk membuat koleksi buku fisik lebih produktif, mudah ditemukan, dan lebih relevan dengan kebutuhan pengguna.
 
 ## Anggota Kelompok:  
 | Nama | NIM | Role |
@@ -10,69 +9,54 @@
 | **Nicholas Shane Pangihutan Siahaan** | 23/520590/TK/57399 | AI Engineer |
 | **Ammar Ali Yasir** | 23/520644/TK/57406 | Frontend Engineer |
 
-## Getting Started
+## Gambaran Singkat
 
-Jalankan environment setiap mulai sesi pengembangan lokal
+Aplikasi ini memiliki tiga komponen utama:
+
+- Frontend React/Vite untuk antarmuka pengguna
+- Backend Go untuk logika bisnis, autentikasi, dan API
+- AI Service Python untuk rekomendasi, pencarian semantik, dan chatbot
+
+Selain itu, UniLibra juga menggunakan PostgreSQL sebagai basis data utama dan mendukung pencarian berbasis lokasi serta pendekatan machine learning untuk pengalaman pengguna yang lebih baik.
+
+## Fitur Utama
+
+- Registrasi dan login pengguna
+- Katalog buku fisik antarpengguna
+- Peminjaman dan peminjaman buku
+- Rekomendasi buku berbasis AI
+- Pencarian pintar dan filter katalog
+- Tracking status ketersediaan buku
+- Chatbot bantuan buku dan rekomendasi
+
+## Teknologi yang Digunakan
+
+- Frontend: React, Vite, TypeScript
+- Backend: Go, Gin
+- AI Service: Python, FastAPI
+- Database: PostgreSQL
+- Deployment: Docker, Azure Container Apps, GitHub Actions
+
+## Struktur Proyek
+
+- `frontend/` - aplikasi web utama
+- `backend/` - API dan logika bisnis
+- `AI/` - layanan AI dan chatbot
+- `docs/` - dokumentasi proyek dan GitHub Pages
+- `.github/workflows/` - pipeline CI/CD
+
+## Menjalankan Proyek Secara Lokal
+
+Untuk menjalankan lingkungan pengembangan lokal, gunakan:
+
 ```bash
 make up
 ```
 
-Matikan environment setelah sesi pengembangan selesai
+Untuk menghentikan seluruh layanan:
+
 ```bash
 make down
 ```
-
-## Workflow
-
-Dilarang melakukan *push* atau *commit* langsung ke `main`.
-
-**1. Sinkronisasi main branch:**
-```bash
-git switch main
-git pull origin main
-```
-
-**2. Pindah ke branch individu:**
-```bash
-git switch -c [NIU]  # Untuk membuat branch baru
-```
-or
-```bash
-git switch [NIU] # Jika branch sudah ada
-git pull --rebase origin main
-```
-
-**3. Code:** 
-
-Setiap kode di-save, perubahan akan langsung disinkronisasi oleh Docker Compose dan dapat langsung dilihat
-
-**4. Commit:**
-```bash
-git add .
-git status # Pastikan tidak ada unwanted file
-git commit -m "feat: [deskripsi fitur]"
-```
-
-**5. Pull perubahan di main:**
-```bash
-git pull --rebase origin main
-```
-
-**6. Push ke repositori:**
-```bash
-git push origin [NIU]
-```
-
-**7. Pull Request (PR):**
-Ajukan PR ke cabang `main`. Wajib mendapatkan persetujuan (*approval*) minimal dari 1 anggota tim sebelum di-*merge*.
-
-## Konvensi Commit Message
-Gunakan standar [Conventional Commits](https://www.conventionalcommits.org/):
-* `feat:` Penambahan fitur baru
-* `fix:` Perbaikan bug
-* `docs:` Pembaruan dokumentasi
-* `refactor:` Restrukturisasi kode tanpa ubah fungsi
-* `chore:` Penyesuaian konfigurasi atau dependensi
-#### Commit early, commit often
 
 ### Departemen Teknologi Elektro dan Teknologi Informasi, Fakultas Teknik, Universitas Gadjah Mada

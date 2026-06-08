@@ -1,43 +1,48 @@
+---
+title: UniLibra
+description: Aplikasi peminjaman buku fisik peer-to-peer berbasis lokasi
+---
 
 # UniLibra
 
-### Anggota Kelompok:  
-- Anggota 1:  Christian Kevin Andhika Danidaiva (23/513576/TK/56433)
-- Anggota 2:  Nicholas Shane Pangihutan Siahaan (23/520590/TK/57399)
-- Anggota 3:  Ammar Ali Yasir  (23/520644/TK/57406) 
+Platform peminjaman buku fisik *peer-to-peer* yang menghubungkan pemilik dan peminjam buku secara lebih mudah, aman, dan kontekstual.
 
-### Project Senior Project TI 
+## Tim Pengembang
 
-### Departemen Teknologi Elektro dan Teknologi Informasi, Fakultas Teknik, Universitas Gadjah Mada
+- Christian Kevin Andhika Danidaiva — 23/513576/TK/56433
+- Nicholas Shane Pangihutan Siahaan — 23/520590/TK/57399
+- Ammar Ali Yasir — 23/520644/TK/57406
 
-### Perumusan Permasalahan
+## Ringkasan Proyek
 
-### Identitas Produk
-* **Nama Produk:** UniLibra
-* **Jenis Produk:** Layanan Aplikasi Peminjaman Buku Fisik *Peer-to-Peer* (P2P)
+UniLibra adalah layanan peminjaman buku fisik antarpengguna yang dirancang untuk membuat buku yang sudah dibaca tetap bernilai. Sistem ini menggabungkan katalog buku, rekomendasi berbasis machine learning, pencarian pintar, dan filter lokasi agar proses mencari buku terasa cepat dan relevan.
 
-### Latar Belakang & Permasalahan
-Minat baca masyarakat Indonesia sebenarnya cukup tinggi (88% anak muda menyukai aktivitas membaca), namun terhambat oleh mahalnya harga buku (rata-rata Rp80.000 - Rp150.000) dan pengeluaran pendidikan yang minim. Buku fisik sering menjadi tidak produktif setelah dibaca. 
-**Rumusan Masalah:**
-1. Bagaimana upaya optimalisasi buku yang tidak lagi produktif agar memiliki nilai ekonomi dan edukatif?
-2. Bagaimana merancang aplikasi peminjaman buku yang mudah diakses dan menarik sebagai alternatif legal terhadap buku bajakan?
-3. Bagaimana perubahan minat buku masyarakat dengan kemajuan teknologi yang ada?
+## Masalah yang Ingin Diselesaikan
 
-### Ide Solusi
-Aplikasi **UniLibra** menyediakan sarana bagi pengguna untuk meminjamkan buku fisik yang dimiliki dan meminjam buku fisik milik pengguna lain.
+1. Buku fisik sering tidak produktif setelah dibaca.
+2. Harga buku baru relatif mahal bagi banyak mahasiswa dan pembaca muda.
+3. Alternatif legal untuk akses buku masih terbatas dan kurang personal.
 
-**Rancangan Fitur:**
-* **Autentikasi & Otorisasi:** Registrasi untuk peminjam dan pemilik buku.
-* **Beranda Rekomendasi:** Menampilkan buku sesuai minat pengguna menggunakan *Machine Learning*.
-* **Meminjamkan Buku:** Mengunggah buku ke katalog dengan harga sewa tertentu.
-* **Meminjam Buku:** Meminjam buku dari katalog.
-* **Pencarian Pintar:** Pencarian judul menggunakan ML untuk mendeteksi kemiripan kata.
-* **Sortir & Filter:** Pengurutan berdasarkan jarak terdekat/harga, dan filter genre.
-* **Tracking Status:** Mengetahui jadwal ketersediaan buku.
+## Solusi UniLibra
 
-### Analisis Kompetitor
-* **Google Book (Tertiary):** Layanan buku digital raksasa, kredibel, namun mahal dan memicu ketergantungan layar.
-* **Deepublish Digital (Tertiary):** Fokus ke jurnal dan mahasiswa, namun minim fiksi dan berupa e-book.
-* **Perpustakaan Indonesia (Indirect):** Memudahkan peminjaman, namun terbatas pada perpustakaan kota asal dan koleksi kurang lengkap.
-* **Keunggulan UniLibra (Unique Value):** Belum ada layanan P2P buku fisik berbasis lokasi terdekat dengan sistem katalog tak hingga yang memberdayakan koleksi pribadi masyarakat.
+Pengguna dapat:
+
+- meminjamkan buku fisik miliknya ke katalog,
+- mencari buku terdekat berdasarkan lokasi,
+- meminjam buku dari pengguna lain,
+- melihat rekomendasi yang lebih sesuai dengan minat.
+
+## Fitur Utama
+
+- Autentikasi dan otorisasi pengguna
+- Beranda rekomendasi buku
+- Unggah buku ke katalog dengan harga sewa
+- Peminjaman buku antarpengguna
+- Pencarian pintar berbasis kemiripan judul
+- Sortir dan filter berdasarkan jarak, harga, dan genre
+- Tracking status ketersediaan buku
+
+## Nilai Pembeda
+
+UniLibra menempatkan koleksi buku pribadi sebagai aset yang bisa terus dimanfaatkan, bukan hanya dibaca sekali lalu disimpan. Dengan pendekatan berbasis lokasi dan rekomendasi cerdas, aplikasi ini menekankan akses yang lebih praktis dan kontekstual.
 
