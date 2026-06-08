@@ -20,6 +20,7 @@ ai_model = SentenceTransformer('all-MiniLM-L6-v2', device=device)
 DB_URL = os.getenv("DATABASE_URL")
 AI_INTERNAL_TOKEN = os.getenv("AI_INTERNAL_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 # Konfigurasi Gemini
 if not GEMINI_API_KEY:
@@ -302,7 +303,7 @@ def classify_intent(message: str) -> str:
     Jawab HANYA dengan huruf 'A' atau 'B'.
     """
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel(GEMINI_MODEL)
         response = model.generate_content(prompt)
         return response.text.strip().upper()
     except Exception:
@@ -320,7 +321,7 @@ def health():
         "status": "ok",
         "device": device,
         "embedding_model": "all-MiniLM-L6-v2",
-        "ai_engine": "gemini-1.5-flash"
+        "ai_engine": GEMINI_MODEL
     }
 
 @app.get("/search")
@@ -438,7 +439,7 @@ def chatbot_unilibra(req: ChatRequest):
                 "bantuan coding, atau hal di luar buku. Arahkan pengguna kembali untuk mencari buku."
             )
             model_fallback = genai.GenerativeModel(
-                model_name='gemini-1.5-flash',
+                model_name=GEMINI_MODEL,
                 system_instruction=system_instruction_fallback
             )
             response = model_fallback.generate_content(req.pesan)
@@ -484,7 +485,7 @@ def chatbot_unilibra(req: ChatRequest):
         """
 
         model_rag = genai.GenerativeModel(
-            model_name='gemini-1.5-flash',
+            model_name=GEMINI_MODEL,
             system_instruction=system_instruction_rag
         )
         response = model_rag.generate_content(req.pesan)
