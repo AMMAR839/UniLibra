@@ -3,6 +3,14 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
+ARG VITE_API_URL
+ARG VITE_WS_URL
+ARG VITE_GOOGLE_LOGIN_URL
+
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_WS_URL=$VITE_WS_URL
+ENV VITE_GOOGLE_LOGIN_URL=$VITE_GOOGLE_LOGIN_URL
+
 # Copy package file(s) and install dependencies
 COPY package*.json ./
 RUN npm install

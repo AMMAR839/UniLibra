@@ -34,11 +34,25 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
+      - name: Validate frontend build variables
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_WS_URL: ${{ vars.VITE_WS_URL }}
+          VITE_GOOGLE_LOGIN_URL: ${{ vars.VITE_GOOGLE_LOGIN_URL }}
+        run: |
+          test -n "$VITE_API_URL" || (echo "VITE_API_URL repository variable is missing" && exit 1)
+          test -n "$VITE_WS_URL" || (echo "VITE_WS_URL repository variable is missing" && exit 1)
+          test -n "$VITE_GOOGLE_LOGIN_URL" || (echo "VITE_GOOGLE_LOGIN_URL repository variable is missing" && exit 1)
+
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL }}
+            VITE_WS_URL=${{ vars.VITE_WS_URL }}
+            VITE_GOOGLE_LOGIN_URL=${{ vars.VITE_GOOGLE_LOGIN_URL }}
           tags: ${{ env.ACR_LOGIN_SERVER }}/unilibra-frontend:${{ github.sha }},${{ env.ACR_LOGIN_SERVER }}/unilibra-frontend:latest
 
       - name: Deploy to Azure Container Apps
