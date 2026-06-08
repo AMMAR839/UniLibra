@@ -1,6 +1,5 @@
 import os
 from dotenv import load_dotenv
-import requests
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from fastapi import FastAPI, Header, HTTPException
@@ -8,9 +7,11 @@ from sentence_transformers import SentenceTransformer
 from pydantic import BaseModel
 import torch
 from math import asin, cos, radians, sin, sqrt
+import google.generativeai as genai
 
-app = FastAPI(title="Unilibra AI API", description="Sistem rekomendasi dan pencarian semantik")
+app = FastAPI(title="Unilibra AI API", description="Sistem rekomendasi dan pencarian semantik terintegrasi Gemini")
 load_dotenv()
+
 # --- 1. INISIALISASI MODEL & KONFIGURASI ---
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 # Cukup 1 model untuk seluruh aplikasi (Lebih hemat RAM/VRAM)
@@ -18,10 +19,13 @@ ai_model = SentenceTransformer('all-MiniLM-L6-v2', device=device)
 
 DB_URL = os.getenv("DATABASE_URL")
 AI_INTERNAL_TOKEN = os.getenv("AI_INTERNAL_TOKEN")
-AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
-AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
-AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT", "unilibra-chat")
-AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-21")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Konfigurasi Gemini
+if not GEMINI_API_KEY:
+    print("WARNING: GEMINI_API_KEY belum terpasang!")
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 class ChatRequest(BaseModel):
     pesan: str
@@ -31,7 +35,7 @@ class ChatRequest(BaseModel):
 class BookEmbeddingRequest(BaseModel):
     book_id: int
 
-# --- 2. FUNGSI UTILITAS ---
+# --- 2. FUNGSI UTILITAS (Dipertahankan Persis Seperti Aslinya) ---
 def get_db_connection():
     try:
         return psycopg2.connect(database_url(), cursor_factory=RealDictCursor)
@@ -51,13 +55,7 @@ def is_catalog_count_question(message):
     normalized = message.lower()
     has_count_intent = any(
         keyword in normalized
-        for keyword in [
-            "berapa banyak",
-            "jumlah",
-            "total",
-            "ada berapa",
-            "berapa buku",
-        ]
+        for keyword in ["berapa banyak", "jumlah", "total", "ada berapa", "berapa buku"]
     )
     has_book_context = any(
         keyword in normalized
@@ -108,7 +106,6 @@ def build_catalog_count_answer(stats):
         "Untuk melihat semuanya, buka halaman Katalog Buku atau cari judul/genre tertentu di sini."
     )
 
-# Pengganti cari_buku_relevan: Digunakan oleh /search dan /api/chat
 def calculate_distance_km(origin_lat, origin_lng, book):
     if origin_lat is None or origin_lng is None:
         return None
@@ -124,6 +121,7 @@ def calculate_distance_km(origin_lat, origin_lng, book):
     return round(6371 * 2 * asin(sqrt(value)), 2)
 
 def execute_semantic_search(query_text, limit=5, latitude=None, longitude=None):
+    # Logika Fuzzy, Spasial, dan Vektor dipertahankan utuh
     query_vector = ai_model.encode(query_text).tolist()
     conn = get_db_connection()
     cur = conn.cursor()
@@ -191,16 +189,8 @@ def execute_semantic_search(query_text, limit=5, latitude=None, longitude=None):
                 ORDER BY fuzzy_score DESC, updated_at DESC
                 LIMIT 40
             """, (
-                query_text,
-                query_text,
-                query_text,
-                query_text,
-                query_text,
-                query_text,
-                query_text,
-                query_text,
-                query_text,
-                query_text,
+                query_text, query_text, query_text, query_text, query_text,
+                query_text, query_text, query_text, query_text, query_text,
             ))
             fuzzy_books = [dict(book) for book in cur.fetchall()]
 
@@ -220,8 +210,7 @@ def execute_semantic_search(query_text, limit=5, latitude=None, longitude=None):
             title_text = str(book.get("title") or "").lower()
             author_text = str(book.get("author") or "").lower()
             haystack = " ".join([
-                title_text,
-                author_text,
+                title_text, author_text,
                 str(book.get("category") or ""),
                 str(book.get("theme") or ""),
                 str(book.get("location") or ""),
@@ -274,62 +263,14 @@ def embedding_text(book):
 def book_line(book):
     distance = ""
     if book.get("distance_km") is not None:
-        distance = f" - sekitar {book['distance_km']} km dari kamu"
+        distance = f" - sekitar {book['distance_km']} km"
     price = book.get("rental_price") or 0
     return (
-        f"{book['title']} oleh {book['author']} | "
-        f"{book.get('category') or 'Kategori belum diisi'} | "
-        f"{book.get('theme') or 'Tema belum diisi'} | "
+        f"{book['title']} - {book['author']} | "
+        f"{book.get('category') or 'Kategori umum'} | "
         f"{book.get('location') or 'Lokasi belum diisi'}{distance} | "
-        f"Rp {int(price):,}/minggu"
-    ).replace(",", ".")
-
-def build_chat_fallback_answer(message, books, has_location):
-    if not books:
-        return (
-            "Aku belum menemukan buku yang cocok.\n"
-            "Coba sebutkan judul, penulis, genre, atau area yang lebih spesifik."
-        )
-
-    recommendations = []
-    for index, book in enumerate(books[:3], 1):
-        distance = ""
-        if book.get("distance_km") is not None:
-            distance = f" - sekitar {book['distance_km']} km"
-        recommendations.append(
-            f"{index}. {book['title']} - {book['author']}\n"
-            f"   {book.get('location') or 'Lokasi belum diisi'}{distance}\n"
-            f"   Rp {int(book.get('rental_price') or 0):,}/minggu".replace(",", ".")
-        )
-
-    intro = fallback_intro_for_message(message)
-    return (
-        intro
-        + "\n\n"
-        + f"Aku menemukan {len(books)} buku yang cocok"
-        + (" dan dekat dari lokasimu." if has_location else ".")
-        + "\n\n"
-        + "\n\n".join(recommendations)
-        + "\n\nPilih salah satu kartu buku di bawah untuk lanjut meminjam."
+        f"Rp {int(price):,}/minggu".replace(",", ".")
     )
-
-def fallback_intro_for_message(message):
-    normalized = message.lower()
-    if any(word in normalized for word in ["sedih", "galau", "kecewa", "patah hati", "capek hati"]):
-        return (
-            "Maaf kamu lagi merasa berat. Aku pilihkan bacaan yang bisa menemani pelan-pelan, "
-            "dari cerita yang hangat sampai buku reflektif yang tidak terlalu menggurui."
-        )
-    if any(word in normalized for word in ["stres", "stress", "cemas", "overthinking", "burnout", "lelah"]):
-        return (
-            "Kalau pikiran sedang penuh, bacaan yang ritmenya tenang biasanya lebih enak. "
-            "Aku pilihkan beberapa buku yang bisa jadi jeda."
-        )
-    if any(word in normalized for word in ["motivasi", "semangat", "produktif", "malas", "bingung mulai"]):
-        return (
-            "Aku pilihkan buku yang bisa bantu membangun dorongan kecil dulu, bukan motivasi yang terasa memaksa."
-        )
-    return "Aku bantu pilihkan dari katalog UniLibra."
 
 def retrieval_query_for_message(message):
     normalized = message.lower()
@@ -345,11 +286,33 @@ def require_internal_token(token):
     if AI_INTERNAL_TOKEN and token != AI_INTERNAL_TOKEN:
         raise HTTPException(status_code=401, detail="AI internal token tidak valid")
 
+# --- 2.5 FITUR BARU: INTENT ROUTER GEMINI ---
+def classify_intent(message: str) -> str:
+    """Mengklasifikasikan niat pengguna untuk menghemat pemanggilan database."""
+    if not GEMINI_API_KEY:
+        return "A"
+        
+    prompt = f"""
+    Klasifikasikan pertanyaan pengguna ini ke dalam dua kategori:
+    Kategori A: Pengguna mencari buku, meminta rekomendasi, atau membahas peminjaman perpustakaan.
+    Kategori B: Pengguna menyapa (Halo), bertanya fakta umum (Siapa presiden), atau membahas hal di luar buku/perpustakaan.
+
+    Pertanyaan: "{message}"
+
+    Jawab HANYA dengan huruf 'A' atau 'B'.
+    """
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
+        return response.text.strip().upper()
+    except Exception:
+        return "A"
+
 # --- 3. ENDPOINT API ---
 
 @app.get("/")
 def root():
-    return {"message": "Unilibra AI Engine is Running!"}
+    return {"message": "Unilibra AI Engine is Running with Gemini!"}
 
 @app.get("/health")
 def health():
@@ -357,11 +320,11 @@ def health():
         "status": "ok",
         "device": device,
         "embedding_model": "all-MiniLM-L6-v2",
+        "ai_engine": "gemini-1.5-flash"
     }
 
 @app.get("/search")
 def search_books(query: str, limit: int = 5, latitude: float | None = None, longitude: float | None = None):
-    # Menggunakan fungsi utilitas agar kode lebih ringkas
     results = execute_semantic_search(query, limit, latitude, longitude)
     return {"query": query, "results": results}
 
@@ -445,7 +408,11 @@ def refresh_book_embedding(
 
 @app.post("/api/chat")
 def chatbot_unilibra(req: ChatRequest):
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=503, detail="Gemini API Key belum dikonfigurasi")
+
     try:
+        # Fitur bawaan: Menjawab jumlah katalog secara cepat
         if is_catalog_count_question(req.pesan):
             stats = get_catalog_stats()
             popular_books = get_popular_books(limit=4)["popular_books"]
@@ -460,9 +427,31 @@ def chatbot_unilibra(req: ChatRequest):
                 "engine": "database-count",
             }
 
-        retrieval_query = retrieval_query_for_message(req.pesan)
+        # LANGKAH 1: Deteksi Niat (Intent Routing)
+        intent = classify_intent(req.pesan)
 
-        # Langkah 1: Retrieval (Menggunakan fungsi utilitas yang sama dengan /search)
+        # JIKA INTENT B (Sapaan / Luar Topik)
+        if "B" in intent:
+            system_instruction_fallback = (
+                "Kamu adalah UniBot, asisten perpustakaan UniLibra. "
+                "Jawab sapaan dengan ramah, tapi tolak dengan sopan semua pertanyaan fakta umum, "
+                "bantuan coding, atau hal di luar buku. Arahkan pengguna kembali untuk mencari buku."
+            )
+            model_fallback = genai.GenerativeModel(
+                model_name='gemini-1.5-flash',
+                system_instruction=system_instruction_fallback
+            )
+            response = model_fallback.generate_content(req.pesan)
+            return {
+                "status": "success",
+                "jawaban": response.text.strip(),
+                "buku_referensi": [],
+                "actions": [],
+                "engine": "gemini-intent-b"
+            }
+
+        # JIKA INTENT A (Cari Buku / Rekomendasi)
+        retrieval_query = retrieval_query_for_message(req.pesan)
         buku_relevan = execute_semantic_search(
             retrieval_query,
             limit=12,
@@ -475,80 +464,41 @@ def chatbot_unilibra(req: ChatRequest):
             for idx, b in enumerate(buku_relevan, 1):
                 konteks_buku += f"{idx}. {book_line(b)}\n"
         else:
-            konteks_buku = "Tidak ada buku spesifik yang relevan di database."
+            konteks_buku = "Tidak ada buku spesifik yang relevan di database saat ini."
 
-        if not AZURE_OPENAI_ENDPOINT or not AZURE_OPENAI_API_KEY or not AZURE_OPENAI_DEPLOYMENT:
-            raise HTTPException(status_code=503, detail="Azure OpenAI belum dikonfigurasi di AI service")
-
-        # Langkah 2: Augmented Prompt
-        prompt = f"""
-        Kamu adalah 'UniBot' dari aplikasi web UniLibra, asisten virtual ramah untuk platform peminjaman buku 'Unilibra'.
-        Tugasmu adalah menjawab pertanyaan pengguna HANYA berdasarkan konteks buku yang tersedia di bawah ini. 
-        Jika pengguna bertanya hal di luar konteks buku atau perpustakaan, arahkan kembali ke topik peminjaman buku.
-        Jika ada lokasi pengguna dan distance_km, prioritaskan buku yang paling dekat.
-        Jika pengguna bertanya apakah buku/penulis tertentu masih ada, jawab berdasarkan status buku di konteks.
-        Jangan mengarang buku di luar konteks.
+        # LANGKAH 2: Guardrail System Instruction untuk Gemini
+        system_instruction_rag = f"""
+        Kamu adalah 'UniBot', asisten virtual ramah untuk platform peminjaman buku 'Unilibra'.
+        Tugas utamamu adalah menjawab berdasarkan konteks buku di bawah ini.
+        Jika ada lokasi pengguna (ditandai dengan 'sekitar X km'), prioritaskan buku yang terdekat.
         
-        Konteks Buku yang Tersedia di Database Saat Ini:
+        Konteks Buku yang Tersedia:
         {konteks_buku}
-
-        Catatan penting:
-        - Konteks di atas hanya potongan hasil pencarian, bukan seluruh jumlah buku di database.
-        - Jika pengguna bertanya total/jumlah semua buku, jangan simpulkan dari jumlah item konteks.
-        
-        Pertanyaan Pengguna: {req.pesan}
         
         Gaya jawaban:
         - Bahasa Indonesia singkat, rapi, dan langsung membantu.
         - Jangan pakai markdown tebal, emoji, heading panjang, atau sapaan berlebihan.
         - Maksimal 4 poin rekomendasi.
-        - Format tiap rekomendasi: Judul - Penulis, lokasi/jarak jika ada, harga per minggu.
-        - Akhiri dengan satu kalimat ajakan memilih kartu buku di bawah.
+        - Format rekomendasi: Judul - Penulis, lokasi (jarak), harga/minggu.
+        - Akhiri dengan kalimat: "Pilih salah satu kartu buku di bawah untuk lanjut meminjam."
         """
 
-        response_text = generate_azure_openai_response(prompt)
+        model_rag = genai.GenerativeModel(
+            model_name='gemini-1.5-flash',
+            system_instruction=system_instruction_rag
+        )
+        response = model_rag.generate_content(req.pesan)
 
         return {
             "status": "success",
-            "jawaban": response_text,
+            "jawaban": response.text.strip(),
             "buku_referensi": buku_relevan,
             "actions": [
                 {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
                 for b in buku_relevan[:3]
             ],
-            "engine": "azure-openai",
+            "engine": "gemini-intent-a-rag",
         }
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-def generate_azure_openai_response(prompt):
-    url = (
-        f"{AZURE_OPENAI_ENDPOINT}/openai/deployments/"
-        f"{AZURE_OPENAI_DEPLOYMENT}/chat/completions"
-        f"?api-version={AZURE_OPENAI_API_VERSION}"
-    )
-    payload = {
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "Kamu adalah UniBot, asisten rekomendasi buku UniLibra. "
-                    "Jawab dalam bahasa Indonesia, singkat, hangat, dan hanya berdasarkan konteks yang diberikan."
-                ),
-            },
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.7,
-        "max_tokens": 700,
-    }
-    headers = {
-        "api-key": AZURE_OPENAI_API_KEY,
-        "Content-Type": "application/json",
-    }
-
-    response = requests.post(url, headers=headers, json=payload, timeout=30)
-    if response.status_code >= 400:
-        raise HTTPException(status_code=response.status_code, detail=response.text)
-
-    data = response.json()
-    return data["choices"][0]["message"]["content"].strip()

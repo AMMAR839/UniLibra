@@ -1,7 +1,10 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+sentence-transformers
 fastapi
 uvicorn
-sentence-transformers
 psycopg2-binary
 pandas
 python-dotenv
 requests
+google-generativeai
