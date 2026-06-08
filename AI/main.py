@@ -326,6 +326,30 @@ def book_context_line(index, book):
         f"deskripsi: {description or 'tidak ada deskripsi'}"
     ).replace(",", ".")
 
+def normalize_book_key(book):
+    return "|".join(
+        str(book.get(field) or "").strip().lower()
+        for field in ["title", "author"]
+    )
+
+def select_chat_books(books, limit=4):
+    selected = []
+    seen_keys = set()
+
+    for book in books:
+        key = normalize_book_key(book)
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        selected.append(book)
+        if len(selected) >= limit:
+            break
+
+    if selected:
+        return selected
+
+    return books[:limit]
+
 def gemini_catalog_count_answer(message, stats, popular_books):
     context = build_catalog_count_answer(stats)
     popular_context = "\n".join(
@@ -540,10 +564,11 @@ def chatbot_unilibra(req: ChatRequest):
             latitude=req.latitude,
             longitude=req.longitude,
         )
+        buku_untuk_chat = select_chat_books(buku_relevan, limit=4)
         
         konteks_buku = ""
-        if buku_relevan:
-            for idx, b in enumerate(buku_relevan, 1):
+        if buku_untuk_chat:
+            for idx, b in enumerate(buku_untuk_chat, 1):
                 konteks_buku += f"{book_context_line(idx, b)}\n"
         else:
             konteks_buku = "Tidak ada buku spesifik yang relevan di database saat ini."
@@ -554,6 +579,8 @@ def chatbot_unilibra(req: ChatRequest):
         Tugas utamamu adalah menjawab berdasarkan konteks buku di bawah ini.
         Gemini tidak boleh mengarang buku di luar konteks. Jika buku yang diminta tidak ada di konteks,
         katakan bahwa data UniLibra belum menemukan buku tersebut dan tawarkan alternatif terdekat.
+        Rekomendasikan hanya buku yang ada pada "Konteks Buku yang Tersedia".
+        Judul yang disebut di jawaban harus sama persis dengan judul pada konteks.
         Jika ada lokasi pengguna (ditandai dengan 'sekitar X km'), prioritaskan buku yang terdekat.
         
         Query database yang dibuat dari chat pengguna:
@@ -579,10 +606,10 @@ def chatbot_unilibra(req: ChatRequest):
         return {
             "status": "success",
             "jawaban": response.text.strip(),
-            "buku_referensi": buku_relevan,
+            "buku_referensi": buku_untuk_chat,
             "actions": [
                 {"label": f"Pinjam {b['title']}", "book_id": b["id"], "path": f"/meminjam?book={b['id']}"}
-                for b in buku_relevan[:3]
+                for b in buku_untuk_chat[:3]
             ],
             "engine": "gemini-intent-a-rag",
         }
