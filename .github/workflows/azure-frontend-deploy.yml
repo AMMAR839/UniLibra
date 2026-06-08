@@ -6,12 +6,13 @@ on:
       - main
     paths:
       - 'frontend/**'
+      - '.github/workflows/azure-frontend-deploy.yml'
   workflow_dispatch:
 
 env:
-  ACR_LOGIN_SERVER: "unilibraregistry.azurecr.io" # Change this to your actual ACR name
-  CONTAINER_APP_NAME: "unilibra-frontend" # The name of your Container App
-  RESOURCE_GROUP: "unilibra-resource-group" # Your Azure Resource Group
+  ACR_LOGIN_SERVER: "unilibraregistry.azurecr.io"
+  CONTAINER_APP_NAME: "unilibra-frontend"
+  RESOURCE_GROUP: "unilibra-resource-group"
 
 jobs:
   build-and-deploy:

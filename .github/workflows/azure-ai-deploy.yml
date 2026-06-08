@@ -6,12 +6,13 @@ on:
       - main
     paths:
       - 'AI/**'
+      - '.github/workflows/azure-ai-deploy.yml'
   workflow_dispatch:
 
 env:
-  ACR_LOGIN_SERVER: "unilibraregistry.azurecr.io" # Change this to your actual ACR name
-  CONTAINER_APP_NAME: "unilibra-ai" # The name of your AI Container App
-  RESOURCE_GROUP: "unilibra-resource-group" # Your Azure Resource Group
+  ACR_LOGIN_SERVER: "unilibraregistry.azurecr.io"
+  CONTAINER_APP_NAME: "unilibra-ai"
+  RESOURCE_GROUP: "unilibra-resource-group"
 
 jobs:
   build-and-deploy:
