@@ -62,6 +62,9 @@ function Navbar({
       const detail = (event as CustomEvent<{ threadID?: number }>).detail;
       if (detail?.threadID) {
         setSelectedChatID(detail.threadID);
+        void loadThreads(detail.threadID);
+      } else {
+        void loadThreads();
       }
       setIsChatOpen(true);
     }
@@ -167,11 +170,16 @@ function Navbar({
     setChatUnreadCount(countUnreadChatNotifications(response.data));
   }
 
-  async function loadThreads() {
+  async function loadThreads(preferredThreadID?: number) {
     try {
       const response = await apiFetch<{ data: ChatThread[] }>("/api/chat/threads");
       setThreads(response.data);
-      setSelectedChatID((current) => current ?? response.data[0]?.id ?? null);
+      setSelectedChatID((current) => {
+        if (preferredThreadID && response.data.some((thread) => thread.id === preferredThreadID)) {
+          return preferredThreadID;
+        }
+        return current ?? response.data[0]?.id ?? null;
+      });
     } catch {
       setThreads([]);
     }
